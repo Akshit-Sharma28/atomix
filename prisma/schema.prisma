@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./atomix.db"
+}
+
+enum Role {
+  ADMIN
+  SECURITY_LEAD
+  CONSULTANT
+  DEVELOPER
+  VIEWER
+}
+
+model User {
+  id String @id @default(cuid())
+
+  name  String
+  email String @unique
+
+  role Role @default(VIEWER)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  assignedFindings Finding[]
+  appSessions      AppSession[]
+}
+
+model Project {
+  id String @id @default(cuid())
+
+  name   String
+  client String?
+
+  executiveSummary String?
+
+  status String @default("Active")
+
+  createdAt DateTime @default(now())
+
+  findings Finding[]
+  tasks    Task[]
+}
+
+model Finding {
+  id String @id @default(cuid())
+
+  title String
+  severity String
+
+  source String
+
+  status String @default("Open")
+
+  ownerId String?
+
+  owner User? @relation(fields: [ownerId], references: [id])
+
+  dueDate DateTime?
+
+  slaDays Int?
+
+  description String?
+  remediation String?
+
+  verified Boolean @default(false)
+
+  cvssScore Float?
+  cvssVector String?
+
+  cweId String?
+  owaspCategory String?
+
+  createdAt DateTime @default(now())
+
+  projectId String
+
+ project Project @relation(fields: [projectId], references: [id])
+
+  analysis FindingAnalysis?
+
+  activities FindingActivity[]
+}
+
+model Task {
+  id String @id @default(cuid())
+
+  title  String
+  status String @default("Open")
+
+  dueDate DateTime?
+
+  projectId String
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model FindingAnalysis {
+  id String @id @default(cuid())
+
+  findingId String @unique
+
+  businessImpact    String?
+  technicalImpact   String?
+  remediationPlan   String?
+  developerGuidance String?
+  executiveSummary  String?
+
+  riskScore Int?
+
+  finding Finding @relation(fields: [findingId], references: [id])
+}
+
+model FindingActivity {
+  id String @id @default(cuid())
+
+  findingId String
+
+  action String
+
+  actor String?
+
+  oldValue String?
+  newValue String?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  finding Finding @relation(fields: [findingId], references: [id])
+}
+
+model AppSession {
+  id String @id @default(cuid())
+
+  currentUserId String
+
+  user User @relation(fields: [currentUserId], references: [id])
+}
+
+model KnowledgeDocument {
+  id String @id @default(cuid())
+
+  title String
+
+  source String
+
+  content String
+
+  documentType String?
+
+  createdAt DateTime @default(now())
+}
+
+model CopilotConversation {
+  id String @id @default(cuid())
+
+  question String
+
+  answer String
+
+  createdAt DateTime @default(now())
+}
