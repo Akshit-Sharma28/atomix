@@ -34,6 +34,56 @@ const importOrder = [
   ["CopilotConversation", "copilotConversation"],
 ];
 
+const childTableForeignKeys = {
+  Account: [["user", "userId"]],
+  Component: [["project", "projectId"]],
+  ScopeProfile: [["project", "projectId"]],
+  ScopeItem: [
+    ["scopeProfile", "scopeProfileId"],
+    ["component", "componentId", true],
+  ],
+  RequiredReviewType: [["scopeProfile", "scopeProfileId"]],
+  SecurityReview: [
+    ["project", "projectId"],
+    ["scopeProfile", "scopeProfileId", true],
+  ],
+  ReviewWorkstream: [["securityReview", "reviewId"]],
+  ReviewerProfile: [["user", "userId"]],
+  ReviewerSkill: [["reviewerProfile", "reviewerProfileId"]],
+  ReviewerAssignment: [
+    ["securityReview", "reviewId"],
+    ["reviewWorkstream", "workstreamId", true],
+    ["reviewerProfile", "reviewerProfileId", true],
+    ["user", "userId", true],
+  ],
+  Finding: [
+    ["project", "projectId"],
+    ["securityReview", "reviewId", true],
+    ["component", "componentId", true],
+    ["finding", "canonicalFindingId", true],
+  ],
+  FindingAnalysis: [["finding", "findingId"]],
+  FindingActivity: [["finding", "findingId"]],
+  Task: [
+    ["project", "projectId"],
+    ["finding", "findingId", true],
+    ["remediationPlan", "remediationPlanId", true],
+    ["user", "ownerId", true],
+  ],
+  RiskException: [["finding", "findingId"]],
+  RemediationPlan: [
+    ["finding", "findingId"],
+    ["user", "ownerId", true],
+  ],
+  ReviewExtension: [
+    ["securityReview", "reviewId"],
+    ["securityReview", "relatedReviewId", true],
+  ],
+  ReviewCancellation: [["securityReview", "reviewId"]],
+  ReviewActivity: [["securityReview", "reviewId"]],
+  AppSession: [["user", "currentUserId"]],
+};
+
 const dateFields = new Set([
   "createdAt",
   "updatedAt",
@@ -89,6 +139,69 @@ function normalizeRow(row) {
   return normalized;
 }
 
+async function existingIds(delegateName) {
+  const rows =
+    await prisma[delegateName].findMany({
+      select: {
+        id: true,
+      },
+    });
+
+  return new Set(rows.map((row) => row.id));
+}
+
+async function filterRowsForExistingParents(
+  tableName,
+  rows
+) {
+  const foreignKeys =
+    childTableForeignKeys[tableName] ?? [];
+
+  if (foreignKeys.length === 0) {
+    return rows;
+  }
+
+  const idSets = new Map();
+
+  for (const [delegateName] of foreignKeys) {
+    if (!idSets.has(delegateName)) {
+      idSets.set(
+        delegateName,
+        await existingIds(delegateName)
+      );
+    }
+  }
+
+  const filtered = rows.filter((row) =>
+    foreignKeys.every(
+      ([delegateName, fieldName, optional]) => {
+        const value = row[fieldName];
+
+        if (
+          optional &&
+          (value === null || value === undefined)
+        ) {
+          return true;
+        }
+
+        return idSets
+          .get(delegateName)
+          .has(value);
+      }
+    )
+  );
+
+  const skipped = rows.length - filtered.length;
+
+  if (skipped > 0) {
+    console.log(
+      `Skipped ${skipped} ${tableName} rows with missing parent records`
+    );
+  }
+
+  return filtered;
+}
+
 async function main() {
   if (!process.env.DATABASE_URL?.startsWith("postgres")) {
     throw new Error(
@@ -116,12 +229,25 @@ async function main() {
       continue;
     }
 
+    const filteredRows =
+      await filterRowsForExistingParents(
+        tableName,
+        rows
+      );
+
+    if (filteredRows.length === 0) {
+      console.log(
+        `Skipped ${tableName}: 0 importable rows`
+      );
+      continue;
+    }
+
     await delegate.createMany({
-      data: rows.map(normalizeRow),
+      data: filteredRows.map(normalizeRow),
       skipDuplicates: true,
     });
 
-    console.log(`Imported ${rows.length} ${tableName} rows`);
+    console.log(`Imported ${filteredRows.length} ${tableName} rows`);
   }
 }
 
