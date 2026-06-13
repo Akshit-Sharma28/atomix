@@ -1,9 +1,14 @@
+import Link from "next/link";
+
 interface Finding {
   id: string;
   title: string;
   severity: string;
   status: string;
   owner?: string | null;
+  project?: string | null;
+  review?: string | null;
+  dueDate?: string | null;
 }
 
 export default function KanbanBoard({
@@ -82,9 +87,11 @@ export default function KanbanBoard({
                 (f) => f.status === column
               )
               .map((finding) => (
-                <div
+                <Link
                   key={finding.id}
+                  href={`/findings/${finding.id}`}
                   className="
+                  block
                   bg-slate-900
                   border
                   border-cyan-500/20
@@ -128,7 +135,23 @@ export default function KanbanBoard({
                     {finding.owner ||
                       "Unassigned"}
                   </p>
-                </div>
+
+                  {(finding.project ||
+                    finding.review) && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      {finding.project}
+                      {finding.review
+                        ? ` · ${finding.review}`
+                        : ""}
+                    </p>
+                  )}
+
+                  {finding.dueDate && (
+                    <p className="mt-2 text-xs text-orange-300">
+                      Due {finding.dueDate}
+                    </p>
+                  )}
+                </Link>
               ))}
           </div>
         </div>

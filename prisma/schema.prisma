@@ -27,12 +27,20 @@ model User {
 
   createdAt DateTime @default(now())
 
-  assignedFindings Finding[]
+  assignedFindings Finding[] @relation("FindingOwner")
+  reviewerProfile  ReviewerProfile?
+  reviewAssignments ReviewerAssignment[] @relation("AssignmentUser")
+  ownedTasks Task[] @relation("TaskOwner")
+  ownedRemediationPlans RemediationPlan[] @relation("RemediationPlanOwner")
   appSessions      AppSession[]
+
+  accounts Account[]
 }
 
 model Project {
   id String @id @default(cuid())
+
+  sprId String? @unique
 
   name   String
   client String?
@@ -40,17 +48,24 @@ model Project {
   executiveSummary String?
 
   status String @default("Active")
+  riskTier String?
+  businessOwner String?
+  technicalOwner String?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  findings Finding[]
-  tasks    Task[]
+  findings      Finding[]
+  tasks         Task[]
+  components    Component[]
+  scopeProfiles ScopeProfile[]
+  reviews       SecurityReview[]
 }
 
 model Finding {
   id String @id @default(cuid())
 
-  title String
+  title    String
   severity String
 
   source String
@@ -59,7 +74,7 @@ model Finding {
 
   ownerId String?
 
-  owner User? @relation(fields: [ownerId], references: [id])
+  owner User? @relation("FindingOwner", fields: [ownerId], references: [id])
 
   dueDate DateTime?
 
@@ -70,21 +85,32 @@ model Finding {
 
   verified Boolean @default(false)
 
-  cvssScore Float?
+  cvssScore  Float?
   cvssVector String?
 
-  cweId String?
+  cweId         String?
   owaspCategory String?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   projectId String
+  reviewId String?
+  componentId String?
+  canonicalFindingId String?
 
- project Project @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  review SecurityReview? @relation(fields: [reviewId], references: [id])
+  component Component? @relation(fields: [componentId], references: [id])
+  canonicalFinding Finding? @relation("FindingVersions", fields: [canonicalFindingId], references: [id])
+  versions Finding[] @relation("FindingVersions")
 
   analysis FindingAnalysis?
 
   activities FindingActivity[]
+  tasks Task[]
+  riskExceptions RiskException[]
+  remediationPlan RemediationPlan?
 }
 
 model Task {
@@ -96,10 +122,263 @@ model Task {
   dueDate DateTime?
 
   projectId String
+  findingId String?
+  remediationPlanId String?
+  ownerId String?
 
   project Project @relation(fields: [projectId], references: [id])
+  finding Finding? @relation(fields: [findingId], references: [id])
+  remediationPlan RemediationPlan? @relation(fields: [remediationPlanId], references: [id])
+  owner User? @relation("TaskOwner", fields: [ownerId], references: [id])
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model Component {
+  id String @id @default(cuid())
+
+  projectId String
+  parentId String?
+
+  name String
+  type String @default("APPLICATION")
+  description String?
+  criticality String @default("Medium")
+
+  project Project @relation(fields: [projectId], references: [id])
+  parent Component? @relation("ComponentTree", fields: [parentId], references: [id])
+  children Component[] @relation("ComponentTree")
+
+  findings Finding[]
+  scopeItems ScopeItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ScopeProfile {
+  id String @id @default(cuid())
+
+  projectId String
+  name String
+  riskProfile String?
+  businessCriticality String?
+  dataClassification String?
+  internetFacing Boolean @default(false)
+  authRequired Boolean @default(false)
+  notes String?
+
+  project Project @relation(fields: [projectId], references: [id])
+  reviews SecurityReview[]
+  scopeItems ScopeItem[]
+  requiredReviews RequiredReviewType[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ScopeItem {
+  id String @id @default(cuid())
+
+  scopeProfileId String
+  componentId String?
+  name String
+  type String @default("URL")
+  value String?
+  inScope Boolean @default(true)
+  notes String?
+
+  scopeProfile ScopeProfile @relation(fields: [scopeProfileId], references: [id])
+  component Component? @relation(fields: [componentId], references: [id])
+}
+
+model RequiredReviewType {
+  id String @id @default(cuid())
+
+  scopeProfileId String
+  type String
+  required Boolean @default(true)
+  reason String?
+
+  scopeProfile ScopeProfile @relation(fields: [scopeProfileId], references: [id])
+}
+
+model SecurityReview {
+  id String @id @default(cuid())
+
+  srId String? @unique
+  projectId String
+  scopeProfileId String?
+
+  title String
+  type String @default("PENTEST")
+  status String @default("Requested")
+  priority String @default("Medium")
+
+  requestedStartDate DateTime?
+  actualStartDate DateTime?
+  dueDate DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  project Project @relation(fields: [projectId], references: [id])
+  scopeProfile ScopeProfile? @relation(fields: [scopeProfileId], references: [id])
+
+  workstreams ReviewWorkstream[]
+  assignments ReviewerAssignment[]
+  findings Finding[]
+  extensions ReviewExtension[] @relation("ReviewExtensionRequest")
+  relatedExtensions ReviewExtension[] @relation("RelatedReviewExtension")
+  cancellation ReviewCancellation?
+  activities ReviewActivity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ReviewWorkstream {
+  id String @id @default(cuid())
+
+  reviewId String
+  type String
+  status String @default("Not Started")
+  required Boolean @default(true)
+  notes String?
+
+  review SecurityReview @relation(fields: [reviewId], references: [id])
+  assignments ReviewerAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ReviewerProfile {
+  id String @id @default(cuid())
+
+  userId String @unique
+  availability String @default("Available")
+  weeklyCapacityHours Int @default(20)
+  notes String?
+
+  user User @relation(fields: [userId], references: [id])
+  skills ReviewerSkill[]
+  assignments ReviewerAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ReviewerSkill {
+  id String @id @default(cuid())
+
+  reviewerProfileId String
+  skill String
+  level String @default("Intermediate")
+
+  reviewerProfile ReviewerProfile @relation(fields: [reviewerProfileId], references: [id])
+
+  @@unique([reviewerProfileId, skill])
+}
+
+model ReviewerAssignment {
+  id String @id @default(cuid())
+
+  reviewId String
+  workstreamId String?
+  reviewerProfileId String?
+  userId String?
+
+  role String @default("Primary")
+  status String @default("Assigned")
+  allocatedHours Int?
+  startDate DateTime?
+  endDate DateTime?
+
+  review SecurityReview @relation(fields: [reviewId], references: [id])
+  workstream ReviewWorkstream? @relation(fields: [workstreamId], references: [id])
+  reviewerProfile ReviewerProfile? @relation(fields: [reviewerProfileId], references: [id])
+  user User? @relation("AssignmentUser", fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ReviewExtension {
+  id String @id @default(cuid())
+
+  reviewId String
+  relatedReviewId String?
+  requestedUntil DateTime
+  reason String
+  status String @default("Requested")
+
+  review SecurityReview @relation("ReviewExtensionRequest", fields: [reviewId], references: [id])
+  relatedReview SecurityReview? @relation("RelatedReviewExtension", fields: [relatedReviewId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ReviewCancellation {
+  id String @id @default(cuid())
+
+  reviewId String @unique
+  reason String
+  status String @default("Requested")
+  approvedBy String?
+
+  review SecurityReview @relation(fields: [reviewId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ReviewActivity {
+  id String @id @default(cuid())
+
+  reviewId String
+  action String
+  actor String?
+  oldValue String?
+  newValue String?
+  notes String?
+
+  review SecurityReview @relation(fields: [reviewId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model RiskException {
+  id String @id @default(cuid())
+
+  findingId String
+  reason String
+  status String @default("Requested")
+  expiresAt DateTime?
+  approvedBy String?
+
+  finding Finding @relation(fields: [findingId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RemediationPlan {
+  id String @id @default(cuid())
+
+  findingId String @unique
+  ownerId String?
+  summary String?
+  status String @default("Planned")
+  targetDate DateTime?
+
+  finding Finding @relation(fields: [findingId], references: [id])
+  owner User? @relation("RemediationPlanOwner", fields: [ownerId], references: [id])
+  tasks Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model FindingAnalysis {
@@ -167,4 +446,14 @@ model CopilotConversation {
   answer String
 
   createdAt DateTime @default(now())
+}
+
+model Account {
+  id String @id @default(cuid())
+
+  userId String @unique
+
+  passwordHash String
+
+  user User @relation(fields: [userId], references: [id])
 }

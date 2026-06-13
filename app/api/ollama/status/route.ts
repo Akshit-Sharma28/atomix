@@ -1,8 +1,12 @@
 export async function GET() {
   try {
+    const baseUrl =
+      process.env.OLLAMA_BASE_URL ??
+      "http://localhost:11434";
+
     const response =
       await fetch(
-        "http://localhost:11434/api/tags"
+        `${baseUrl}/api/tags`
       );
 
     if (!response.ok) {

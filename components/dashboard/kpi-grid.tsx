@@ -42,7 +42,7 @@ export default function KPIGrid({
   ];
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
       {cards.map((card) => (
         <StatCard
           key={card.title}

@@ -1,15 +1,20 @@
 "use client";
 
 import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
   PieChart,
   Pie,
   Cell,
-  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
 } from "recharts";
 
 const severityData = [
@@ -36,9 +41,15 @@ const COLORS = [
 ];
 
 export default function DashboardCharts() {
-  return (
-    <div className="grid lg:grid-cols-2 gap-6 mt-8">
+  const [mounted, setMounted] =
+    useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-4 mt-5">
       {/* Severity Distribution */}
 
       <div
@@ -47,40 +58,66 @@ export default function DashboardCharts() {
         border
         border-cyan-500/10
         rounded-2xl
-        p-6
+        p-4
         atomix-glow
         "
       >
-        <h3 className="text-xl font-semibold text-white mb-6">
+        <h3
+          className="
+          text-lg
+          font-semibold
+          text-white
+          mb-4
+          "
+        >
           Severity Distribution
         </h3>
 
-        <div className="h-[350px] w-full">
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-          >
-            <PieChart>
-              <Pie
-                data={severityData}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={110}
-                innerRadius={50}
+        <div className="h-[210px] min-h-[210px] w-full min-w-0 overflow-hidden">
+          {mounted ? (
+            <div className="flex h-full items-center justify-center">
+              <PieChart
+                width={420}
+                height={210}
+                margin={{
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  left: 0,
+                }}
               >
-                {severityData.map(
-                  (_, index) => (
-                    <Cell
-                      key={index}
-                      fill={COLORS[index]}
-                    />
-                  )
-                )}
-              </Pie>
+                <Pie
+                  data={severityData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={70}
+                  innerRadius={32}
+                >
+                  {severityData.map(
+                    (_, index) => (
+                      <Cell
+                        key={index}
+                        fill={COLORS[index]}
+                      />
+                    )
+                  )}
+                </Pie>
 
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+                <Tooltip />
+
+                <Legend
+                  verticalAlign="bottom"
+                  height={24}
+                  iconSize={10}
+                  wrapperStyle={{
+                    fontSize: "12px",
+                }}
+              />
+              </PieChart>
+            </div>
+          ) : (
+            <div className="h-full rounded-xl bg-slate-950/70" />
+          )}
         </div>
       </div>
 
@@ -92,45 +129,61 @@ export default function DashboardCharts() {
         border
         border-cyan-500/10
         rounded-2xl
-        p-6
+        p-4
         atomix-glow
         "
       >
-        <h3 className="text-xl font-semibold text-white mb-6">
+        <h3
+          className="
+          text-lg
+          font-semibold
+          text-white
+          mb-4
+          "
+        >
           Findings Trend
         </h3>
 
-        <div className="h-[350px] w-full">
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-          >
-            <LineChart data={trendData}>
-              <XAxis
-                dataKey="month"
-                stroke="#94a3b8"
-              />
+        <div className="h-[210px] min-h-[210px] w-full min-w-0 overflow-hidden">
+          {mounted ? (
+            <div className="flex h-full items-center justify-center">
+              <LineChart
+                data={trendData}
+                width={500}
+                height={210}
+              >
+                <XAxis
+                  dataKey="month"
+                  stroke="#94a3b8"
+                  tick={{ fontSize: 12 }}
+                />
 
-              <YAxis
-                stroke="#94a3b8"
-              />
+                <YAxis
+                  stroke="#94a3b8"
+                  tick={{ fontSize: 12 }}
+                />
 
-              <Tooltip />
+                <Tooltip />
 
-              <Line
-                type="monotone"
-                dataKey="findings"
-                stroke="#06b6d4"
-                strokeWidth={3}
-                dot={{
-                  r: 5,
-                }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+                <Line
+                  type="monotone"
+                  dataKey="findings"
+                  stroke="#06b6d4"
+                  strokeWidth={2}
+                  dot={{
+                    r: 3,
+                  }}
+                  activeDot={{
+                    r: 5,
+                  }}
+                />
+              </LineChart>
+            </div>
+          ) : (
+            <div className="h-full rounded-xl bg-slate-950/70" />
+          )}
         </div>
       </div>
-
     </div>
   );
 }

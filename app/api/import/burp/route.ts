@@ -6,11 +6,37 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
 
   const file = formData.get("file") as File;
+  const projectId =
+    formData.get("projectId");
 
   if (!file) {
     return NextResponse.json(
       { error: "No file uploaded" },
       { status: 400 }
+    );
+  }
+
+  if (
+    typeof projectId !== "string" ||
+    projectId.trim().length === 0
+  ) {
+    return NextResponse.json(
+      { error: "Project is required" },
+      { status: 400 }
+    );
+  }
+
+  const project =
+    await prisma.project.findUnique({
+      where: {
+        id: projectId,
+      },
+    });
+
+  if (!project) {
+    return NextResponse.json(
+      { error: "Project not found" },
+      { status: 404 }
     );
   }
 
@@ -42,8 +68,7 @@ export async function POST(req: NextRequest) {
 
         status: "Open",
 
-        projectId:
-          "REPLACE_WITH_PROJECT_ID",
+        projectId,
       },
     });
 

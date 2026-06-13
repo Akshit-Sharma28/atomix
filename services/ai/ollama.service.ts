@@ -1,9 +1,17 @@
 export async function askOllama(
   prompt: string
 ) {
+  const baseUrl =
+    process.env.OLLAMA_BASE_URL ??
+    "http://localhost:11434";
+
+  const model =
+    process.env.OLLAMA_MODEL ??
+    "qwen3:8b";
+
   const response =
     await fetch(
-      "http://localhost:11434/api/generate",
+      `${baseUrl}/api/generate`,
       {
         method: "POST",
         headers: {
@@ -11,7 +19,7 @@ export async function askOllama(
             "application/json",
         },
         body: JSON.stringify({
-          model: "qwen3:8b",
+          model,
           prompt,
           stream: false,
         }),

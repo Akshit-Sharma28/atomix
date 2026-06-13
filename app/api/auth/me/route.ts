@@ -1,12 +1,16 @@
-import { prisma } from "../../../../lib/prisma";
+import { getServerSession }
+from "next-auth";
+
+import { authOptions }
+from "@/lib/auth/auth";
 
 export async function GET() {
-  const user =
-    await prisma.user.findFirst({
-      where: {
-        role: "ADMIN",
-      },
-    });
+  const session =
+    await getServerSession(
+      authOptions
+    );
 
-  return Response.json(user);
+  return Response.json({
+    session,
+  });
 }

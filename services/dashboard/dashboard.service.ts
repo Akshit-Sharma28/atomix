@@ -1,34 +1,61 @@
 import { prisma } from "../../lib/prisma";
 
 export async function getDashboardMetrics() {
-  const findings =
-    await prisma.finding.findMany();
+  const [
+    total,
+    critical,
+    high,
+    medium,
+    low,
+    open,
+    closed,
+  ] = await Promise.all([
+    prisma.finding.count(),
+
+    prisma.finding.count({
+      where: {
+        severity: "Critical",
+      },
+    }),
+
+    prisma.finding.count({
+      where: {
+        severity: "High",
+      },
+    }),
+
+    prisma.finding.count({
+      where: {
+        severity: "Medium",
+      },
+    }),
+
+    prisma.finding.count({
+      where: {
+        severity: "Low",
+      },
+    }),
+
+    prisma.finding.count({
+      where: {
+        status: "Open",
+      },
+    }),
+
+    prisma.finding.count({
+      where: {
+        status: "Closed",
+      },
+    }),
+  ]);
 
   return {
-    total: findings.length,
-
-    critical: findings.filter(
-      (f) => f.severity === "Critical"
-    ).length,
-
-    high: findings.filter(
-      (f) => f.severity === "High"
-    ).length,
-
-    medium: findings.filter(
-      (f) => f.severity === "Medium"
-    ).length,
-
-    low: findings.filter(
-      (f) => f.severity === "Low"
-    ).length,
-
-    open: findings.filter(
-      (f) => f.status === "Open"
-    ).length,
-
-    closed: findings.filter(
-      (f) => f.status === "Closed"
-    ).length,
+    total,
+    critical,
+    high,
+    medium,
+    low,
+    open,
+    closed,
   };
 }
