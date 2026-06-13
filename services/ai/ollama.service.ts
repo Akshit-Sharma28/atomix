@@ -9,6 +9,9 @@ export async function askOllama(
     process.env.OLLAMA_MODEL ??
     "qwen3:8b";
 
+  const apiKey =
+    process.env.OLLAMA_API_KEY;
+
   const response =
     await fetch(
       `${baseUrl}/api/generate`,
@@ -17,6 +20,12 @@ export async function askOllama(
         headers: {
           "Content-Type":
             "application/json",
+          ...(apiKey
+            ? {
+                Authorization:
+                  `Bearer ${apiKey}`,
+              }
+            : {}),
         },
         body: JSON.stringify({
           model,

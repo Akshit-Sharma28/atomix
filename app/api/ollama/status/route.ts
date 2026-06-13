@@ -3,10 +3,22 @@ export async function GET() {
     const baseUrl =
       process.env.OLLAMA_BASE_URL ??
       "http://localhost:11434";
+    const apiKey =
+      process.env.OLLAMA_API_KEY;
 
     const response =
       await fetch(
-        `${baseUrl}/api/tags`
+        `${baseUrl}/api/tags`,
+        {
+          headers: {
+            ...(apiKey
+              ? {
+                  Authorization:
+                    `Bearer ${apiKey}`,
+                }
+              : {}),
+          },
+        }
       );
 
     if (!response.ok) {

@@ -4,10 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "backfill:spr-sr": "node scripts/backfill-spr-sr.mjs"
+    "db:push": "prisma db push",
+    "export:sqlite": "node scripts/export-sqlite.mjs",
+    "import:postgres": "node scripts/import-postgres.mjs",
+    "backfill:spr-sr": "node scripts/backfill-spr-sr.mjs",
+    "ai:server": "node scripts/ai-server.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

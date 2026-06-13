@@ -24,17 +24,29 @@ flowchart LR
 
 ## Database
 
-The app is still configured for SQLite locally so the current UI remains reviewable.
+The app is now configured for Neon/Postgres through `DATABASE_URL`.
 
 For production V1, use Neon Postgres:
 
 1. Create a Neon project/database.
 2. Set `DATABASE_URL` in Vercel.
-3. Switch `prisma/schema.prisma` datasource provider from `sqlite` to `postgresql`.
-4. Recreate a clean Postgres migration baseline before running production migrations.
-5. Run `npx prisma migrate deploy` in CI/Vercel build flow or a controlled release step.
+3. Set the same `DATABASE_URL` locally for one-time schema/data migration.
+4. Run `npm run db:push` once to create the schema in Neon.
+5. Run `npm run export:sqlite` to export local SQLite data.
+6. Run `npm run import:postgres` with `DATABASE_URL` pointing at Neon.
 
 Do not use a laptop-hosted database for production. If the laptop sleeps, the live app fails.
+
+Important: the historical `prisma/migrations` in this repo were created while the app used SQLite. For the first Neon cutover, use `npm run db:push`, not `prisma migrate deploy`. After Neon is the source of truth, create a clean Postgres migration baseline before relying on `migrate deploy`.
+
+Example local cutover:
+
+```bash
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST.neon.tech/atomix?sslmode=require"
+npm run db:push
+npm run export:sqlite
+npm run import:postgres
+```
 
 ## LLM
 
@@ -42,6 +54,7 @@ Ollama is now environment-driven:
 
 - `OLLAMA_BASE_URL`
 - `OLLAMA_MODEL`
+- `OLLAMA_API_KEY`
 
 Safe V1 options:
 
@@ -50,6 +63,53 @@ Safe V1 options:
 3. Temporarily expose your machine with Cloudflare Tunnel or Tailscale Funnel.
 
 If using your machine for Ollama, keep the DB on Neon. The app should remain usable when the LLM endpoint is offline.
+
+### Local machine as AI server
+
+Run Ollama locally:
+
+```bash
+ollama serve
+ollama pull qwen3:8b
+```
+
+Run the Atomix AI proxy:
+
+```bash
+export OLLAMA_API_KEY="use-a-long-random-token"
+npm run ai:server
+```
+
+Expose the proxy with a secure HTTPS tunnel, then put the tunnel URL in Vercel as `OLLAMA_BASE_URL`.
+
+Example tunnel target:
+
+```bash
+cloudflared tunnel --url http://localhost:8787
+```
+
+Set these in Vercel:
+
+```bash
+OLLAMA_BASE_URL="https://your-tunnel.trycloudflare.com"
+OLLAMA_MODEL="qwen3:8b"
+OLLAMA_API_KEY="same-token-used-locally"
+```
+
+Do not expose raw Ollama directly without an auth layer. The included `npm run ai:server` proxy adds a bearer-token check.
+
+## Vercel environment variables
+
+Set these before deploying:
+
+```bash
+DATABASE_URL="postgresql://USER:PASSWORD@HOST.neon.tech/atomix?sslmode=require"
+NEXTAUTH_URL="https://your-vercel-domain.vercel.app"
+NEXTAUTH_SECRET="long-random-secret"
+OLLAMA_BASE_URL="https://your-ai-tunnel.example.com"
+OLLAMA_MODEL="qwen3:8b"
+OLLAMA_API_KEY="long-random-token"
+```
 
 ## Local UI review
 
