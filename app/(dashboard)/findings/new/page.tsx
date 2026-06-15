@@ -44,7 +44,7 @@ export default async function NewFindingPage() {
   const users = await prisma.user.findMany({
     where: {
       role: {
-        in: ["CONSULTANT", "DEVELOPER"],
+        in: ["CONSULTANT", "REVIEWER", "QA_REVIEWER"],
       },
     },
     orderBy: {

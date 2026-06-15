@@ -22,65 +22,123 @@ interface Props {
   role?: string;
 }
 
+function normalizeRole(role: string) {
+  if (role === "SECURITY_LEAD") {
+    return "GOVERNANCE_TEAM";
+  }
+
+  if (role === "DEVELOPER") {
+    return "REVIEWER";
+  }
+
+  if (role === "VIEWER") {
+    return "CONSULTANT";
+  }
+
+  return role;
+}
+
 export default function Sidebar({
-  role = "VIEWER",
+  role = "CONSULTANT",
 }: Props) {
   const pathname = usePathname();
+  const normalizedRole = normalizeRole(role);
 
   const navItems = [
     {
       href: "/dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT", "DEVELOPER", "VIEWER"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "ENGAGEMENT_MANAGER",
+        "CONSULTANT",
+      ],
     },
     {
       href: "/projects",
       label: "Projects",
       icon: FolderOpen,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT", "DEVELOPER"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "ENGAGEMENT_MANAGER",
+        "CONSULTANT",
+      ],
     },
     {
       href: "/findings",
       label: "Findings",
       icon: ShieldAlert,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT", "DEVELOPER"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "ENGAGEMENT_MANAGER",
+        "CONSULTANT",
+      ],
     },
     {
       href: "/reviews",
       label: "Security Reviews",
       icon: FileSearch,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "ENGAGEMENT_MANAGER",
+        "CONSULTANT",
+      ],
     },
     {
       href: "/reviewers",
       label: "Pentester Tracker",
       icon: UserCheck,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "ENGAGEMENT_MANAGER",
+      ],
     },
     {
       href: "/my-findings",
       label: "My Findings",
       icon: ShieldAlert,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT", "DEVELOPER"],
+      roles: ["ADMIN", "QA_REVIEWER", "REVIEWER", "CONSULTANT"],
     },
     {
       href: "/timeline",
       label: "Timeline",
       icon: KanbanSquare,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "ENGAGEMENT_MANAGER",
+        "CONSULTANT",
+      ],
     },
     {
       href: "/reports",
       label: "Reports",
       icon: FileText,
-      roles: ["ADMIN", "SECURITY_LEAD"],
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "ENGAGEMENT_MANAGER", "QA_REVIEWER"],
     },
     {
       href: "/import",
       label: "Import",
       icon: Upload,
-      roles: ["ADMIN", "CONSULTANT"],
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "ENGAGEMENT_MANAGER", "CONSULTANT"],
     },
     {
       href: "/users",
@@ -92,24 +150,45 @@ export default function Sidebar({
       href: "/sla",
       label: "SLA",
       icon: Clock3,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "ENGAGEMENT_MANAGER",
+        "CONSULTANT",
+      ],
     },
     {
       href: "/copilot",
       label: "Security Copilot",
       icon: Bot,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT", "DEVELOPER"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "ENGAGEMENT_MANAGER",
+        "CONSULTANT",
+      ],
     },
     {
       href: "/knowledge",
       label: "Knowledge Base",
       icon: Brain,
-      roles: ["ADMIN", "SECURITY_LEAD", "CONSULTANT"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "ENGAGEMENT_MANAGER",
+        "CONSULTANT",
+      ],
     },
   ];
 
   const visibleItems = navItems.filter((item) =>
-    item.roles.includes(role)
+    item.roles.includes(normalizedRole)
   );
 
   return (

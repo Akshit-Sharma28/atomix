@@ -20,7 +20,7 @@ export default async function DashboardLayout({
     <Sidebar
       role={
         user?.role ??
-        "VIEWER"
+        "CONSULTANT"
       }
     />
 

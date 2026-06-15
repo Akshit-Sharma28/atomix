@@ -3,33 +3,36 @@ import {
   ArrowRight,
   Bot,
   BrainCircuit,
+  Building2,
+  ClipboardCheck,
   FileText,
   Radar,
   ShieldCheck,
   Sparkles,
+  Users,
 } from "lucide-react";
 
 const metrics = [
-  ["12+", "finding workflows"],
-  ["AI", "copilot assisted"],
-  ["24/7", "review workspace"],
+  ["APIM", "information system view"],
+  ["SPR/SR", "delivery governance"],
+  ["AI", "agent-assisted workflows"],
 ];
 
 const capabilities = [
   {
     icon: ShieldCheck,
-    title: "Pentest Command Center",
-    text: "Track projects, findings, SLAs, review activity, and remediation status from one operating layer.",
+    title: "Governance Command Center",
+    text: "Track APIM information systems, SPR scope, SR execution, SLAs, review activity, and remediation status from one operating layer.",
   },
   {
     icon: BrainCircuit,
-    title: "AI Security Intelligence",
-    text: "Use local or tunneled AI to summarize risk, generate reports, suggest remediation, and triage findings.",
+    title: "Agentic Security Intelligence",
+    text: "Use local or tunneled AI agents to summarize risk, generate reports, suggest remediation, triage findings, and unblock review flows.",
   },
   {
     icon: Radar,
-    title: "Risk Posture Analytics",
-    text: "Surface top-risk projects, open criticals, owner workload, and remediation momentum for leadership reviews.",
+    title: "Reviewer Capacity Analytics",
+    text: "Surface reviewer pool health, chargeability variance, red engagements, reschedules, extensions, and overdue delivery risk.",
   },
   {
     icon: FileText,
@@ -39,10 +42,35 @@ const capabilities = [
 ];
 
 const workflow = [
-  "Import scan evidence or create findings manually",
-  "Map projects, reviews, components, owners, and SLAs",
-  "Use Atomix Copilot to analyze risk and remediation paths",
-  "Generate reports and track closure from dashboard to delivery",
+  "Import APIM, SPR, and SR context into the delivery cockpit",
+  "Map reviews to reviewers, peer review gates, owners, and SLA commitments",
+  "Use Atomix agents to analyze delivery risk, capacity, and remediation paths",
+  "Generate executive packs and track closure from dashboard to delivery",
+];
+
+const deliveryGaps = [
+  {
+    icon: Building2,
+    title: "From system context to delivery action.",
+    text: "Atomix makes APIM, SPR, and SR execution visible by reviewer, due date, workload, status, and leadership risk.",
+  },
+  {
+    icon: Users,
+    title: "Capacity is operational, not static.",
+    text: "Atomix shows who is available, what they are assigned to, how many peer reviews are waiting, and which engagements need rescue.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Delivery needs workflow intelligence.",
+    text: "SPR/SR metadata becomes actionable through red engagement flags, extension tracking, chargeability variance, and agent-assisted summaries.",
+  },
+];
+
+const agents = [
+  "Governance Agent",
+  "Executive Agent",
+  "Peer Review Agent",
+  "Pentest Copilot Agent",
 ];
 
 export default function Home() {
@@ -52,7 +80,7 @@ export default function Home() {
       <div className="atomix-hero-orb atomix-hero-orb-a" />
       <div className="atomix-hero-orb atomix-hero-orb-b" />
 
-      <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-7">
+      <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <Link href="/" className="flex items-center gap-3">
           <div className="grid h-12 w-12 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 atomix-logo-pulse">
             <ShieldCheck className="text-cyan-200" size={24} />
@@ -74,8 +102,11 @@ export default function Home() {
           <a href="#workflow" className="hover:text-cyan-200">
             Workflow
           </a>
-          <a href="#copilot" className="hover:text-cyan-200">
-            Copilot
+          <a href="#delivery" className="hover:text-cyan-200">
+            Delivery
+          </a>
+          <a href="#agents" className="hover:text-cyan-200">
+            Agents
           </a>
         </nav>
 
@@ -87,25 +118,26 @@ export default function Home() {
         </Link>
       </header>
 
-      <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 gap-14 px-6 pb-20 pt-16 lg:grid-cols-12 lg:pt-24">
+      <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 pb-14 pt-8 lg:grid-cols-12 lg:pt-12">
         <div className="lg:col-span-7">
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
             <Sparkles size={16} />
-            Security operations built for modern pentest teams
+            Governance cockpit for modern pentest teams
           </div>
 
-          <h1 className="max-w-5xl text-5xl font-black tracking-tight md:text-7xl">
-            AI-assisted pentest work,
-            <span className="block text-cyan-300">organized end to end.</span>
+          <h1 className="max-w-5xl text-5xl font-black tracking-tight md:text-6xl">
+            Pentest delivery governance,
+            <span className="block text-cyan-300">organized by APIM, SPR, and SR.</span>
           </h1>
 
-          <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">
-            Atomix brings projects, findings, review workflows, AI summaries,
-            remediation guidance, and executive reporting into a single security
-            dashboard for teams that move fast.
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+            Atomix turns APIM information systems, SPR scope, and SR review
+            records into a live operating surface for governance, reviewer
+            allocation, peer review, SLA work, chargeability, and executive
+            reporting.
           </p>
 
-          <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <Link
               href="/login"
               className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-4 font-bold text-slate-950 transition hover:bg-cyan-200"
@@ -126,7 +158,7 @@ export default function Home() {
             </a>
           </div>
 
-          <div className="mt-12 grid max-w-2xl grid-cols-3 gap-4">
+          <div className="mt-8 grid max-w-2xl grid-cols-3 gap-4">
             {metrics.map(([value, label]) => (
               <div
                 key={label}
@@ -146,7 +178,7 @@ export default function Home() {
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
                   Live Preview
                 </p>
-                <h2 className="text-2xl font-bold">Security Dashboard</h2>
+                <h2 className="text-2xl font-bold">Governance Dashboard</h2>
               </div>
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-300 text-slate-950">
                 <Bot size={24} />
@@ -183,7 +215,7 @@ export default function Home() {
                 "Generate Pentest Report",
                 "Review Findings",
                 "Suggest Remediation",
-                "Analyze Risk Posture",
+                "Analyze Governance Risk",
               ].map((item) => (
                 <div
                   key={item}
@@ -229,7 +261,7 @@ export default function Home() {
 
       <section
         id="capabilities"
-        className="relative z-10 mx-auto max-w-7xl px-6 py-16"
+        className="relative z-10 mx-auto max-w-7xl px-6 py-12"
       >
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
@@ -237,12 +269,13 @@ export default function Home() {
               Capabilities
             </p>
             <h2 className="mt-3 text-3xl font-black md:text-4xl">
-              Built for security delivery.
+              Built for security delivery governance.
             </h2>
           </div>
           <p className="max-w-xl text-sm leading-6 text-slate-400">
-            Atomix is the operating surface between testers, owners, leadership,
-            and AI-assisted security work.
+            Atomix focuses on the execution layer: reviewer capacity, peer
+            review, SLA progress, red engagements, extensions, and executive
+            reporting.
           </p>
         </div>
 
@@ -267,8 +300,34 @@ export default function Home() {
       </section>
 
       <section
+        id="delivery"
+        className="relative z-10 mx-auto max-w-7xl px-6 py-10"
+      >
+        <div className="grid gap-5 lg:grid-cols-3">
+          {deliveryGaps.map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <article
+                key={item.title}
+                className="rounded-3xl border border-cyan-300/15 bg-slate-950/70 p-6"
+              >
+                <Icon className="text-cyan-300" size={28} />
+                <h3 className="mt-5 text-xl font-bold">
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-slate-400">
+                  {item.text}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section
         id="workflow"
-        className="relative z-10 mx-auto max-w-7xl px-6 py-16"
+        className="relative z-10 mx-auto max-w-7xl px-6 py-12"
       >
         <div className="rounded-[2rem] border border-cyan-300/20 bg-slate-950/70 p-6 md:p-10">
           <p className="text-xs uppercase tracking-[0.22em] text-cyan-300">
@@ -297,8 +356,8 @@ export default function Home() {
       </section>
 
       <section
-        id="copilot"
-        className="relative z-10 mx-auto max-w-7xl px-6 pb-24 pt-12"
+        id="agents"
+        className="relative z-10 mx-auto max-w-7xl px-6 pb-24 pt-10"
       >
         <div className="grid grid-cols-1 gap-6 rounded-[2rem] border border-slate-800 bg-slate-950/80 p-6 md:grid-cols-12 md:p-10">
           <div className="md:col-span-8">
@@ -306,13 +365,23 @@ export default function Home() {
               Powered by Twenty Eight Labs
             </p>
             <h2 className="mt-3 text-3xl font-black">
-              Research-backed AI security workflows.
+              Agentic workflows for pentest delivery.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-400">
-              Atomix is built by Twenty Eight Labs to turn security research,
-              AI-assisted testing, and practical pentest operations into one
-              usable product experience.
+              Atomix is built by Twenty Eight Labs to turn pentest operations
+              into assisted workflows: governance triage, executive reporting,
+              peer review, and practitioner copilot support.
             </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {agents.map((agent) => (
+                <div
+                  key={agent}
+                  className="rounded-2xl border border-cyan-300/15 bg-cyan-300/5 px-4 py-3 text-sm font-semibold text-cyan-100"
+                >
+                  {agent}
+                </div>
+              ))}
+            </div>
           </div>
           <div className="flex items-center md:col-span-4 md:justify-end">
             <Link

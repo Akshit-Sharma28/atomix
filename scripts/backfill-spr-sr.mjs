@@ -18,7 +18,7 @@ async function main() {
   const reviewers = await prisma.user.findMany({
     where: {
       role: {
-        in: ["ADMIN", "SECURITY_LEAD", "CONSULTANT"],
+        in: ["ADMIN", "GOVERNANCE_TEAM", "QA_REVIEWER", "REVIEWER", "CONSULTANT"],
       },
       isActive: true,
     },

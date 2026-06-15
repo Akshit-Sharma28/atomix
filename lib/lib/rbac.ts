@@ -5,6 +5,43 @@ export const permissions = {
     "manage_findings",
     "assign_findings",
     "close_findings",
+    "manage_governance",
+    "manage_reviewer_pool",
+  ],
+
+  GOVERNANCE_TEAM: [
+    "assign_findings",
+    "review_findings",
+    "close_findings",
+    "generate_reports",
+    "manage_governance",
+    "manage_reviewer_pool",
+  ],
+
+  QA_REVIEWER: [
+    "review_findings",
+    "peer_review",
+    "generate_reports",
+  ],
+
+  REVIEWER: [
+    "review_findings",
+    "create_findings",
+    "edit_findings",
+  ],
+
+  ENGAGEMENT_MANAGER: [
+    "manage_projects",
+    "assign_findings",
+    "generate_reports",
+    "manage_governance",
+  ],
+
+  CONSULTANT: [
+    "create_findings",
+    "edit_findings",
+    "generate_ai_analysis",
+    "update_sla_work",
   ],
 
   SECURITY_LEAD: [
@@ -12,19 +49,19 @@ export const permissions = {
     "review_findings",
     "close_findings",
     "generate_reports",
-  ],
-
-  CONSULTANT: [
-    "create_findings",
-    "edit_findings",
-    "generate_ai_analysis",
+    "manage_governance",
+    "manage_reviewer_pool",
   ],
 
   DEVELOPER: [
-    "update_status",
+    "review_findings",
+    "create_findings",
+    "edit_findings",
   ],
 
-  VIEWER: [],
+  VIEWER: [
+    "update_sla_work",
+  ],
 } as const;
 
 export function hasPermission(

@@ -42,7 +42,7 @@ export default async function FindingDetailPage({ params }: Props) {
   const users = await prisma.user.findMany({
     where: {
       role: {
-        in: ["DEVELOPER", "CONSULTANT"],
+        in: ["REVIEWER", "CONSULTANT", "QA_REVIEWER"],
       },
     },
 

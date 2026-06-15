@@ -7,10 +7,11 @@ async function createUser(
   email: string,
   role:
     | "ADMIN"
-    | "SECURITY_LEAD"
+    | "GOVERNANCE_TEAM"
+    | "QA_REVIEWER"
+    | "REVIEWER"
+    | "ENGAGEMENT_MANAGER"
     | "CONSULTANT"
-    | "DEVELOPER"
-    | "VIEWER"
 ) {
   const existing = await prisma.user.findUnique({
     where: {
@@ -41,9 +42,27 @@ async function main() {
   );
 
   await createUser(
-    "Security Lead",
-    "lead@atomix.ai",
-    "SECURITY_LEAD"
+    "Governance Lead",
+    "governance@atomix.ai",
+    "GOVERNANCE_TEAM"
+  );
+
+  await createUser(
+    "QA Reviewer",
+    "qa@atomix.ai",
+    "QA_REVIEWER"
+  );
+
+  await createUser(
+    "Reviewer",
+    "reviewer@atomix.ai",
+    "REVIEWER"
+  );
+
+  await createUser(
+    "Engagement Manager",
+    "em@atomix.ai",
+    "ENGAGEMENT_MANAGER"
   );
 
   await createUser(
@@ -52,17 +71,6 @@ async function main() {
     "CONSULTANT"
   );
 
-  await createUser(
-    "Developer",
-    "developer@atomix.ai",
-    "DEVELOPER"
-  );
-
-  await createUser(
-    "Viewer",
-    "viewer@atomix.ai",
-    "VIEWER"
-  );
 }
 
 main()

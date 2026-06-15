@@ -13,7 +13,7 @@ async function main() {
       {
         name: "Lead",
         email: "lead@atomix.local",
-        role: "SECURITY_LEAD",
+        role: "GOVERNANCE_TEAM",
       },
       {
         name: "Consultant",
@@ -23,7 +23,7 @@ async function main() {
       {
         name: "Developer",
         email: "developer@atomix.local",
-        role: "DEVELOPER",
+        role: "REVIEWER",
       },
     ],
   });
