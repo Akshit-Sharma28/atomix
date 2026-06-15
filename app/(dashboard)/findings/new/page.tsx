@@ -41,16 +41,19 @@ export default async function NewFindingPage() {
     },
   });
 
-  const users = await prisma.user.findMany({
-    where: {
-      role: {
-        in: ["CONSULTANT", "REVIEWER", "QA_REVIEWER"],
-      },
-    },
+  const allUsers = await prisma.user.findMany({
     orderBy: {
       name: "asc",
     },
   });
+  const users = allUsers.filter((user) =>
+    [
+      "CONSULTANT",
+      "REVIEWER",
+      "QA_REVIEWER",
+      "DEVELOPER",
+    ].includes(user.role)
+  );
 
   return (
     <div

@@ -39,17 +39,19 @@ export default async function FindingDetailPage({ params }: Props) {
     },
   });
 
-  const users = await prisma.user.findMany({
-    where: {
-      role: {
-        in: ["REVIEWER", "CONSULTANT", "QA_REVIEWER"],
-      },
-    },
-
+  const allUsers = await prisma.user.findMany({
     orderBy: {
       name: "asc",
     },
   });
+  const users = allUsers.filter((user) =>
+    [
+      "REVIEWER",
+      "CONSULTANT",
+      "QA_REVIEWER",
+      "DEVELOPER",
+    ].includes(user.role)
+  );
 
   if (!finding) {
     return <div className="p-8 text-white">Finding not found</div>;
