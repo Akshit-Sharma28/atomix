@@ -15,16 +15,66 @@ export default function ExecutiveReportGenerator() {
     setLoading(false);
   }
 
-  function download() {
-    const blob = new Blob([report], {
-      type: "text/markdown;charset=utf-8",
+  async function downloadPdf() {
+    const { jsPDF } = await import("jspdf");
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4",
     });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "atomix-executive-report.md";
-    link.click();
-    URL.revokeObjectURL(url);
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 48;
+    const contentWidth = pageWidth - margin * 2;
+    let y = margin;
+
+    pdf.setFillColor(2, 6, 23);
+    pdf.rect(0, 0, pageWidth, 82, "F");
+    pdf.setTextColor(103, 232, 249);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(18);
+    pdf.text("ATOMIX Executive Security Report", margin, 36);
+    pdf.setTextColor(203, 213, 225);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+    pdf.text(`Generated ${new Date().toLocaleString()}`, margin, 56);
+
+    y = 110;
+    const lines = report.split("\n");
+
+    for (const line of lines) {
+      const isHeading = line.startsWith("#");
+      const cleaned = line.replace(/^#+\s*/, "");
+
+      if (isHeading) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(line.startsWith("##") ? 14 : 17);
+        pdf.setTextColor(8, 145, 178);
+      } else {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10.5);
+        pdf.setTextColor(30, 41, 59);
+      }
+
+      const wrapped = pdf.splitTextToSize(
+        cleaned || " ",
+        contentWidth,
+      );
+
+      for (const wrappedLine of wrapped) {
+        if (y > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+
+        pdf.text(wrappedLine, margin, y);
+        y += isHeading ? 18 : 14;
+      }
+
+      y += isHeading ? 6 : 3;
+    }
+
+    pdf.save("atomix-executive-report.pdf");
   }
 
   function printReport() {
@@ -57,12 +107,30 @@ export default function ExecutiveReportGenerator() {
             Generate Report
           </button>
           <button
-            onClick={download}
+            onClick={downloadPdf}
             disabled={!report}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 disabled:opacity-40"
           >
             <Download size={16} />
-            Download
+            Download PDF
+          </button>
+          <button
+            onClick={() => {
+              const blob = new Blob([report], {
+                type: "text/markdown;charset=utf-8",
+              });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = "atomix-executive-report.md";
+              link.click();
+              URL.revokeObjectURL(url);
+            }}
+            disabled={!report}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 disabled:opacity-40"
+          >
+            <FileText size={16} />
+            Markdown
           </button>
           <button
             onClick={printReport}

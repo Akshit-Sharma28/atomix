@@ -15,6 +15,7 @@ import {
   getExecutiveDashboard,
 } from "@/services/dashboard/executive.service";
 import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
+import ExecutiveReportGenerator from "@/components/reports/executive-report-generator";
 
 function metricClass(value: number) {
   if (value > 0) {
@@ -180,6 +181,8 @@ export default async function ExecutiveDashboardPage({
           ))}
         </div>
       </div>
+
+      <ExecutiveReportGenerator />
 
       <form className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
         <div>

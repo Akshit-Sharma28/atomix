@@ -9,7 +9,6 @@ import {
   FolderOpen,
   ShieldAlert,
   KanbanSquare,
-  FileText,
   FileSearch,
   Upload,
   Users,
@@ -135,12 +134,6 @@ export default function Sidebar({
         "ENGAGEMENT_MANAGER",
         "CONSULTANT",
       ],
-    },
-    {
-      href: "/reports",
-      label: "Reports",
-      icon: FileText,
-      roles: ["ADMIN", "GOVERNANCE_TEAM", "ENGAGEMENT_MANAGER", "QA_REVIEWER"],
     },
     {
       href: "/import",
