@@ -13,6 +13,7 @@ import {
   createSecurityReview,
 } from "./actions";
 import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
+import AgentCommandConsole from "@/components/agents/agent-command-console";
 
 function cleanRole(role: string) {
   if (role === "SECURITY_LEAD") {
@@ -409,6 +410,8 @@ export default async function WorkflowPage() {
           </button>
         </form>
       </div>
+
+      <AgentCommandConsole />
     </div>
   );
 }

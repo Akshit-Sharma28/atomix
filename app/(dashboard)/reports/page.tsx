@@ -8,6 +8,7 @@ import {
   ShieldAlert,
   TrendingUp,
 } from "lucide-react";
+import ExecutiveReportGenerator from "@/components/reports/executive-report-generator";
 
 function riskWeight(severity: string) {
   if (severity === "Critical") return 10;
@@ -220,6 +221,8 @@ export default async function ReportsPage() {
           <p className="mt-2 text-3xl font-bold text-pink-300">{extensionRequests}</p>
         </div>
       </div>
+
+      <ExecutiveReportGenerator />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-2xl border border-slate-800 bg-slate-900">

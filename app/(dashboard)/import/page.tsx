@@ -1,4 +1,5 @@
 import ImportUploader from "@/components/import/import-uploader";
+import AIReportReviewer from "@/components/import/ai-report-reviewer";
 import { prisma } from "@/lib/prisma";
 import {
   FileCode2,
@@ -95,6 +96,8 @@ export default async function ImportPage() {
       </div>
 
       <ImportUploader projects={projects} />
+
+      <AIReportReviewer projects={projects} />
 
       <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900">
         <div className="border-b border-slate-800 px-6 py-4">
