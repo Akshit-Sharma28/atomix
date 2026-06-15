@@ -36,9 +36,11 @@ function statusMatches(status: string, filter: ExecutiveFilter) {
 export async function getExecutiveDashboard({
   sort = "variance",
   filter = "all",
+  search = "",
 }: {
   sort?: ExecutiveSort;
   filter?: ExecutiveFilter;
+  search?: string;
 }) {
   const projects = await prisma.project.findMany({
     include: {
@@ -126,11 +128,28 @@ export async function getExecutiveDashboard({
     };
   });
 
-  const filteredRows = rows.filter((row) =>
-    filter === "red"
-      ? row.red
-      : statusMatches(row.status, filter),
-  );
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredRows = rows.filter((row) => {
+    const matchesFilter =
+      filter === "red"
+        ? row.red
+        : statusMatches(row.status, filter);
+    const matchesSearch =
+      !normalizedSearch ||
+      [
+        row.name,
+        row.client,
+        row.sprId,
+        row.status,
+        row.riskTier,
+        row.latestReview,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch);
+
+    return matchesFilter && matchesSearch;
+  });
 
   filteredRows.sort((left, right) => {
     if (sort === "risk") {
@@ -172,6 +191,54 @@ export async function getExecutiveDashboard({
       allocatedHours: totalHours,
       variance: totalHours - totalExpected,
     },
+    trends: [
+      {
+        label: "Delivery Load",
+        value: `${totalHours}h`,
+        direction:
+          totalHours >= totalExpected
+            ? "up"
+            : "down",
+        detail:
+          totalHours >= totalExpected
+            ? "Allocated hours are above expected active-review baseline."
+            : "Allocated hours are below expected active-review baseline.",
+      },
+      {
+        label: "Escalation Pressure",
+        value: rows
+          .filter((row) => row.red)
+          .length.toString(),
+        direction:
+          rows.some((row) => row.red)
+            ? "watch"
+            : "stable",
+        detail:
+          "Projects turn red when overdue reviews, critical open findings, or pending extensions exist.",
+      },
+      {
+        label: "Portfolio Freshness",
+        value:
+          rows[0]?.updatedAt.toLocaleDateString("en", {
+            month: "short",
+            day: "numeric",
+          }) ?? "No data",
+        direction: "stable",
+        detail:
+          "Most recently updated project record in the executive portfolio.",
+      },
+    ],
+    insights: [
+      rows.filter((row) => row.red).length > 0
+        ? `${rows.filter((row) => row.red).length} projects require leadership attention due to red delivery or risk signals.`
+        : "No red projects detected in the current portfolio view.",
+      totalHours - totalExpected > 0
+        ? `Portfolio is running ${totalHours - totalExpected}h above expected allocation baseline; review capacity and chargeability variance.`
+        : `Portfolio is ${Math.abs(totalHours - totalExpected)}h under expected allocation baseline; check whether reviews are under-staffed or not yet assigned.`,
+      rows.some((row) => row.pendingExtensions > 0)
+        ? "Pending extension requests exist; leadership should ask for owner decisions and revised timelines."
+        : "No pending extension pressure detected across current project records.",
+    ],
     rows: filteredRows,
   };
 }

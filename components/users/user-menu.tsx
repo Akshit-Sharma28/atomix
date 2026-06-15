@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   signOut,
   useSession,
@@ -215,7 +217,8 @@ export default function UserMenu() {
             </span>
           </div>
 
-          <button
+          <Link
+            href="/profile"
             className="
             mt-3
             w-full
@@ -232,7 +235,7 @@ export default function UserMenu() {
           >
             <User size={16} />
             Profile
-          </button>
+          </Link>
 
           <button
             onClick={() =>

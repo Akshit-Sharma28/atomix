@@ -1,4 +1,5 @@
 import Sidebar from "@/components/layout/sidebar";
+import FloatingAgentChat from "@/components/agents/floating-agent-chat";
 
 import { getCurrentUser } from "@/services/users/current-user.service";
 
@@ -27,6 +28,7 @@ export default async function DashboardLayout({
     <main className="flex-1">
       {children}
     </main>
+    <FloatingAgentChat />
   </div>
 );
 }

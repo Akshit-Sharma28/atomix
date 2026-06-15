@@ -1,8 +1,19 @@
 import Link from "next/link";
-import { UserCog, UsersRound } from "lucide-react";
+import {
+  Plus,
+  Save,
+  Trash2,
+  UserCog,
+  UsersRound,
+} from "lucide-react";
 
 import SwitchUserButton from "@/components/users/switch-user-button";
 import { getUsers } from "@/services/users/user.service";
+import {
+  createUser,
+  deactivateUser,
+  updateUser,
+} from "./actions";
 
 const roleDefinitions = [
   ["ADMIN", "Admin", "Full platform administration and role control."],
@@ -27,7 +38,16 @@ const roleDefinitions = [
     "Engagement Manager",
     "Coordinates delivery across projects without user administration access.",
   ],
-  ["CONSULTANT", "Consultant", "Works assigned findings and SLA tasks."],
+  ["REVIEWER", "Reviewer", "Primary execution role for reviewers and legacy consultant users."],
+];
+
+const editableRoles = [
+  ["ADMIN", "Admin"],
+  ["GOVERNANCE_TEAM", "Governance Team"],
+  ["EXECUTIVE", "Executive"],
+  ["ENGAGEMENT_MANAGER", "Engagement Manager"],
+  ["QA_REVIEWER", "QA Reviewer"],
+  ["REVIEWER", "Reviewer"],
 ];
 
 function cleanRole(role: string) {
@@ -40,7 +60,11 @@ function cleanRole(role: string) {
   }
 
   if (role === "VIEWER") {
-    return "CONSULTANT";
+    return "REVIEWER";
+  }
+
+  if (role === "CONSULTANT") {
+    return "REVIEWER";
   }
 
   return role.replaceAll("_", " ");
@@ -73,6 +97,60 @@ export default async function UsersPage() {
           Open Governance Workflow
         </Link>
       </div>
+
+      <form
+        action={createUser}
+        className="mb-8 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5"
+      >
+        <div className="mb-5 flex items-center gap-3">
+          <Plus className="text-cyan-300" size={22} />
+          <div>
+            <h2 className="text-xl font-bold text-white">
+              Add User
+            </h2>
+            <p className="text-sm text-slate-400">
+              Admin dashboard for creating leadership, governance, engagement,
+              QA, and reviewer accounts.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-5">
+          <input
+            name="name"
+            placeholder="Full name"
+            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+            required
+          />
+          <input
+            name="email"
+            type="email"
+            placeholder="email@atomix.ai"
+            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+            required
+          />
+          <select
+            name="role"
+            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+          >
+            {editableRoles.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <input
+            name="password"
+            type="password"
+            placeholder="Optional password"
+            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+          />
+          <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950">
+            <Plus size={16} />
+            Add User
+          </button>
+        </div>
+      </form>
 
       <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {roleDefinitions.map(([role, title, detail]) => (
@@ -127,34 +205,65 @@ export default async function UsersPage() {
                 key={user.id}
                 className="border-b border-slate-800 last:border-b-0"
               >
-                <td className="p-4">
-                  <p className="font-semibold text-white">
-                    {user.name}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {user.email}
-                  </p>
-                </td>
-
-                <td className="p-4">
-                  <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-                    {cleanRole(user.role)}
-                  </span>
-                </td>
-
-                <td className="p-4">
-                  <span
-                    className={
-                      user.isActive
-                        ? "rounded-full bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300"
-                        : "rounded-full bg-red-500/10 px-3 py-1 text-xs text-red-300"
-                    }
+                <td className="p-4 align-top">
+                  <form
+                    id={`update-${user.id}`}
+                    action={updateUser}
+                    className="space-y-2"
                   >
-                    {user.isActive ? "Active" : "Inactive"}
-                  </span>
+                    <input type="hidden" name="userId" value={user.id} />
+                    <input
+                      name="name"
+                      defaultValue={user.name}
+                      className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
+                    />
+                    <input
+                      name="email"
+                      type="email"
+                      defaultValue={user.email}
+                      className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-300"
+                    />
+                  </form>
                 </td>
 
-                <td className="p-4 text-sm text-slate-400">
+                <td className="p-4 align-top">
+                  <select
+                    form={`update-${user.id}`}
+                    name="role"
+                    defaultValue={
+                      user.role === "CONSULTANT" ||
+                      user.role === "DEVELOPER" ||
+                      user.role === "VIEWER"
+                        ? "REVIEWER"
+                        : user.role
+                    }
+                    className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-cyan-200"
+                  >
+                    {editableRoles.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Current: {cleanRole(user.role)}
+                  </p>
+                </td>
+
+                <td className="p-4 align-top">
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-300">
+                    <input
+                      form={`update-${user.id}`}
+                      type="checkbox"
+                      name="isActive"
+                      defaultChecked={user.isActive}
+                      className="h-4 w-4 accent-cyan-400"
+                    />
+                    {user.isActive ? "Active" : "Inactive"}
+                  </label>
+                </td>
+
+                <td className="p-4 align-top text-sm text-slate-400">
                   {new Intl.DateTimeFormat("en", {
                     month: "short",
                     day: "numeric",
@@ -162,8 +271,24 @@ export default async function UsersPage() {
                   }).format(user.createdAt)}
                 </td>
 
-                <td className="p-4">
-                  <SwitchUserButton userId={user.id} />
+                <td className="p-4 align-top">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      form={`update-${user.id}`}
+                      className="inline-flex items-center gap-2 rounded-lg bg-cyan-500/20 px-3 py-2 text-sm text-cyan-300 hover:bg-cyan-500/30"
+                    >
+                      <Save size={14} />
+                      Save
+                    </button>
+                    <SwitchUserButton userId={user.id} />
+                    <form action={deactivateUser}>
+                      <input type="hidden" name="userId" value={user.id} />
+                      <button className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 hover:bg-red-500/20">
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             ))}

@@ -3,6 +3,7 @@ import {
   BarChart3,
   Eye,
   Filter,
+  Search,
   TrendingUp,
   TriangleAlert,
 } from "lucide-react";
@@ -41,6 +42,7 @@ export default async function ExecutiveDashboardPage({
   searchParams: Promise<{
     sort?: ExecutiveSort;
     filter?: ExecutiveFilter;
+    search?: string;
   }>;
 }) {
   const allowed = await canAccess(["ADMIN", "EXECUTIVE"]);
@@ -64,9 +66,11 @@ export default async function ExecutiveDashboardPage({
   const params = await searchParams;
   const sort = params.sort ?? "variance";
   const filter = params.filter ?? "all";
+  const search = params.search ?? "";
   const data = await getExecutiveDashboard({
     sort,
     filter,
+    search,
   });
 
   return (
@@ -137,7 +141,62 @@ export default async function ExecutiveDashboardPage({
         />
       </div>
 
+      <div className="mb-6 grid gap-4 lg:grid-cols-3">
+        {data.trends.map((trend) => (
+          <div
+            key={trend.label}
+            className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                {trend.label}
+              </p>
+              <span className="rounded-full bg-cyan-400/10 px-2 py-1 text-[11px] font-semibold text-cyan-200">
+                {trend.direction}
+              </span>
+            </div>
+            <p className="mt-3 text-2xl font-black text-white">
+              {trend.value}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              {trend.detail}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-5">
+        <h2 className="text-lg font-bold text-white">
+          Leadership Insights
+        </h2>
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {data.insights.map((insight) => (
+            <div
+              key={insight}
+              className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300"
+            >
+              {insight}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <form className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+        <div>
+          <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-slate-500">
+            Search records
+          </label>
+          <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2">
+            <Search size={16} className="text-slate-500" />
+            <input
+              name="search"
+              defaultValue={search}
+              placeholder="Project, SPR, client, status..."
+              className="w-64 bg-transparent text-sm text-white outline-none"
+            />
+          </div>
+        </div>
+
         <div>
           <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-slate-500">
             Sort records
