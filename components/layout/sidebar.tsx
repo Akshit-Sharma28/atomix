@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import {
   LayoutDashboard,
+  BarChart3,
   FolderOpen,
   ShieldAlert,
   KanbanSquare,
@@ -13,6 +14,7 @@ import {
   Upload,
   Users,
   UserCheck,
+  Workflow,
   Clock3,
   Bot,
   Brain,
@@ -59,6 +61,12 @@ export default function Sidebar({
       ],
     },
     {
+      href: "/executive",
+      label: "Executive Dashboard",
+      icon: BarChart3,
+      roles: ["ADMIN", "EXECUTIVE"],
+    },
+    {
       href: "/projects",
       label: "Projects",
       icon: FolderOpen,
@@ -101,13 +109,13 @@ export default function Sidebar({
       href: "/reviewers",
       label: "Pentester Tracker",
       icon: UserCheck,
-      roles: [
-        "ADMIN",
-        "GOVERNANCE_TEAM",
-        "QA_REVIEWER",
-        "REVIEWER",
-        "ENGAGEMENT_MANAGER",
-      ],
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "EXECUTIVE"],
+    },
+    {
+      href: "/workflow",
+      label: "Workflow",
+      icon: Workflow,
+      roles: ["ADMIN", "GOVERNANCE_TEAM"],
     },
     {
       href: "/my-findings",

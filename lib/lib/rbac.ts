@@ -30,6 +30,11 @@ export const permissions = {
     "edit_findings",
   ],
 
+  EXECUTIVE: [
+    "view_executive_dashboard",
+    "generate_reports",
+  ],
+
   ENGAGEMENT_MANAGER: [
     "manage_projects",
     "assign_findings",

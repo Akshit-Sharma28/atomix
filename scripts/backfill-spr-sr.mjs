@@ -15,17 +15,17 @@ async function main() {
     },
   });
 
-  const reviewers = await prisma.user.findMany({
+  const users = await prisma.user.findMany({
     where: {
-      role: {
-        in: ["ADMIN", "GOVERNANCE_TEAM", "QA_REVIEWER", "REVIEWER", "CONSULTANT"],
-      },
       isActive: true,
     },
     orderBy: {
       createdAt: "asc",
     },
   });
+  const reviewers = users.filter((user) =>
+    ["ADMIN", "GOVERNANCE_TEAM", "QA_REVIEWER", "REVIEWER", "CONSULTANT", "SECURITY_LEAD", "DEVELOPER"].includes(user.role)
+  );
 
   for (const [index, user] of reviewers.entries()) {
     const profile = await prisma.reviewerProfile.upsert({

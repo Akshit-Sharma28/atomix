@@ -3,9 +3,36 @@ import {
   Activity,
   AlertTriangle,
   CalendarDays,
+  CalendarClock,
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
+import { canAccess } from "@/services/users/access.service";
+import { getGovernanceDashboard } from "@/services/dashboard/governance.service";
+
+function formatDate(date?: Date | null) {
+  if (!date) {
+    return "Not set";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+function trendClass(trend: string) {
+  if (
+    trend.includes("action") ||
+    trend.includes("watch") ||
+    trend === "tight" ||
+    trend === "down"
+  ) {
+    return "text-amber-300";
+  }
+
+  return "text-emerald-300";
+}
 
 function availabilityClass(availability: string) {
   if (availability === "Available") {
@@ -20,7 +47,29 @@ function availabilityClass(availability: string) {
 }
 
 export default async function ReviewersPage() {
-  const [reviewers, users, unassignedReviews] = await Promise.all([
+  const allowed = await canAccess([
+    "ADMIN",
+    "GOVERNANCE_TEAM",
+    "EXECUTIVE",
+  ]);
+
+  if (!allowed) {
+    return (
+      <div className="p-8">
+        <div className="rounded-2xl border border-red-500/20 bg-red-950/20 p-6">
+          <h1 className="text-2xl font-bold text-white">
+            Pentester Tracker access restricted
+          </h1>
+          <p className="mt-2 text-slate-400">
+            This governance view is available to Admin, Governance Team, and
+            Executive roles only.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const [reviewers, users, unassignedReviews, governance] = await Promise.all([
     prisma.reviewerProfile.findMany({
       include: {
         user: true,
@@ -82,6 +131,7 @@ export default async function ReviewersPage() {
         },
       },
     }),
+    getGovernanceDashboard(),
   ]);
 
   const reviewerRows =
@@ -140,6 +190,32 @@ export default async function ReviewersPage() {
         </p>
       </div>
 
+      <div className="mb-6 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        {governance.kpis.map((kpi) => (
+          <div
+            key={kpi.label}
+            className="rounded-2xl border border-cyan-500/10 bg-slate-900/70 p-4"
+          >
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+              {kpi.label}
+            </p>
+            <p className="mt-3 text-3xl font-black text-white">
+              {kpi.value}
+            </p>
+            <p className="mt-2 text-xs text-slate-400">
+              {kpi.helper}
+            </p>
+            <p
+              className={`mt-2 text-xs font-semibold uppercase ${trendClass(
+                kpi.trend,
+              )}`}
+            >
+              {kpi.trend}
+            </p>
+          </div>
+        ))}
+      </div>
+
       <div className="grid md:grid-cols-4 gap-4 mb-8">
         <div className="rounded-2xl border border-emerald-500/20 bg-slate-900 p-5">
           <div className="flex items-center justify-between text-slate-400">
@@ -178,6 +254,189 @@ export default async function ReviewersPage() {
           </div>
           <div className="mt-3 text-4xl font-bold text-yellow-300">
             {unassignedReviews}
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-8 grid gap-6 xl:grid-cols-3">
+        <div className="rounded-2xl border border-cyan-500/10 bg-slate-900/60 p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <UserCheck size={20} className="text-cyan-400" />
+            <h2 className="text-lg font-bold">
+              QA Pool & Availability
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {governance.reviewerPool.slice(0, 6).map((reviewer) => (
+              <div
+                key={reviewer.id}
+                className="rounded-xl border border-slate-800 bg-slate-950/60 p-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-white">
+                      {reviewer.name}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {reviewer.role.replaceAll("_", " ")} ·{" "}
+                      {reviewer.capacity}h capacity
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-cyan-400/10 px-2 py-1 text-xs text-cyan-200">
+                    {reviewer.availability}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-slate-300">
+                  {reviewer.project}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {reviewer.sprId} · {reviewer.srId} · {reviewer.status}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-cyan-500/10 bg-slate-900/60 p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <AlertTriangle size={20} className="text-amber-300" />
+            <h2 className="text-lg font-bold">
+              Red Engagements
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {governance.activeReviews
+              .filter((review) => review.isOverdue)
+              .slice(0, 5)
+              .map((review) => (
+                <div
+                  key={review.id}
+                  className="rounded-xl border border-red-500/20 bg-red-950/20 p-3"
+                >
+                  <p className="font-semibold text-white">
+                    {review.project}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-300">
+                    {review.title}
+                  </p>
+                  <p className="mt-2 text-xs text-red-200">
+                    {review.sprId} · {review.srId} · due{" "}
+                    {formatDate(review.dueDate)}
+                  </p>
+                </div>
+              ))}
+            {governance.activeReviews.filter((review) => review.isOverdue)
+              .length === 0 && (
+              <p className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-3 text-sm text-emerald-200">
+                No overdue active security reviews.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-cyan-500/10 bg-slate-900/60 p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <CalendarClock size={20} className="text-cyan-400" />
+            <h2 className="text-lg font-bold">
+              Extensions & Reschedules
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {governance.extensions.slice(0, 3).map((extension) => (
+              <div
+                key={extension.id}
+                className="rounded-xl border border-slate-800 bg-slate-950/60 p-3"
+              >
+                <p className="font-semibold text-white">
+                  {extension.project}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {extension.srId} · until {formatDate(extension.requestedUntil)}
+                </p>
+                <p className="mt-2 text-sm text-slate-300">
+                  {extension.reason}
+                </p>
+              </div>
+            ))}
+            {governance.extensions.length === 0 && (
+              <p className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-400">
+                No pending extension requests.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-8 grid gap-6 xl:grid-cols-2">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <div className="mb-4 flex items-center gap-3">
+            <CalendarClock className="text-cyan-400" size={22} />
+            <h2 className="text-xl font-bold text-white">
+              Active SR Delivery Board
+            </h2>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-slate-800">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-950/70 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
+                <tr>
+                  <th className="p-3">APIM / SPR / SR</th>
+                  <th className="p-3">Project</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3">Due</th>
+                </tr>
+              </thead>
+              <tbody>
+                {governance.activeReviews.map((review) => (
+                  <tr key={review.id} className="border-t border-slate-800">
+                    <td className="p-3 text-slate-300">
+                      <span className="block text-xs text-slate-500">
+                        APIM grouped
+                      </span>
+                      {review.sprId} · {review.srId}
+                    </td>
+                    <td className="p-3 text-white">{review.project}</td>
+                    <td className="p-3">
+                      <span className="rounded-full bg-cyan-400/10 px-2 py-1 text-xs text-cyan-200">
+                        {review.status}
+                      </span>
+                    </td>
+                    <td
+                      className={`p-3 ${
+                        review.isOverdue
+                          ? "text-red-300"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      {formatDate(review.dueDate)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <div className="mb-4 flex items-center gap-3">
+            <Activity className="text-cyan-400" size={22} />
+            <h2 className="text-xl font-bold text-white">
+              Information System → SPR → SR Layer
+            </h2>
+          </div>
+          <div className="grid gap-3">
+            {governance.terminology.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-xl border border-slate-800 bg-slate-950/60 p-4"
+              >
+                <p className="font-bold text-cyan-200">
+                  {item.label}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  {item.detail}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

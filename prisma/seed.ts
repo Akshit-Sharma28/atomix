@@ -10,6 +10,7 @@ async function createUser(
     | "GOVERNANCE_TEAM"
     | "QA_REVIEWER"
     | "REVIEWER"
+    | "EXECUTIVE"
     | "ENGAGEMENT_MANAGER"
     | "CONSULTANT"
 ) {
@@ -57,6 +58,12 @@ async function main() {
     "Reviewer",
     "reviewer@atomix.ai",
     "REVIEWER"
+  );
+
+  await createUser(
+    "Executive",
+    "executive@atomix.ai",
+    "EXECUTIVE"
   );
 
   await createUser(

@@ -2,29 +2,13 @@ import { prisma } from "../../lib/prisma";
 
 export async function getUsers() {
   return prisma.user.findMany({
-    include: {
-      reviewerProfile: {
-        include: {
-          assignments: {
-            include: {
-              review: {
-                include: {
-                  project: true,
-                },
-              },
-            },
-            orderBy: {
-              updatedAt: "desc",
-            },
-          },
-        },
-      },
-      _count: {
-        select: {
-          reviewAssignments: true,
-          assignedFindings: true,
-        },
-      },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
     },
     orderBy: {
       name: "asc",
