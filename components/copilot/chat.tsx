@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 
-export default function CopilotChat() {
+export default function CopilotChat({
+  initialPrompt = "",
+}: {
+  initialPrompt?: string;
+}) {
   const [question, setQuestion] =
-    useState("");
+    useState(initialPrompt);
 
   const [response, setResponse] =
     useState("");
@@ -54,6 +58,9 @@ export default function CopilotChat() {
       <div className="flex flex-wrap gap-2">
 
         {[
+          "Summarize agentic governance risks",
+          "Draft executive risk brief",
+          "Recommend reviewer assignments",
           "Show critical findings",
           "Show overdue findings",
           "Which project has highest risk?",

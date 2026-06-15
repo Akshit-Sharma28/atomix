@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { canAccess } from "@/services/users/access.service";
 import { getGovernanceDashboard } from "@/services/dashboard/governance.service";
+import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
 
 function formatDate(date?: Date | null) {
   if (!date) {
@@ -256,6 +257,26 @@ export default async function ReviewersPage() {
             {unassignedReviews}
           </div>
         </div>
+      </div>
+
+      <div className="mb-8">
+        <AgenticCapabilityPanel
+          context="governance"
+          metrics={[
+            {
+              label: "Available reviewers",
+              value: availableReviewers,
+            },
+            {
+              label: "Unassigned SRs",
+              value: unassignedReviews,
+            },
+            {
+              label: "Allocated hours",
+              value: allocatedHours,
+            },
+          ]}
+        />
       </div>
 
       <div className="mb-8 grid gap-6 xl:grid-cols-3">

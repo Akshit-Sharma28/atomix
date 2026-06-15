@@ -10,9 +10,17 @@ import {
 
 import { Bot } from "lucide-react";
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    prompt?: string;
+  }>;
+}) {
   const history =
     await getConversationHistory();
+  const params = await searchParams;
+  const initialPrompt = params.prompt ?? "";
 
   return (
     <div className="max-w-7xl mx-auto p-8">
@@ -45,7 +53,7 @@ export default async function Page() {
       <div className="grid lg:grid-cols-3 gap-6">
 
         <div className="lg:col-span-2">
-          <CopilotChat />
+          <CopilotChat initialPrompt={initialPrompt} />
         </div>
 
         <History

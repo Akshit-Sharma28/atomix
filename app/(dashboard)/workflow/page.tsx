@@ -12,6 +12,7 @@ import {
   createReviewerProfile,
   createSecurityReview,
 } from "./actions";
+import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
 
 function cleanRole(role: string) {
   if (role === "SECURITY_LEAD") {
@@ -144,6 +145,26 @@ export default async function WorkflowPage() {
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="mb-8">
+        <AgenticCapabilityPanel
+          context="workflow"
+          metrics={[
+            {
+              label: "Projects ready",
+              value: projects.length,
+            },
+            {
+              label: "Reviewer profiles",
+              value: reviewerProfiles.length,
+            },
+            {
+              label: "Open SRs",
+              value: reviews.length,
+            },
+          ]}
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">

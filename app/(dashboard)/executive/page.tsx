@@ -13,6 +13,7 @@ import {
   ExecutiveSort,
   getExecutiveDashboard,
 } from "@/services/dashboard/executive.service";
+import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
 
 function metricClass(value: number) {
   if (value > 0) {
@@ -114,6 +115,26 @@ export default async function ExecutiveDashboardPage({
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="mb-6">
+        <AgenticCapabilityPanel
+          context="executive"
+          metrics={[
+            {
+              label: "Red projects",
+              value: data.summary.redProjects,
+            },
+            {
+              label: "Portfolio variance",
+              value: `${data.summary.variance >= 0 ? "+" : ""}${data.summary.variance}h`,
+            },
+            {
+              label: "Overdue SRs",
+              value: data.summary.overdueReviews,
+            },
+          ]}
+        />
       </div>
 
       <form className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
