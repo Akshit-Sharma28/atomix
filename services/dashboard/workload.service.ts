@@ -3,8 +3,15 @@ import { prisma } from "../../lib/prisma";
 export async function getDeveloperWorkload() {
   const users =
     await prisma.user.findMany({
-      include: {
-        assignedFindings: true,
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        assignedFindings: {
+          select: {
+            id: true,
+          },
+        },
       },
       orderBy: {
         name: "asc",

@@ -5,6 +5,9 @@ import { getCurrentUser } from "@/services/users/current-user.service";
 export const dynamic =
   "force-dynamic";
 
+export const preferredRegion =
+  "sin1";
+
 export default async function DashboardLayout({
   children,
 }: {

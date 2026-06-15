@@ -4,11 +4,36 @@ import NewProjectForm from "@/components/projects/new-project-form";
 
 export default async function ProjectsPage() {
   const projects = await prisma.project.findMany({
-    include: {
-      findings: true,
-      reviews: true,
-      components: true,
-      scopeProfiles: true,
+    select: {
+      id: true,
+      sprId: true,
+      name: true,
+      client: true,
+      riskTier: true,
+      findings: {
+        select: {
+          severity: true,
+          status: true,
+        },
+      },
+      reviews: {
+        select: {
+          srId: true,
+          title: true,
+          status: true,
+          createdAt: true,
+        },
+      },
+      components: {
+        select: {
+          id: true,
+        },
+      },
+      scopeProfiles: {
+        select: {
+          id: true,
+        },
+      },
     },
   });
 

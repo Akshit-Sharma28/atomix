@@ -35,8 +35,7 @@ export default async function FindingsPage({
     params.projectId ?? "";
   const ai = params.ai ?? "";
 
-  const findings = await prisma.finding.findMany({
-    where: {
+  const where = {
       ...(query
         ? {
             OR: [
@@ -92,25 +91,73 @@ export default async function FindingsPage({
             },
           }
         : {}),
-    },
-    include: {
-      project: true,
-      owner: true,
-      analysis: true,
-      review: true,
-      component: true,
+    };
+
+  const [
+    findings,
+    projects,
+  ] = await Promise.all([
+  prisma.finding.findMany({
+    where,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      severity: true,
+      status: true,
+      source: true,
+      cweId: true,
+      owaspCategory: true,
+      verified: true,
+      createdAt: true,
+      project: {
+        select: {
+          id: true,
+          sprId: true,
+          name: true,
+        },
+      },
+      owner: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      analysis: {
+        select: {
+          id: true,
+          riskScore: true,
+        },
+      },
+      review: {
+        select: {
+          id: true,
+          srId: true,
+          title: true,
+        },
+      },
+      component: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",
     },
-  });
-
-  const projects =
-    await prisma.project.findMany({
+  }),
+    prisma.project.findMany({
+      select: {
+        id: true,
+        sprId: true,
+        name: true,
+      },
       orderBy: {
         name: "asc",
       },
-    });
+    }),
+  ]);
 
   const criticalCount = findings.filter(
     (f) => f.severity === "Critical"

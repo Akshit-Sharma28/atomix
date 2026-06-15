@@ -3,8 +3,15 @@ import { prisma } from "../../lib/prisma";
 export async function getCurrentUser() {
   const session =
     await prisma.appSession.findFirst({
-      include: {
-        user: true,
+      select: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
       },
     });
 

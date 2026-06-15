@@ -4,8 +4,16 @@ import { calculateRisk } from "../risk/risk.service";
 export async function getProjectRiskSummary() {
   const projects =
     await prisma.project.findMany({
-      include: {
-        findings: true,
+      select: {
+        id: true,
+        name: true,
+        client: true,
+        findings: {
+          select: {
+            severity: true,
+            status: true,
+          },
+        },
       },
     });
 

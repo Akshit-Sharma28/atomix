@@ -25,11 +25,15 @@ import {
 import UserMenu from "@/components/users/user-menu";
 
 export default async function DashboardPage() {
-  const metrics = await getDashboardMetrics();
-
-  const projects = await getProjectRiskSummary();
-
-  const workload = await getDeveloperWorkload();
+  const [
+    metrics,
+    projects,
+    workload,
+  ] = await Promise.all([
+    getDashboardMetrics(),
+    getProjectRiskSummary(),
+    getDeveloperWorkload(),
+  ]);
 
   return (
     <div
