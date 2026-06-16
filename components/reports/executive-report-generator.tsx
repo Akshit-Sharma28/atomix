@@ -7,6 +7,18 @@ export default function ExecutiveReportGenerator() {
   const [report, setReport] = useState("");
   const [loading, setLoading] = useState(false);
 
+  function parseReportValue(label: string, fallback = "—") {
+    return report.match(new RegExp(`- ${label}: ([^\\n]+)`))?.[1] ?? fallback;
+  }
+
+  function compactMetric(value: string) {
+    return value
+      .replace(/\s+of\s+reviewer\s+capacity/i, "")
+      .replace(/\s+against\s+expected\s+delivery\s+baseline/i, "")
+      .replace(/\s+versus\s+.*$/i, "")
+      .trim();
+  }
+
   async function generate() {
     setLoading(true);
     const response = await fetch("/api/reports/executive");
@@ -107,9 +119,11 @@ export default function ExecutiveReportGenerator() {
       pdf.setTextColor(100, 116, 139);
       pdf.text(title, x + 18, cardY + 24);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(22);
+      const fontSize = value.length > 8 ? 16 : 22;
+      pdf.setFontSize(fontSize);
       pdf.setTextColor(...accent);
-      pdf.text(value, x + 18, cardY + 56);
+      const wrappedValue = pdf.splitTextToSize(value, width - 32);
+      pdf.text(wrappedValue.slice(0, 2), x + 18, cardY + 54);
     }
 
     pdf.setFillColor(2, 6, 23);
@@ -137,18 +151,10 @@ export default function ExecutiveReportGenerator() {
 
     y = 185;
     const summaryMatches = {
-      hours:
-        report.match(/- Hours charged this week: ([^\n]+)/)?.[1] ??
-        "—",
-      chargeability:
-        report.match(/- Chargeability: ([^\n]+)/)?.[1] ??
-        "—",
-      variance:
-        report.match(/- Variance: ([^\n]+)/)?.[1] ??
-        "—",
-      red:
-        report.match(/- Red engagements: ([^\n]+)/)?.[1] ??
-        "—",
+      hours: compactMetric(parseReportValue("Hours charged this week")),
+      chargeability: compactMetric(parseReportValue("Chargeability")),
+      variance: compactMetric(parseReportValue("Variance")),
+      red: compactMetric(parseReportValue("Red engagements")),
     };
     const cardWidth = (contentWidth - 36) / 4;
     drawCard(margin, y, cardWidth, "Hours This Week", summaryMatches.hours, [
@@ -224,9 +230,197 @@ export default function ExecutiveReportGenerator() {
   function printReport() {
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document.write(`<pre style="font-family:Inter,Arial,sans-serif;white-space:pre-wrap;line-height:1.5">${report.replaceAll("<", "&lt;")}</pre>`);
+    const escapeHtml = (value: string) =>
+      value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    const sections = report
+      .split("\n## ")
+      .map((section, index) => {
+        const [heading, ...content] = section.replace(/^##\s*/, "").split("\n");
+        if (index === 0) {
+          return "";
+        }
+
+        return `
+          <section class="section">
+            <h2>${escapeHtml(heading)}</h2>
+            <div class="body">${content
+              .filter(Boolean)
+              .map((line) =>
+                line.startsWith("- ")
+                  ? `<p class="bullet">${escapeHtml(line.slice(2))}</p>`
+                  : `<p>${escapeHtml(line)}</p>`,
+              )
+              .join("")}</div>
+          </section>
+        `;
+      })
+      .join("");
+
+    const generated = escapeHtml(
+      report.match(/Generated: ([^\n]+)/)?.[1] ?? new Date().toLocaleString(),
+    );
+    const kpis = [
+      ["Hours This Week", compactMetric(parseReportValue("Hours charged this week"))],
+      ["Chargeability", compactMetric(parseReportValue("Chargeability"))],
+      ["Variance", compactMetric(parseReportValue("Variance"))],
+      ["Red Engagements", compactMetric(parseReportValue("Red engagements"))],
+    ];
+
+    win.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>Atomix Executive Delivery Report</title>
+          <style>
+            @page { margin: 0.55in; }
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              background: #f8fafc;
+              color: #0f172a;
+              font-family: Inter, Arial, sans-serif;
+              line-height: 1.45;
+            }
+            .cover {
+              background: #020617;
+              color: white;
+              padding: 42px 48px;
+              border-radius: 22px;
+              position: relative;
+              overflow: hidden;
+            }
+            .cover:after {
+              content: "";
+              position: absolute;
+              right: 42px;
+              top: 34px;
+              width: 86px;
+              height: 86px;
+              border-radius: 999px;
+              background: radial-gradient(circle, #7dd3fc 0 38%, #0891b2 39% 100%);
+              opacity: .85;
+            }
+            .brand {
+              color: #67e8f9;
+              font-size: 13px;
+              font-weight: 800;
+              letter-spacing: .14em;
+            }
+            h1 {
+              margin: 18px 0 10px;
+              max-width: 620px;
+              font-size: 42px;
+              line-height: 1;
+            }
+            .subtitle {
+              max-width: 650px;
+              color: #cbd5e1;
+              font-size: 15px;
+            }
+            .generated {
+              margin-top: 18px;
+              color: #94a3b8;
+              font-size: 12px;
+            }
+            .kpis {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 14px;
+              margin: 24px 0;
+            }
+            .kpi {
+              border: 1px solid #e2e8f0;
+              border-left: 7px solid #06b6d4;
+              border-radius: 18px;
+              background: white;
+              padding: 18px;
+              min-height: 92px;
+            }
+            .kpi:nth-child(2) { border-left-color: #2563eb; }
+            .kpi:nth-child(3) { border-left-color: #f59e0b; }
+            .kpi:nth-child(4) { border-left-color: #ef4444; }
+            .kpi-label {
+              color: #64748b;
+              font-size: 11px;
+              font-weight: 800;
+              letter-spacing: .08em;
+              text-transform: uppercase;
+            }
+            .kpi-value {
+              margin-top: 12px;
+              color: #0f172a;
+              font-size: 26px;
+              font-weight: 900;
+              overflow-wrap: anywhere;
+            }
+            .section {
+              margin-top: 18px;
+              border: 1px solid #e2e8f0;
+              border-radius: 18px;
+              background: white;
+              padding: 20px 24px;
+              break-inside: avoid;
+            }
+            h2 {
+              margin: 0 0 12px;
+              color: #0f172a;
+              font-size: 18px;
+            }
+            p {
+              margin: 7px 0;
+              color: #334155;
+              font-size: 12px;
+            }
+            .bullet {
+              padding-left: 18px;
+              position: relative;
+            }
+            .bullet:before {
+              content: "";
+              position: absolute;
+              left: 0;
+              top: 7px;
+              width: 6px;
+              height: 6px;
+              border-radius: 999px;
+              background: #06b6d4;
+            }
+            @media print {
+              body { background: white; }
+              .cover, .section, .kpi { break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <main>
+            <header class="cover">
+              <div class="brand">ATOMIX</div>
+              <h1>Executive Delivery Report</h1>
+              <div class="subtitle">Hours, chargeability, KPI variance, trends, red engagements, unassigned reviews, reschedules, cancellations, and extension queues.</div>
+              <div class="generated">Generated ${generated}</div>
+            </header>
+            <div class="kpis">
+              ${kpis
+                .map(
+                  ([label, value]) => `
+                    <div class="kpi">
+                      <div class="kpi-label">${escapeHtml(label)}</div>
+                      <div class="kpi-value">${escapeHtml(value)}</div>
+                    </div>
+                  `,
+                )
+                .join("")}
+            </div>
+            ${sections}
+          </main>
+        </body>
+      </html>
+    `);
     win.document.close();
-    win.print();
+    win.onload = () => win.print();
   }
 
   return (
