@@ -35,7 +35,7 @@ export default function ExecutiveReportGenerator() {
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8);
       pdf.setTextColor(100, 116, 139);
-      pdf.text("ATOMIX · Executive Security Report", margin, pageHeight - 25);
+      pdf.text("ATOMIX · Executive Delivery Report", margin, pageHeight - 25);
       pdf.text(
         `Page ${pageNumber}`,
         pageWidth - margin - 36,
@@ -124,30 +124,34 @@ export default function ExecutiveReportGenerator() {
     pdf.text("ATOMIX", margin, 36);
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(28);
-    pdf.text("Executive Security Report", margin, 72);
+    pdf.text("Executive Delivery Report", margin, 72);
     pdf.setTextColor(203, 213, 225);
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(11);
-    pdf.text("Security posture, SR delivery, findings, and governance actions", margin, 96);
+    pdf.text(
+      "Hours, chargeability, variance, trends, and delivery exceptions",
+      margin,
+      96,
+    );
     pdf.text(`Generated ${generatedAt}`, margin, 118);
 
     y = 185;
     const summaryMatches = {
-      projects:
-        report.match(/- (\d+) projects/)?.[1] ??
+      hours:
+        report.match(/- Hours charged this week: ([^\n]+)/)?.[1] ??
         "—",
-      active:
-        report.match(/- (\d+) active SRs/)?.[1] ??
+      chargeability:
+        report.match(/- Chargeability: ([^\n]+)/)?.[1] ??
         "—",
-      critical:
-        report.match(/- (\d+) critical/)?.[1] ??
+      variance:
+        report.match(/- Variance: ([^\n]+)/)?.[1] ??
         "—",
-      unassigned:
-        report.match(/- (\d+) SRs need reviewer/)?.[1] ??
+      red:
+        report.match(/- Red engagements: ([^\n]+)/)?.[1] ??
         "—",
     };
     const cardWidth = (contentWidth - 36) / 4;
-    drawCard(margin, y, cardWidth, "Projects / SPRs", summaryMatches.projects, [
+    drawCard(margin, y, cardWidth, "Hours This Week", summaryMatches.hours, [
       8,
       145,
       178,
@@ -156,25 +160,25 @@ export default function ExecutiveReportGenerator() {
       margin + cardWidth + 12,
       y,
       cardWidth,
-      "Active SRs",
-      summaryMatches.active,
+      "Chargeability",
+      summaryMatches.chargeability,
       [37, 99, 235],
     );
     drawCard(
       margin + (cardWidth + 12) * 2,
       y,
       cardWidth,
-      "Critical",
-      summaryMatches.critical,
-      [239, 68, 68],
+      "Variance",
+      summaryMatches.variance,
+      [245, 158, 11],
     );
     drawCard(
       margin + (cardWidth + 12) * 3,
       y,
       cardWidth,
-      "Unassigned SRs",
-      summaryMatches.unassigned,
-      [245, 158, 11],
+      "Red Engagements",
+      summaryMatches.red,
+      [239, 68, 68],
     );
 
     y += 115;
@@ -234,8 +238,9 @@ export default function ExecutiveReportGenerator() {
             Generate Executive Report
           </h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-400">
-            Creates a leadership-ready report from current projects, SRs,
-            findings, extension requests, and agentic follow-up actions.
+            Creates a leadership-ready delivery report covering hours,
+            chargeability, KPI variance, trends, red engagements, unassigned
+            reviews, reschedules, cancellations, and extension queues.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
