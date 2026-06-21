@@ -12,10 +12,10 @@ export default async function AgentCommandCenterPage() {
       <div className="p-8">
         <div className="rounded-2xl border border-red-500/20 bg-red-950/20 p-6">
           <h1 className="text-2xl font-bold text-white">
-            Command center access restricted
+            Agent action access restricted
           </h1>
           <p className="mt-2 text-slate-400">
-            Agent Command Center is available to Admin and Governance Team roles.
+            Agent Action Builder is available to Admin and Governance Team roles.
           </p>
         </div>
       </div>
@@ -34,14 +34,15 @@ export default async function AgentCommandCenterPage() {
         </Link>
         <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
           <TerminalSquare size={16} />
-          Controlled Command Runner
+          Controlled DB Action Runner
         </div>
         <h1 className="text-3xl font-bold text-white">
-          Agent Command Center
+          Agent Action Builder
         </h1>
         <p className="mt-2 max-w-3xl text-slate-400">
-          Run whitelisted commands for Atomix records. This is governed command
-          execution, not an unconstrained autonomous agent loop.
+          Build safe database write commands through forms. Assignment and
+          intake recommendations live on the main Workflow page; this workspace
+          is for explicit user, project, SR, finding, and peer-review actions.
         </p>
       </div>
 

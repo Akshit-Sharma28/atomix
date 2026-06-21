@@ -53,11 +53,11 @@ const agentWorkflows = [
     icon: FileSearch,
   },
   {
-    title: "Agent Command Center",
+    title: "Agent Action Builder",
     href: "/workflow/command-center",
-    mode: "Whitelisted commands",
+    mode: "DB write actions",
     description:
-      "Run governed JSON commands for user/project/SR/finding creation with role checks, validation, and audit-friendly responses.",
+      "Use forms to create governed user/project/SR/finding records through whitelisted, role-checked API commands.",
     icon: TerminalSquare,
   },
   {
@@ -217,6 +217,8 @@ export default async function WorkflowPage() {
               These are human-in-the-loop workflow agents. Structured flows post
               typed data and files to dedicated APIs; Copilot shortcuts are
               advisory prompts and do not automatically mutate records.
+              Assignment and intake stay on this page; the Action Builder is
+              only for explicit database write actions.
             </p>
           </div>
         </div>
@@ -270,7 +272,8 @@ export default async function WorkflowPage() {
             <p className="font-semibold text-amber-200">What is advisory</p>
             <p className="mt-1 text-slate-400">
               Copilot prompts draft, summarize, and reason from current data;
-              humans still approve decisions and record changes.
+              assignment and intake recommendations still need a human to apply
+              them through the Workflow forms.
             </p>
           </div>
           <div>
