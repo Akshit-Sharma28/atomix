@@ -23,6 +23,7 @@
     "fast-xml-parser": "^5.8.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.18.0",
+    "mammoth": "^1.12.0",
     "next": "16.2.9",
     "next-auth": "^4.24.14",
     "openai": "^6.42.0",

@@ -1,17 +1,21 @@
 import bcrypt from "bcryptjs";
+import { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAccess } from "@/services/users/access.service";
+
+type CommandData = Record<string, unknown>;
 
 type CommandBody = {
   command:
     | "create_user"
     | "create_project"
     | "create_sr"
-    | "create_finding";
-  data: Record<string, any>;
+    | "create_finding"
+    | "peer_review";
+  data: CommandData;
 };
 
-function required(data: Record<string, any>, key: string) {
+function required(data: CommandData, key: string) {
   const value = data[key];
 
   if (!value) {
@@ -19,6 +23,16 @@ function required(data: Record<string, any>, key: string) {
   }
 
   return String(value);
+}
+
+function roleValue(value: unknown) {
+  const role = value ? String(value) : "REVIEWER";
+
+  if (!Object.values(Role).includes(role as Role)) {
+    throw new Error("role is invalid");
+  }
+
+  return role as Role;
 }
 
 export async function POST(req: Request) {
@@ -35,7 +49,7 @@ export async function POST(req: Request) {
         data: {
           name: required(data, "name"),
           email: required(data, "email").toLowerCase(),
-          role: (data.role ?? "REVIEWER") as any,
+          role: roleValue(data.role),
           isActive: true,
         },
       });
@@ -53,6 +67,88 @@ export async function POST(req: Request) {
         ok: true,
         created: "user",
         user,
+      });
+    }
+
+    if (body.command === "peer_review") {
+      const files = (data.files ?? {}) as CommandData;
+      const risk = (data.risk ?? {}) as CommandData;
+      const scanReports = Array.isArray(files.scanReports)
+        ? files.scanReports.map(String).filter(Boolean)
+        : [];
+      const scope = required(data, "scope");
+      const reviewType = required(data, "typeOfReview");
+
+      return Response.json({
+        ok: true,
+        agent: "peer_review",
+        objective:
+          "Cross-check FEAD, BEAD, scan reports, and reviewer findings against scope-driven peer review guidelines.",
+        scopePackage: {
+          scope,
+          typeOfReview: reviewType,
+          spr: required(data, "spr"),
+          sr: required(data, "sr"),
+          typeOfApplication: required(data, "typeOfApplication"),
+          risk: {
+            confidentiality: risk.confidentiality ?? "Not provided",
+            integrity: risk.integrity ?? "Not provided",
+            availability: risk.availability ?? "Not provided",
+          },
+          network: required(data, "network"),
+          files: {
+            feadWordFile: required(files, "feadWordFile"),
+            beadWordFile: files.beadWordFile
+              ? String(files.beadWordFile)
+              : "Not provided",
+            scanReports,
+          },
+        },
+        checks: [
+          "Confirm FEAD controls match the declared scope, review type, application exposure, CIA rating, and network context.",
+          "Use BEAD when backend, API, service, or data-flow controls are applicable to the declared scope.",
+          "Validate that applicable Qualys, Checkmarx, Mend, AquaSec, and AI QRM outputs are present or explicitly marked not applicable.",
+          "Compare scanner findings with FEAD/BEAD findings to detect missing, downgraded, duplicated, or unsupported issues.",
+          "Flag controls that need more testing, missing evidence, reviewer follow-up, or peer review escalation.",
+        ],
+        controlCoverage: [
+          "0.1 Security review notification and stakeholder awareness",
+          "6.3 Authentication controls",
+          "7.1 Authorization controls",
+          "8.x Session management, cookie flags, CSRF, concurrent sessions",
+          "9.3 XSS",
+          "9.4 Command Injection",
+          "9.10 SSRF",
+          "11.1 Secure token transmission",
+          "14.2 Server-side code exposure",
+          "14.7 Version disclosure",
+          "15.18 Email restrictions",
+          "16.14 Security headers including CSP, Cache-Control, and X-CTO",
+          "19.1-19.6 JWT security, headers, identity exposure, and API rate limiting",
+          "21.1 Model denial of service",
+          "21.2 Data exfiltration",
+          "21.3 Data poisoning",
+          "21.4 Prompt injection and jailbreak",
+          "21.5 Arbitrary plugin invocation",
+          "21.6 Sensitive data leakage",
+          "21.7 OSS approval",
+          "17.13 Responsible AI principles",
+          "17.14 Model validation and drift",
+          "17.15 Audit trail and explainability",
+        ],
+        requiredArtifacts: {
+          fead: "Required for Web, Web + LLM, LLM only, and Thick Client reviews when frontend controls are in scope.",
+          bead: "Required when backend, API, service, data-flow, auth, or integration controls are in scope.",
+          scans:
+            "Attach applicable Qualys, Checkmarx, Mend, AquaSec, and AI QRM reports; explain any scanner that is not applicable.",
+        },
+        outputFormat: [
+          "Coverage gaps",
+          "Potential missed findings",
+          "Controls needing more testing",
+          "Scanner-to-artifact mismatches",
+          "Peer review decision and required reviewer actions",
+        ],
       });
     }
 
@@ -94,8 +190,9 @@ export async function POST(req: Request) {
           priority: data.priority ? String(data.priority) : "Medium",
           status: data.status ? String(data.status) : "Requested",
           srId:
-            data.srId ??
-            `SR-${new Date().getFullYear()}-${String(count + 1).padStart(4, "0")}`,
+            data.srId ?
+              String(data.srId)
+            : `SR-${new Date().getFullYear()}-${String(count + 1).padStart(4, "0")}`,
           dueDate: data.dueDate ? new Date(String(data.dueDate)) : undefined,
         },
       });

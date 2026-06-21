@@ -322,34 +322,37 @@ export default async function ReviewersPage() {
           <div className="mb-3 flex items-center gap-3">
             <AlertTriangle size={20} className="text-amber-300" />
             <h2 className="text-lg font-bold">
-              Red Engagements
+              Red Projects
             </h2>
           </div>
           <div className="space-y-3">
-            {governance.activeReviews
-              .filter((review) => review.isOverdue)
+            {governance.redProjects
               .slice(0, 5)
-              .map((review) => (
+              .map((project) => (
                 <div
-                  key={review.id}
+                  key={project.id}
                   className="rounded-xl border border-red-500/20 bg-red-950/20 p-3"
                 >
                   <p className="font-semibold text-white">
-                    {review.project}
+                    {project.name}
                   </p>
                   <p className="mt-1 text-sm text-slate-300">
-                    {review.title}
+                    {project.status}
                   </p>
                   <p className="mt-2 text-xs text-red-200">
-                    {review.sprId} · {review.srId} · due{" "}
-                    {formatDate(review.dueDate)}
+                    {project.sprId} · due {formatDate(project.dueDate)}
+                    {project.openCriticals > 0
+                      ? ` · ${project.openCriticals} open critical`
+                      : ""}
+                  </p>
+                  <p className="mt-2 text-xs text-amber-200">
+                    {project.reasons.join(", ")}
                   </p>
                 </div>
               ))}
-            {governance.activeReviews.filter((review) => review.isOverdue)
-              .length === 0 && (
+            {governance.redProjects.length === 0 && (
               <p className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-3 text-sm text-emerald-200">
-                No overdue active security reviews.
+                No red project signals in the active portfolio.
               </p>
             )}
           </div>

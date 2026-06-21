@@ -14,6 +14,7 @@ import {
 } from "./actions";
 import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
 import AgentCommandConsole from "@/components/agents/agent-command-console";
+import PeerReviewAgent from "@/components/agents/peer-review-agent";
 
 function cleanRole(role: string) {
   if (role === "SECURITY_LEAD") {
@@ -410,6 +411,8 @@ export default async function WorkflowPage() {
           </button>
         </form>
       </div>
+
+      <PeerReviewAgent />
 
       <AgentCommandConsole />
     </div>

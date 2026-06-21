@@ -26,6 +26,61 @@ function isActiveStatus(status: string) {
   );
 }
 
+function isPendingExtension(status: string) {
+  return !["approved", "rejected"].includes(status.toLowerCase());
+}
+
+function hasCriticalOpenFinding(
+  findings: {
+    severity: string;
+    status: string;
+  }[],
+) {
+  return findings.some(
+    (finding) =>
+      finding.severity === "Critical" &&
+      finding.status !== "Closed",
+  );
+}
+
+function redProjectReasons(
+  project: {
+    findings: {
+      severity: string;
+      status: string;
+    }[];
+    reviews: {
+      status: string;
+      dueDate: Date | null;
+      extensions: {
+        status: string;
+      }[];
+    }[];
+  },
+  now: Date,
+) {
+  return [
+    project.reviews.some(
+      (review) =>
+        isActiveStatus(review.status) &&
+        Boolean(review.dueDate) &&
+        review.dueDate!.getTime() < now.getTime(),
+    )
+      ? "Overdue active review"
+      : "",
+    hasCriticalOpenFinding(project.findings)
+      ? "Critical open finding"
+      : "",
+    project.reviews.some((review) =>
+      review.extensions.some((extension) =>
+        isPendingExtension(extension.status),
+      ),
+    )
+      ? "Pending extension"
+      : "",
+  ].filter(Boolean);
+}
+
 function trendLabel(current: number, previous: number) {
   const variance = current - previous;
 
@@ -40,21 +95,12 @@ function trendLabel(current: number, previous: number) {
 
 export async function getGovernanceDashboard() {
   const now = new Date();
-  const monthStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    1
-  );
-  const yearStart = new Date(
-    now.getFullYear(),
-    0,
-    1
-  );
 
   const [
     reviewerProfiles,
     reviews,
     extensionRequests,
+    projects,
   ] = await Promise.all([
     prisma.reviewerProfile.findMany({
       include: {
@@ -64,7 +110,17 @@ export async function getGovernanceDashboard() {
           include: {
             review: {
               include: {
-                project: true,
+                project: {
+                  include: {
+                    findings: {
+                      select: {
+                        severity: true,
+                        status: true,
+                      },
+                    },
+                  },
+                },
+                extensions: true,
               },
             },
           },
@@ -81,7 +137,16 @@ export async function getGovernanceDashboard() {
     }),
     prisma.securityReview.findMany({
       include: {
-        project: true,
+        project: {
+          include: {
+            findings: {
+              select: {
+                severity: true,
+                status: true,
+              },
+            },
+          },
+        },
         assignments: true,
         extensions: true,
       },
@@ -102,6 +167,21 @@ export async function getGovernanceDashboard() {
         requestedUntil: "asc",
       },
       take: 10,
+    }),
+    prisma.project.findMany({
+      include: {
+        findings: {
+          select: {
+            severity: true,
+            status: true,
+          },
+        },
+        reviews: {
+          include: {
+            extensions: true,
+          },
+        },
+      },
     }),
   ]);
 
@@ -128,10 +208,25 @@ export async function getGovernanceDashboard() {
   );
 
   const pendingExtensions = extensionRequests.filter(
-    (extension) =>
-      extension.status.toLowerCase() !== "approved" &&
-      extension.status.toLowerCase() !== "rejected"
+    (extension) => isPendingExtension(extension.status)
   );
+
+  const redProjects = projects.filter(
+    (project) => redProjectReasons(project, now).length > 0,
+  );
+
+  const redActiveReviews = activeReviews.filter((review) => {
+    const reasons = [
+      Boolean(review.dueDate) &&
+        review.dueDate!.getTime() < now.getTime(),
+      hasCriticalOpenFinding(review.project.findings),
+      review.extensions.some((extension) =>
+        isPendingExtension(extension.status),
+      ),
+    ];
+
+    return reasons.some(Boolean);
+  });
 
   const estimatedWeeklyHours = governancePool.reduce(
     (total, profile) => {
@@ -201,11 +296,11 @@ export async function getGovernanceDashboard() {
             : "down",
       },
       {
-        label: "Red Engagements",
-        value: overdueReviews.length.toString(),
-        helper: "overdue active SRs",
+        label: "Red Projects",
+        value: redProjects.length.toString(),
+        helper: "matches executive dashboard",
         trend:
-          overdueReviews.length > 0
+          redProjects.length > 0
             ? "needs action"
             : "clear",
       },
@@ -271,6 +366,30 @@ export async function getGovernanceDashboard() {
           currentAssignment?.allocatedHours ?? 0,
       };
     }),
+    redProjects: redProjects.map((project) => {
+      const nextReview =
+        project.reviews
+          .filter((review) => isActiveStatus(review.status))
+          .sort(
+            (left, right) =>
+              (left.dueDate?.getTime() ?? Number.MAX_SAFE_INTEGER) -
+              (right.dueDate?.getTime() ?? Number.MAX_SAFE_INTEGER),
+          )[0] ?? project.reviews[0];
+
+      return {
+        id: project.id,
+        name: project.name,
+        sprId: project.sprId ?? "SPR pending",
+        status: nextReview?.status ?? "No active review",
+        dueDate: nextReview?.dueDate ?? null,
+        openCriticals: project.findings.filter(
+          (finding) =>
+            finding.severity === "Critical" &&
+            finding.status !== "Closed",
+        ).length,
+        reasons: redProjectReasons(project, now),
+      };
+    }),
     activeReviews: activeReviews.slice(0, 8).map((review) => ({
       id: review.id,
       title: review.title,
@@ -283,6 +402,23 @@ export async function getGovernanceDashboard() {
       isOverdue:
         Boolean(review.dueDate) &&
         review.dueDate!.getTime() < now.getTime(),
+      isRed: redActiveReviews.some(
+        (redReview) => redReview.id === review.id,
+      ),
+      redReasons: [
+        Boolean(review.dueDate) &&
+        review.dueDate!.getTime() < now.getTime()
+          ? "Overdue active review"
+          : "",
+        hasCriticalOpenFinding(review.project.findings)
+          ? "Critical open finding"
+          : "",
+        review.extensions.some((extension) =>
+          isPendingExtension(extension.status),
+        )
+          ? "Pending extension"
+          : "",
+      ].filter(Boolean),
     })),
     rescheduled: rescheduledReviews
       .slice(0, 6)

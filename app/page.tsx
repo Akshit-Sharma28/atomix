@@ -13,16 +13,16 @@ import {
 } from "lucide-react";
 
 const metrics = [
-  ["APIM", "information system view"],
-  ["SPR/SR", "delivery governance"],
+  ["Scope", "review intake"],
+  ["Evidence", "artifact checks"],
   ["AI", "agent-assisted workflows"],
 ];
 
 const capabilities = [
   {
     icon: ShieldCheck,
-    title: "Governance Command Center",
-    text: "Track APIM information systems, SPR scope, SR execution, SLAs, review activity, and remediation status from one operating layer.",
+    title: "Pentest Delivery Cockpit",
+    text: "Track review scope, reviewer activity, deadlines, evidence, remediation status, and report readiness from one operating layer.",
   },
   {
     icon: BrainCircuit,
@@ -32,7 +32,7 @@ const capabilities = [
   {
     icon: Radar,
     title: "Reviewer Capacity Analytics",
-    text: "Surface reviewer pool health, chargeability variance, red engagements, reschedules, extensions, and overdue delivery risk.",
+    text: "Surface reviewer pool health, chargeability variance, delivery exceptions, reschedules, extensions, and overdue delivery risk.",
   },
   {
     icon: FileText,
@@ -42,7 +42,7 @@ const capabilities = [
 ];
 
 const workflow = [
-  "Import APIM, SPR, and SR context into the delivery cockpit",
+  "Import review scope, artifacts, and scan reports into the delivery cockpit",
   "Map reviews to reviewers, peer review gates, owners, and SLA commitments",
   "Use Atomix agents to analyze delivery risk, capacity, and remediation paths",
   "Generate executive packs and track closure from dashboard to delivery",
@@ -52,7 +52,7 @@ const deliveryGaps = [
   {
     icon: Building2,
     title: "From system context to delivery action.",
-    text: "Atomix makes APIM, SPR, and SR execution visible by reviewer, due date, workload, status, and leadership risk.",
+    text: "Atomix makes review execution visible by reviewer, due date, workload, status, and delivery risk.",
   },
   {
     icon: Users,
@@ -62,12 +62,12 @@ const deliveryGaps = [
   {
     icon: ClipboardCheck,
     title: "Delivery needs workflow intelligence.",
-    text: "SPR/SR metadata becomes actionable through red engagement flags, extension tracking, chargeability variance, and agent-assisted summaries.",
+    text: "Review metadata becomes actionable through red engagement flags, extension tracking, chargeability variance, and agent-assisted summaries.",
   },
 ];
 
 const agents = [
-  "Governance Agent",
+  "Delivery Triage Agent",
   "Executive Agent",
   "Peer Review Agent",
   "Pentest Copilot Agent",
@@ -122,19 +122,18 @@ export default function Home() {
         <div className="lg:col-span-7">
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
             <Sparkles size={16} />
-            Governance cockpit for modern pentest teams
+            AI cockpit for modern pentest teams
           </div>
 
           <h1 className="max-w-5xl text-5xl font-black tracking-tight md:text-6xl">
-            Pentest delivery governance,
-            <span className="block text-cyan-300">organized by APIM, SPR, and SR.</span>
+            Pentest delivery,
+            <span className="block text-cyan-300">reviewed with AI assistance.</span>
           </h1>
 
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            Atomix turns APIM information systems, SPR scope, and SR review
-            records into a live operating surface for governance, reviewer
-            allocation, peer review, SLA work, chargeability, and executive
-            reporting.
+            Atomix turns review scope, Word artifacts, scan reports, findings,
+            and reviewer activity into a live operating surface for peer review,
+            SLA work, chargeability, and executive reporting.
           </p>
 
           <div className="mt-8 flex flex-col gap-4 sm:flex-row">
@@ -178,7 +177,7 @@ export default function Home() {
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
                   Live Preview
                 </p>
-                <h2 className="text-2xl font-bold">Governance Dashboard</h2>
+                <h2 className="text-2xl font-bold">Delivery Dashboard</h2>
               </div>
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-300 text-slate-950">
                 <Bot size={24} />
@@ -215,7 +214,7 @@ export default function Home() {
                 "Generate Pentest Report",
                 "Review Findings",
                 "Suggest Remediation",
-                "Analyze Governance Risk",
+                "Check Peer Review Gaps",
               ].map((item) => (
                 <div
                   key={item}
@@ -269,12 +268,12 @@ export default function Home() {
               Capabilities
             </p>
             <h2 className="mt-3 text-3xl font-black md:text-4xl">
-              Built for security delivery governance.
+              Built for security delivery teams.
             </h2>
           </div>
           <p className="max-w-xl text-sm leading-6 text-slate-400">
             Atomix focuses on the execution layer: reviewer capacity, peer
-            review, SLA progress, red engagements, extensions, and executive
+            review, SLA progress, delivery exceptions, extensions, and executive
             reporting.
           </p>
         </div>
@@ -369,7 +368,7 @@ export default function Home() {
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-400">
               Atomix is built by Twenty Eight Labs to turn pentest operations
-              into assisted workflows: governance triage, executive reporting,
+              into assisted workflows: delivery triage, executive reporting,
               peer review, and practitioner copilot support.
             </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">

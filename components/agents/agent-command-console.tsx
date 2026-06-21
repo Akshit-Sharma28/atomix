@@ -1,9 +1,39 @@
 "use client";
 
-import { Bot, Loader2, Terminal } from "lucide-react";
+import { Bot, FileCheck2, Loader2, Terminal } from "lucide-react";
 import { useState } from "react";
 
 const examples = [
+  {
+    label: "Peer Review Agent",
+    command: {
+      command: "peer_review",
+      data: {
+        scope: "Web + LLM",
+        typeOfReview: "FULL",
+        spr: "SPR-9001",
+        sr: "SR-9001-2026",
+        typeOfApplication: "internet",
+        risk: {
+          confidentiality: "High",
+          integrity: "Medium",
+          availability: "High",
+        },
+        network: "Adjacent",
+        files: {
+          feadWordFile: "/path/to/FEAD.docx",
+          beadWordFile: "/path/to/BEAD.docx",
+          scanReports: [
+            "/path/to/qualys.pdf",
+            "/path/to/checkmarx.pdf",
+            "/path/to/mend.pdf",
+            "/path/to/aquasec.pdf",
+            "/path/to/ai-qrm.pdf"
+          ],
+        },
+      },
+    },
+  },
   {
     label: "Create Project",
     command: {
@@ -85,10 +115,26 @@ export default function AgentCommandConsole() {
             Agent Command Center
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            Admin/Governance-only command surface. The AI agent can create
-            users, projects/SPRs, SRs, and findings when a human submits a
-            structured command.
+            Admin-only command surface for controlled record creation and peer
+            review checks. Use the Peer Review Agent to submit scope, review
+            type, risk context, Word artifacts, and scanner reports for a
+            control coverage review.
           </p>
+        </div>
+      </div>
+
+      <div className="mb-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-cyan-200">
+          <FileCheck2 size={17} />
+          Peer review scope format
+        </div>
+        <div className="grid gap-3 text-xs text-slate-400 md:grid-cols-2">
+          <p>Scope: Web only, Web + LLM, API, LLM only, or Thick Client</p>
+          <p>Type of Review: FULL or Enhancement</p>
+          <p>Identifiers: SPR and SR</p>
+          <p>Application: Internal, intranet, or internet</p>
+          <p>Risk: CIA rated High, Medium, or Low</p>
+          <p>Network: Adjacent or applicable exposure path</p>
         </div>
       </div>
 
