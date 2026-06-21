@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   ) {
     return NextResponse.json(
       {
-        error: "Project name is required",
+        error: "Information System name is required",
       },
       {
         status: 400,
