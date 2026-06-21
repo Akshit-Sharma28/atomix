@@ -17,6 +17,7 @@ import {
   Clock3,
   Bot,
   Brain,
+  RotateCcw,
 } from "lucide-react";
 
 interface Props {
@@ -115,6 +116,12 @@ export default function Sidebar({
       label: "Workflow",
       icon: Workflow,
       roles: ["ADMIN", "GOVERNANCE_TEAM"],
+    },
+    {
+      href: "/retest-governance",
+      label: "Retest Governance",
+      icon: RotateCcw,
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "EXECUTIVE"],
     },
     {
       href: "/my-findings",

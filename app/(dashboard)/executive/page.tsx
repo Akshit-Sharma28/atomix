@@ -182,6 +182,75 @@ export default async function ExecutiveDashboardPage({
         </div>
       </div>
 
+      <div className="mb-6 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-white">
+              Retest Governance Insights
+            </h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Fix-readiness, assignment pressure, overdue retests, and
+              extension signals from the retest queue.
+            </p>
+          </div>
+          <Link
+            href="/retest-governance"
+            className="rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-400/10"
+          >
+            Open Retest Governance
+          </Link>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+          {[
+            ["Retests", data.retestSummary.total, "requests"],
+            [
+              "Controls",
+              data.retestSummary.controlsInRetest,
+              "in retest",
+            ],
+            [
+              "Not Assigned",
+              data.retestSummary.notAssigned,
+              "need reviewer",
+            ],
+            ["In Progress", data.retestSummary.inProgress, "active"],
+            ["Overdue", data.retestSummary.overdue, "past target"],
+            [
+              "Extensions",
+              data.retestSummary.extensionNeeded,
+              "need decision",
+            ],
+          ].map(([label, value, helper]) => (
+            <div
+              key={label as string}
+              className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
+            >
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                {label as string}
+              </p>
+              <p className="mt-2 text-2xl font-black text-white">
+                {value as number}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                {helper as string}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {data.retestInsights.map((insight) => (
+            <div
+              key={insight}
+              className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300"
+            >
+              {insight}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <ExecutiveReportGenerator />
 
       <form className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">

@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { calculateRisk } from "../risk/risk.service";
+import { getRetestGovernanceDashboard } from "./retest-governance.service";
 
 export type ExecutiveSort =
   | "variance"
@@ -42,28 +43,31 @@ export async function getExecutiveDashboard({
   filter?: ExecutiveFilter;
   search?: string;
 }) {
-  const projects = await prisma.project.findMany({
-    include: {
-      findings: {
-        select: {
-          severity: true,
-          status: true,
+  const [projects, retestGovernance] = await Promise.all([
+    prisma.project.findMany({
+      include: {
+        findings: {
+          select: {
+            severity: true,
+            status: true,
+          },
+        },
+        reviews: {
+          include: {
+            assignments: true,
+            extensions: true,
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
         },
       },
-      reviews: {
-        include: {
-          assignments: true,
-          extensions: true,
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
+      orderBy: {
+        updatedAt: "desc",
       },
-    },
-    orderBy: {
-      updatedAt: "desc",
-    },
-  });
+    }),
+    getRetestGovernanceDashboard(),
+  ]);
 
   const rows = projects.map((project) => {
     const activeReviews = project.reviews.filter(
@@ -238,7 +242,12 @@ export async function getExecutiveDashboard({
       rows.some((row) => row.pendingExtensions > 0)
         ? "Pending extension requests exist; leadership should ask for owner decisions and revised timelines."
         : "No pending extension pressure detected across current project records.",
+      retestGovernance.summary.overdue > 0
+        ? `${retestGovernance.summary.overdue} retest requests are overdue; validate project-team fix readiness and reviewer assignment.`
+        : "No overdue retest requests detected in the retest governance queue.",
     ],
+    retestSummary: retestGovernance.summary,
+    retestInsights: retestGovernance.insights,
     rows: filteredRows,
   };
 }
