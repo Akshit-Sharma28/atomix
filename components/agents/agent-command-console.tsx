@@ -115,10 +115,9 @@ export default function AgentCommandConsole() {
             Agent Command Center
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            Admin-only command surface for controlled record creation and peer
-            review checks. Use the Peer Review Agent to submit scope, review
-            type, risk context, Word artifacts, and scanner reports for a
-            control coverage review.
+            Governed command surface for controlled record creation and peer
+            review checks. Commands are whitelisted, role-gated, and reviewed
+            by humans; this is not an unconstrained autonomous planner.
           </p>
         </div>
       </div>

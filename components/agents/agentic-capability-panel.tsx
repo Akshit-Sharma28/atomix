@@ -33,10 +33,10 @@ const agentConfigs: Record<
   }
 > = {
   governance: {
-    eyebrow: "Agentic Governance Layer",
-    title: "Agents that watch capacity, red work, and reviewer flow.",
+    eyebrow: "Agent-Assisted Governance Layer",
+    title: "Copiloted workflows for capacity, red work, and reviewer flow.",
     description:
-      "Use Atomix agents as the coordination layer between governance and reviewers: they highlight bottlenecks, summarize delivery risk, and recommend next actions without changing source records automatically.",
+      "Use Atomix workflow agents as a governed coordination layer: they highlight bottlenecks, summarize delivery risk, and recommend next actions without changing source records automatically.",
     agents: [
       {
         title: "Governance Agent",
@@ -62,10 +62,10 @@ const agentConfigs: Record<
     ],
   },
   executive: {
-    eyebrow: "Agentic Leadership Layer",
-    title: "Agents that turn delivery signals into executive decisions.",
+    eyebrow: "Agent-Assisted Leadership Layer",
+    title: "Copiloted briefs for delivery signals and executive decisions.",
     description:
-      "Executive agents convert portfolio variance, overdue reviews, critical exposure, and trend data into concise leadership narratives and decision prompts.",
+      "Executive workflows convert portfolio variance, overdue reviews, critical exposure, and trend data into concise leadership narratives and decision prompts.",
     agents: [
       {
         title: "Executive Agent",
@@ -91,10 +91,10 @@ const agentConfigs: Record<
     ],
   },
   workflow: {
-    eyebrow: "Agentic Workflow Layer",
-    title: "Agents that assist intake, assignment, and scope quality.",
+    eyebrow: "Agent-Assisted Workflow Layer",
+    title: "Dedicated flows for intake, assignment, and scope quality.",
     description:
-      "Workflow agents help governance create clean review records, select reviewers, balance capacity, and prepare scope documents before testing starts.",
+      "Structured workflow agents help governance create clean review records, select reviewers, balance capacity, and prepare scope documents before testing starts.",
     agents: [
       {
         title: "Assignment Agent",
@@ -154,7 +154,7 @@ export default function AgenticCapabilityPanel({
           className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
         >
           <Bot size={16} />
-          Ask Atomix Agent
+          Ask Copilot
         </Link>
       </div>
 
@@ -203,7 +203,7 @@ export default function AgenticCapabilityPanel({
                 className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200"
               >
                 <FileText size={15} />
-                Run agent prompt
+                Open Copilot prompt
               </Link>
             </article>
           );

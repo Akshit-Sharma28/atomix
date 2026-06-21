@@ -1,7 +1,12 @@
+import Link from "next/link";
 import {
+  Bot,
   ClipboardList,
+  FileSearch,
   GitBranch,
   ListChecks,
+  ShieldCheck,
+  TerminalSquare,
   UserPlus,
 } from "lucide-react";
 
@@ -13,9 +18,6 @@ import {
   createSecurityReview,
 } from "./actions";
 import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
-import AgentCommandConsole from "@/components/agents/agent-command-console";
-import PeerReviewAgent from "@/components/agents/peer-review-agent";
-import ScopeCallAgent from "@/components/agents/scope-call-agent";
 
 function cleanRole(role: string) {
   if (role === "SECURITY_LEAD") {
@@ -32,6 +34,41 @@ function cleanRole(role: string) {
 
   return role.replaceAll("_", " ");
 }
+
+const agentWorkflows = [
+  {
+    title: "Scope Call Agent",
+    href: "/workflow/scope-call",
+    mode: "Structured intake",
+    description:
+      "Collect demo-call scope, URL/IP, risk, AV/Au, RBAC roles, artifacts, and scan evidence into a pre-review scope document.",
+    icon: ClipboardList,
+  },
+  {
+    title: "Peer Review Agent",
+    href: "/workflow/peer-review",
+    mode: "Artifact review",
+    description:
+      "Review FEAD, BEAD, LLM FEAD, and scan evidence against scope and control coverage before reviewer sign-off.",
+    icon: FileSearch,
+  },
+  {
+    title: "Agent Command Center",
+    href: "/workflow/command-center",
+    mode: "Whitelisted commands",
+    description:
+      "Run governed JSON commands for user/project/SR/finding creation with role checks, validation, and audit-friendly responses.",
+    icon: TerminalSquare,
+  },
+  {
+    title: "Security Copilot",
+    href: "/copilot",
+    mode: "Advisory chat",
+    description:
+      "Ask portfolio or finding questions. Copilot helps draft and reason, but does not autonomously change records.",
+    icon: Bot,
+  },
+];
 
 export default async function WorkflowPage() {
   const allowed = await canAccess(["ADMIN", "GOVERNANCE_TEAM"]);
@@ -52,46 +89,45 @@ export default async function WorkflowPage() {
     );
   }
 
-  const [projects, users, reviewerProfiles, reviews] =
-    await Promise.all([
-      prisma.project.findMany({
-        orderBy: {
+  const [projects, users, reviewerProfiles, reviews] = await Promise.all([
+    prisma.project.findMany({
+      orderBy: {
+        name: "asc",
+      },
+    }),
+    prisma.user.findMany({
+      where: {
+        isActive: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    }),
+    prisma.reviewerProfile.findMany({
+      include: {
+        user: true,
+      },
+      orderBy: {
+        user: {
           name: "asc",
         },
-      }),
-      prisma.user.findMany({
-        where: {
-          isActive: true,
+      },
+    }),
+    prisma.securityReview.findMany({
+      where: {
+        status: {
+          notIn: ["Completed", "Cancelled"],
         },
-        orderBy: {
-          name: "asc",
-        },
-      }),
-      prisma.reviewerProfile.findMany({
-        include: {
-          user: true,
-        },
-        orderBy: {
-          user: {
-            name: "asc",
-          },
-        },
-      }),
-      prisma.securityReview.findMany({
-        where: {
-          status: {
-            notIn: ["Completed", "Cancelled"],
-          },
-        },
-        include: {
-          project: true,
-          assignments: true,
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
-      }),
-    ]);
+      },
+      include: {
+        project: true,
+        assignments: true,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    }),
+  ]);
 
   const reviewerCandidateRoles = [
     "GOVERNANCE_TEAM",
@@ -117,8 +153,8 @@ export default async function WorkflowPage() {
         </h1>
         <p className="mt-2 max-w-3xl text-slate-400">
           Governance layer for creating reviewer capacity, creating SR work,
-          and assigning projects/reviews to reviewers. This keeps operational
-          allocation separate from user administration and reviewer execution.
+          and assigning projects/reviews to reviewers. Dedicated agent flows now
+          live in separate workspaces so the page stays focused.
         </p>
       </div>
 
@@ -128,8 +164,7 @@ export default async function WorkflowPage() {
           ["Reviewer Profiles", reviewerProfiles.length, "capacity records"],
           [
             "Unassigned SRs",
-            reviews.filter((review) => review.assignments.length === 0)
-              .length,
+            reviews.filter((review) => review.assignments.length === 0).length,
             "need governance action",
           ],
         ].map(([label, value, helper]) => (
@@ -143,9 +178,7 @@ export default async function WorkflowPage() {
             <p className="mt-3 text-4xl font-black text-white">
               {value as number}
             </p>
-            <p className="mt-2 text-sm text-slate-400">
-              {helper as string}
-            </p>
+            <p className="mt-2 text-sm text-slate-400">{helper as string}</p>
           </div>
         ))}
       </div>
@@ -170,6 +203,86 @@ export default async function WorkflowPage() {
         />
       </div>
 
+      <section className="mb-8 rounded-[1.75rem] border border-cyan-400/20 bg-slate-900/70 p-6">
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-cyan-200">
+              <ShieldCheck size={17} />
+              Agent Workbench
+            </div>
+            <h2 className="text-2xl font-bold text-white">
+              Separate flows for each agent-assisted task.
+            </h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
+              These are human-in-the-loop workflow agents. Structured flows post
+              typed data and files to dedicated APIs; Copilot shortcuts are
+              advisory prompts and do not automatically mutate records.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-4">
+          {agentWorkflows.map((workflow) => {
+            const Icon = workflow.icon;
+
+            return (
+              <Link
+                key={workflow.title}
+                href={workflow.href}
+                className="group rounded-2xl border border-slate-800 bg-slate-950/70 p-4 transition hover:border-cyan-400/50 hover:bg-cyan-400/[0.06]"
+              >
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200">
+                    <Icon size={21} />
+                  </div>
+                  <span className="rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-300">
+                    {workflow.mode}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  {workflow.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  {workflow.description}
+                </p>
+                <p className="mt-4 text-sm font-semibold text-cyan-300 group-hover:text-cyan-200">
+                  Open workspace →
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mb-8 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-5">
+        <h2 className="text-lg font-bold text-white">
+          Agent capability model
+        </h2>
+        <div className="mt-4 grid gap-4 text-sm leading-6 text-slate-300 lg:grid-cols-3">
+          <div>
+            <p className="font-semibold text-amber-200">What is agentic now</p>
+            <p className="mt-1 text-slate-400">
+              Scope, peer review, and command workflows use structured APIs,
+              role checks, typed inputs, and AI-generated recommendations.
+            </p>
+          </div>
+          <div>
+            <p className="font-semibold text-amber-200">What is advisory</p>
+            <p className="mt-1 text-slate-400">
+              Copilot prompts draft, summarize, and reason from current data;
+              humans still approve decisions and record changes.
+            </p>
+          </div>
+          <div>
+            <p className="font-semibold text-amber-200">What comes next</p>
+            <p className="mt-1 text-slate-400">
+              A full autonomous agent would add planner/tool loops, dry-run vs
+              apply modes, audit logs, retries, policy gates, and model evals.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <div className="grid gap-6 xl:grid-cols-3">
         <form
           action={createReviewerProfile}
@@ -182,9 +295,7 @@ export default async function WorkflowPage() {
             </h2>
           </div>
 
-          <label className="mb-2 block text-sm text-slate-400">
-            User
-          </label>
+          <label className="mb-2 block text-sm text-slate-400">User</label>
           <select
             name="userId"
             className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
@@ -222,9 +333,7 @@ export default async function WorkflowPage() {
             className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
           />
 
-          <label className="mb-2 block text-sm text-slate-400">
-            Notes
-          </label>
+          <label className="mb-2 block text-sm text-slate-400">Notes</label>
           <textarea
             name="notes"
             rows={3}
@@ -243,14 +352,10 @@ export default async function WorkflowPage() {
         >
           <div className="mb-5 flex items-center gap-3">
             <ClipboardList className="text-cyan-300" size={22} />
-            <h2 className="text-xl font-bold text-white">
-              2. Create SR Work
-            </h2>
+            <h2 className="text-xl font-bold text-white">2. Create SR Work</h2>
           </div>
 
-          <label className="mb-2 block text-sm text-slate-400">
-            Project
-          </label>
+          <label className="mb-2 block text-sm text-slate-400">Project</label>
           <select
             name="projectId"
             className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
@@ -276,9 +381,7 @@ export default async function WorkflowPage() {
 
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm text-slate-400">
-                Type
-              </label>
+              <label className="mb-2 block text-sm text-slate-400">Type</label>
               <select
                 name="type"
                 className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
@@ -361,9 +464,7 @@ export default async function WorkflowPage() {
             ))}
           </select>
 
-          <label className="mb-2 block text-sm text-slate-400">
-            Reviewer
-          </label>
+          <label className="mb-2 block text-sm text-slate-400">Reviewer</label>
           <select
             name="reviewerProfileId"
             className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
@@ -412,12 +513,6 @@ export default async function WorkflowPage() {
           </button>
         </form>
       </div>
-
-      <ScopeCallAgent />
-
-      <PeerReviewAgent />
-
-      <AgentCommandConsole />
     </div>
   );
 }
