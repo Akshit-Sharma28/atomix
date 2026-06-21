@@ -7,6 +7,9 @@ import {
   Filter,
   Plus,
   Brain,
+  ClipboardList,
+  RotateCcw,
+  CheckCircle2,
 } from "lucide-react";
 
 interface Props {
@@ -209,17 +212,18 @@ export default async function FindingsPage({
 
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Findings
+                Findings Governance
               </h1>
 
               <p className="text-slate-400 mt-1">
-                Security vulnerabilities across all projects
+                Portfolio-level finding search, triage, retest readiness, and
+                closure governance across SPRs/SRs.
               </p>
             </div>
           </div>
 
           <Link
-            href="/findings/new"
+            href="/my-findings"
             className="
             flex
             items-center
@@ -235,9 +239,58 @@ export default async function FindingsPage({
             "
           >
             <Plus size={16} />
-            New Finding
+            Add Findings
           </Link>
         </div>
+      </div>
+
+      <div className="mb-6 grid gap-4 lg:grid-cols-3">
+        {[
+          {
+            icon: ClipboardList,
+            title: "Reviewer Entry",
+            text: "Reviewers add initial findings from My Findings after selecting their assigned SPR/SR package.",
+            href: "/my-findings",
+            cta: "Open My Findings",
+          },
+          {
+            icon: RotateCcw,
+            title: "Retest Flow",
+            text: "When app teams fix issues, retest requests are tracked in Retest Governance and mapped back to initial findings.",
+            href: "/retest-governance",
+            cta: "Open Retest Governance",
+          },
+          {
+            icon: CheckCircle2,
+            title: "Closure Decision",
+            text: "If no open findings remain, the SPR can move toward closure; unresolved items need retest, remediation plan, or exception.",
+            href: "/findings?status=Open",
+            cta: "Review Open Findings",
+          },
+        ].map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <div
+              key={item.title}
+              className="rounded-2xl border border-cyan-500/10 bg-slate-900/70 p-5"
+            >
+              <Icon className="text-cyan-300" size={24} />
+              <h2 className="mt-4 text-lg font-bold text-white">
+                {item.title}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                {item.text}
+              </p>
+              <Link
+                href={item.href}
+                className="mt-4 inline-flex text-sm font-semibold text-cyan-300 hover:text-cyan-200"
+              >
+                {item.cta}
+              </Link>
+            </div>
+          );
+        })}
       </div>
 
       {/* KPI Row */}
