@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAccess } from "@/services/users/access.service";
 
 function normalizeOptional(value: unknown) {
   if (typeof value !== "string") return null;
@@ -10,6 +11,8 @@ function normalizeOptional(value: unknown) {
 }
 
 export async function POST(req: NextRequest) {
+  await requireAccess(["ADMIN"]);
+
   const body = await req.json();
 
   if (

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import NewProjectForm from "@/components/projects/new-project-form";
+import { canAccess } from "@/services/users/access.service";
 import {
   AlertTriangle,
   CalendarClock,
@@ -26,7 +28,13 @@ function badgeClass(status: string) {
 }
 
 export default async function ReviewsPage() {
-  const [reviews, unassignedReviews, activeAssignments, extensionRequests] =
+  const [
+    reviews,
+    unassignedReviews,
+    activeAssignments,
+    extensionRequests,
+    canCreateInformationSystem,
+  ] =
     await Promise.all([
       prisma.securityReview.findMany({
         include: {
@@ -72,6 +80,7 @@ export default async function ReviewsPage() {
           status: "Requested",
         },
       }),
+      canAccess(["ADMIN"]),
     ]);
 
   const activeReviews = reviews.filter(
@@ -99,14 +108,30 @@ export default async function ReviewsPage() {
             </p>
           </div>
 
-          <Link
-            href="/projects"
-            className="rounded-xl bg-cyan-500 px-4 py-2.5 font-semibold text-black hover:bg-cyan-400"
-          >
-            Open SPR Portfolio
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/projects"
+              className="rounded-xl border border-cyan-400/30 px-4 py-2.5 font-semibold text-cyan-200 hover:border-cyan-300"
+            >
+              Open SPR Portfolio
+            </Link>
+            {canCreateInformationSystem && (
+              <Link
+                href="#create-information-system"
+                className="rounded-xl bg-cyan-500 px-4 py-2.5 font-semibold text-black hover:bg-cyan-400"
+              >
+                Create Information System / SPR
+              </Link>
+            )}
+          </div>
         </div>
       </div>
+
+      {canCreateInformationSystem && (
+        <div id="create-information-system">
+          <NewProjectForm />
+        </div>
+      )}
 
       <div className="grid md:grid-cols-4 gap-4 mb-8">
         <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
