@@ -92,9 +92,9 @@ const agentConfigs: Record<
   },
   workflow: {
     eyebrow: "Agentic Workflow Layer",
-    title: "Agents that assist intake, assignment, and handoff quality.",
+    title: "Agents that assist intake, assignment, and scope quality.",
     description:
-      "Workflow agents help governance create clean SR records, select reviewers, balance capacity, and prepare reviewer handoff notes.",
+      "Workflow agents help governance create clean review records, select reviewers, balance capacity, and prepare scope documents before testing starts.",
     agents: [
       {
         title: "Assignment Agent",
@@ -106,16 +106,16 @@ const agentConfigs: Record<
       {
         title: "Intake Agent",
         detail:
-          "Checks whether APIM, SPR, SR, due date, priority, and review type are complete enough for assignment.",
+          "Checks whether review identifiers, due date, priority, and review type are complete enough for assignment.",
         prompt:
           "Review the intake workflow and list missing data fields that should be captured before assigning reviewers.",
       },
       {
-        title: "Handoff Agent",
+        title: "Scope Call Agent",
         detail:
-          "Generates reviewer handoff notes with scope, due date, expected output, and peer-review expectations.",
+          "Turns demo-call notes into a pre-review scope document with risk, access, RBAC, scans, and architecture assumptions.",
         prompt:
-          "Create reviewer handoff notes for newly assigned security reviews, including scope, deadline, evidence expectations, and QA checkpoints.",
+          "Create a pre-review scope document from demo-call notes, including target URL, IP, risk, AV, authentication, RBAC roles, scan reports, BEAD or LLM FEAD needs, and open questions.",
       },
     ],
   },

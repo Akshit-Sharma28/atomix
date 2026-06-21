@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   FileSearch,
   Loader2,
+  Plus,
   Upload,
 } from "lucide-react";
 import { useState } from "react";
@@ -32,11 +33,21 @@ const scopes = [
 ];
 
 const riskLevels = ["High", "Medium", "Low"];
+const scanTypes = [
+  "Burp Suite",
+  "Qualys",
+  "Checkmarx",
+  "Mend",
+  "AquaSec",
+  "Manual Evidence",
+  "Other",
+];
 
 export default function PeerReviewAgent() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] =
     useState<PeerReviewResult | null>(null);
+  const [scanSlots, setScanSlots] = useState([0]);
 
   async function submit(formData: FormData) {
     setLoading(true);
@@ -78,13 +89,13 @@ export default function PeerReviewAgent() {
               Peer Review Agent
             </p>
             <h2 className="mt-2 text-2xl font-black text-white">
-              Review Word artifacts and scan evidence
+              Review pentest artifact and scan report
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-              Upload FEAD, BEAD, and applicable scanner reports. The agent
-              cross-checks scope, risk, application context, and control
-              coverage to identify missed testing, weak evidence, and findings
-              that need reviewer follow-up.
+              Upload FEAD, BEAD, LLM FEAD, and categorized scan reports. The
+              agent cross-checks scope, risk, URL/IP context, RBAC roles, and
+              control coverage to identify missed testing, weak evidence, and
+              findings that need reviewer follow-up.
             </p>
           </div>
         </div>
@@ -96,148 +107,147 @@ export default function PeerReviewAgent() {
 
       <form action={submit} className="grid gap-5">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-400">
-              Scope
-            </span>
-            <select
-              name="scope"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-            >
-              {scopes.map((scope) => (
-                <option key={scope}>{scope}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-400">
-              Type of Review
-            </span>
-            <select
-              name="typeOfReview"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-            >
-              <option>FULL</option>
-              <option>Enhancement</option>
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-400">
-              Application Type
-            </span>
-            <select
-              name="typeOfApplication"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-            >
-              <option>Internal</option>
-              <option>Intranet</option>
-              <option>Internet</option>
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-400">
-              Network
-            </span>
-            <select
-              name="network"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-            >
-              <option>Adjacent</option>
-              <option>Internal</option>
-              <option>Internet exposed</option>
-              <option>Segmented</option>
-            </select>
-          </label>
+          <SelectField name="scope" label="Scope" options={scopes} />
+          <SelectField
+            name="typeOfReview"
+            label="Type of Review"
+            options={["FULL", "Enhancement"]}
+          />
+          <SelectField
+            name="typeOfApplication"
+            label="Application Type"
+            options={["Internal", "Intranet", "Internet"]}
+          />
+          <SelectField
+            name="network"
+            label="AV - Attack Vector"
+            options={[
+              "N - Network / Internet",
+              "A - Adjacent / Internal",
+              "L - Local / Indirect access",
+              "P - Physical access",
+            ]}
+          />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-400">
-              Reference Package
-            </span>
-            <input
-              name="referencePackage"
-              placeholder="Project/package identifier"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-2 block text-sm text-slate-400">
-              Review Record
-            </span>
-            <input
-              name="reviewRecord"
-              placeholder="Review record identifier"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-            />
-          </label>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <TextField
+            name="referencePackage"
+            label="SPR"
+            placeholder="SPR-18984"
+          />
+          <TextField
+            name="reviewRecord"
+            label="SR"
+            placeholder="SR / review identifier"
+          />
+          <TextField
+            name="targetUrl"
+            label="Testing App URL"
+            placeholder="https://app.example.com"
+          />
+          <TextField
+            name="ipAddress"
+            label="IP Address"
+            placeholder="10.84.115.5"
+          />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <SelectField
+            name="overallRisk"
+            label="Overall Risk"
+            options={riskLevels}
+          />
           {[
             ["confidentiality", "Confidentiality Risk"],
             ["integrity", "Integrity Risk"],
             ["availability", "Availability Risk"],
           ].map(([name, label]) => (
-            <label key={name} className="block">
-              <span className="mb-2 block text-sm text-slate-400">
-                {label}
-              </span>
-              <select
-                name={name}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-              >
-                {riskLevels.map((risk) => (
-                  <option key={risk}>{risk}</option>
-                ))}
-              </select>
-            </label>
+            <SelectField
+              key={name}
+              name={name}
+              label={label}
+              options={riskLevels}
+            />
           ))}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
+          <SelectField
+            name="authentication"
+            label="Au - Authentication"
+            options={[
+              "M - Multiple authentication",
+              "S - Single authentication",
+              "N - No authentication",
+            ]}
+          />
+          <TextField
+            name="roles"
+            label="Role/s - RBAC roles in app"
+            placeholder="Admin, Entitlement User, Reviewer, Regular User"
+          />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
           {[
             ["feadFile", "FEAD Word/PDF"],
             ["beadFile", "BEAD Word/PDF"],
-            ["aiQrmFile", "AI QRM / LLM Evidence"],
+            ["llmFeadFile", "LLM FEAD Word/PDF"],
           ].map(([name, label]) => (
-            <label
-              key={name}
-              className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/70 p-4"
-            >
-              <span className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-200">
-                <Upload size={16} className="text-cyan-300" />
-                {label}
-              </span>
-              <input
-                name={name}
-                type="file"
-                accept=".docx,.pdf,.txt,.md,.csv,.json,.xml"
-                className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:font-bold file:text-slate-950"
-              />
-            </label>
+            <FileField key={name} name={name} label={label} />
           ))}
+        </div>
 
-          <label className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/70 p-4">
-            <span className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-200">
-              <Upload size={16} className="text-cyan-300" />
-              Scanner Reports
-            </span>
-            <input
-              name="scanFiles"
-              type="file"
-              multiple
-              accept=".docx,.pdf,.txt,.md,.csv,.json,.xml"
-              className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:font-bold file:text-slate-950"
-            />
-            <p className="mt-3 text-xs text-slate-500">
-              Supports Qualys, Checkmarx, Mend, AquaSec, Burp, XML, CSV,
-              markdown, text, and PDF exports.
-            </p>
-          </label>
+        <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/70 p-4">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <span className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                <Upload size={16} className="text-cyan-300" />
+                Scan Reports
+              </span>
+              <p className="mt-2 text-xs text-slate-500">
+                Select the report type for each upload so Atomix can sort
+                Qualys, Checkmarx, Mend, AquaSec, Burp, and manual evidence.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setScanSlots((current) => [...current, Date.now()])
+              }
+              className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 px-3 py-2 text-xs font-bold text-cyan-200"
+            >
+              <Plus size={14} />
+              Add scan report
+            </button>
+          </div>
+
+          <div className="grid gap-3">
+            {scanSlots.map((slot, index) => (
+              <div
+                key={slot}
+                className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-950 p-3 md:grid-cols-[220px_1fr]"
+              >
+                <select
+                  name="scanTypes"
+                  defaultValue={scanTypes[Math.min(index, scanTypes.length - 1)]}
+                  className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+                >
+                  {scanTypes.map((type) => (
+                    <option key={type}>{type}</option>
+                  ))}
+                </select>
+                <input
+                  name="scanFiles"
+                  type="file"
+                  accept=".docx,.pdf,.txt,.md,.csv,.json,.xml"
+                  className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:font-bold file:text-slate-950"
+                />
+              </div>
+            ))}
+          </div>
         </div>
 
         <label className="block">
@@ -247,7 +257,7 @@ export default function PeerReviewAgent() {
           <textarea
             name="notes"
             rows={4}
-            placeholder="Mention known constraints, controls marked N/A, or areas where you want a second look."
+            placeholder="Mention constraints, controls marked N/A, RBAC notes, auth details, architecture assumptions, or areas where you want a second look."
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
           />
         </label>
@@ -307,5 +317,77 @@ export default function PeerReviewAgent() {
         </div>
       )}
     </section>
+  );
+}
+
+function SelectField({
+  name,
+  label,
+  options,
+}: {
+  name: string;
+  label: string;
+  options: string[];
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm text-slate-400">
+        {label}
+      </span>
+      <select
+        name={name}
+        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+      >
+        {options.map((option) => (
+          <option key={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function TextField({
+  name,
+  label,
+  placeholder,
+}: {
+  name: string;
+  label: string;
+  placeholder: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm text-slate-400">
+        {label}
+      </span>
+      <input
+        name={name}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+      />
+    </label>
+  );
+}
+
+function FileField({
+  name,
+  label,
+}: {
+  name: string;
+  label: string;
+}) {
+  return (
+    <label className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/70 p-4">
+      <span className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-200">
+        <Upload size={16} className="text-cyan-300" />
+        {label}
+      </span>
+      <input
+        name={name}
+        type="file"
+        accept=".docx,.pdf,.txt,.md,.csv,.json,.xml"
+        className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:font-bold file:text-slate-950"
+      />
+    </label>
   );
 }

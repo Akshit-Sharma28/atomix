@@ -162,6 +162,11 @@ export async function POST(req: Request) {
     const network = value(form, "network") || "Adjacent";
     const referencePackage = value(form, "referencePackage");
     const reviewRecord = value(form, "reviewRecord");
+    const targetUrl = value(form, "targetUrl");
+    const ipAddress = value(form, "ipAddress");
+    const roles = value(form, "roles");
+    const authentication = value(form, "authentication");
+    const overallRisk = value(form, "overallRisk") || "Medium";
     const notes = value(form, "notes");
     const risk = {
       confidentiality: value(form, "confidentiality") || "Medium",
@@ -171,12 +176,20 @@ export async function POST(req: Request) {
 
     const feadFile = getFile(form, "feadFile");
     const beadFile = getFile(form, "beadFile");
-    const aiQrmFile = getFile(form, "aiQrmFile");
+    const llmFeadFile =
+      getFile(form, "llmFeadFile") ?? getFile(form, "aiQrmFile");
     const scanFiles = getFiles(form, "scanFiles");
+    const scanTypes = form
+      .getAll("scanTypes")
+      .map((scanType) => String(scanType || "Unclassified"));
+    const scanInventory = scanFiles.map(
+      (file, index) =>
+        `${scanTypes[index] ?? "Unclassified"}: ${file.name}`,
+    );
     const filesToExtract = [
       feadFile,
       beadFile,
-      aiQrmFile,
+      llmFeadFile,
       ...scanFiles,
     ].filter(Boolean) as File[];
 
@@ -216,11 +229,17 @@ Act as the Atomix Peer Review Agent.
 Review metadata:
 - Scope: ${scope}
 - Type of Review: ${typeOfReview}
-- Reference package: ${referencePackage || "Not provided"}
-- Review record: ${reviewRecord || "Not provided"}
+- SPR: ${referencePackage || "Not provided"}
+- SR: ${reviewRecord || "Not provided"}
+- Testing app URL: ${targetUrl || "Not provided"}
+- IP address: ${ipAddress || "Not provided"}
+- Role/s and RBAC roles: ${roles || "Not provided"}
 - Application type: ${appType}
+- Overall risk: ${overallRisk}
 - CIA risk: C=${risk.confidentiality}, I=${risk.integrity}, A=${risk.availability}
-- Network: ${network}
+- AV attack vector: ${network}
+- Au authentication: ${authentication || "Not provided"}
+- Scan inventory: ${scanInventory.length > 0 ? scanInventory.join("; ") : "No scan reports attached"}
 - Reviewer notes: ${notes || "None"}
 
 Applicable peer review controls:
@@ -231,7 +250,7 @@ ${artifactText}
 
 Return a structured peer review report in markdown with:
 1. Executive peer review decision: Pass with conditions, Needs rework, or Escalate.
-2. Artifact completeness table covering FEAD, BEAD, Qualys, Checkmarx, Mend, AquaSec, and AI QRM when applicable.
+2. Artifact completeness table covering FEAD, BEAD, LLM FEAD, Qualys, Checkmarx, Mend, AquaSec, Burp, and manual evidence when applicable.
 3. Controls covered with evidence.
 4. Potential missed findings.
 5. Controls requiring more testing.
@@ -260,9 +279,15 @@ Return a structured peer review report in markdown with:
       typeOfReview,
       referencePackage,
       reviewRecord,
+      targetUrl,
+      ipAddress,
+      roles,
+      authentication,
+      overallRisk,
       typeOfApplication: appType,
       risk,
       network,
+      scanInventory,
       artifacts: summarizeExtractedFiles(extractedFiles),
       applicableControlCount: applicableControls.length,
       controls: applicableControls.map((control) => ({

@@ -90,24 +90,40 @@ export async function POST(req: Request) {
           spr: required(data, "spr"),
           sr: required(data, "sr"),
           typeOfApplication: required(data, "typeOfApplication"),
+          overallRisk: data.overallRisk
+            ? String(data.overallRisk)
+            : "Not provided",
           risk: {
             confidentiality: risk.confidentiality ?? "Not provided",
             integrity: risk.integrity ?? "Not provided",
             availability: risk.availability ?? "Not provided",
           },
-          network: required(data, "network"),
+          attackVector: required(data, "network"),
+          authentication: data.authentication
+            ? String(data.authentication)
+            : "Not provided",
+          targetUrl: data.targetUrl
+            ? String(data.targetUrl)
+            : "Not provided",
+          ipAddress: data.ipAddress
+            ? String(data.ipAddress)
+            : "Not provided",
+          roles: data.roles ? String(data.roles) : "Not provided",
           files: {
             feadWordFile: required(files, "feadWordFile"),
             beadWordFile: files.beadWordFile
               ? String(files.beadWordFile)
               : "Not provided",
+            llmFeadFile: files.llmFeadFile
+              ? String(files.llmFeadFile)
+              : "Not provided",
             scanReports,
           },
         },
         checks: [
-          "Confirm FEAD controls match the declared scope, review type, application exposure, CIA rating, and network context.",
+          "Confirm FEAD controls match the declared scope, review type, application exposure, CIA rating, AV, Au, URL/IP, and RBAC roles.",
           "Use BEAD when backend, API, service, or data-flow controls are applicable to the declared scope.",
-          "Validate that applicable Qualys, Checkmarx, Mend, AquaSec, and AI QRM outputs are present or explicitly marked not applicable.",
+          "Validate that applicable Qualys, Checkmarx, Mend, AquaSec, Burp, manual evidence, and LLM FEAD outputs are present or explicitly marked not applicable.",
           "Compare scanner findings with FEAD/BEAD findings to detect missing, downgraded, duplicated, or unsupported issues.",
           "Flag controls that need more testing, missing evidence, reviewer follow-up, or peer review escalation.",
         ],
@@ -139,8 +155,10 @@ export async function POST(req: Request) {
         requiredArtifacts: {
           fead: "Required for Web, Web + LLM, LLM only, and Thick Client reviews when frontend controls are in scope.",
           bead: "Required when backend, API, service, data-flow, auth, or integration controls are in scope.",
+          llmFead:
+            "Required when LLM-integrated behavior, model workflows, prompt flows, tool use, data leakage, or AI controls are in scope.",
           scans:
-            "Attach applicable Qualys, Checkmarx, Mend, AquaSec, and AI QRM reports; explain any scanner that is not applicable.",
+            "Attach applicable Qualys, Checkmarx, Mend, AquaSec, Burp, and manual evidence reports; explain any scanner that is not applicable.",
         },
         outputFormat: [
           "Coverage gaps",

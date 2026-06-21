@@ -10,7 +10,7 @@ export default function QRMCard() {
       "
     >
       <h2 className="text-xl font-bold mb-4">
-        AI QRM Status
+        LLM FEAD Status
       </h2>
 
       <div className="space-y-3">
