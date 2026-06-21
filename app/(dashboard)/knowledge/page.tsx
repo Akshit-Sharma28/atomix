@@ -5,6 +5,7 @@ import {
   Upload,
 } from "lucide-react";
 import KnowledgeForm from "@/components/copilot/knowledge-form";
+import KnowledgeLibrary from "@/components/copilot/knowledge-library";
 import ReportUpload from "@/components/copilot/report-upload";
 import { prisma } from "@/lib/prisma";
 
@@ -25,7 +26,18 @@ export default async function KnowledgePage() {
     docs.filter(
       (doc) =>
         doc.source === "PDF Upload" ||
-        doc.documentType === "Report"
+        doc.source === "Scan Evidence" ||
+        doc.documentType === "Report" ||
+        doc.documentType === "Scan Report"
+    ).length;
+
+  const reviewArtifacts =
+    docs.filter((doc) =>
+      [
+        "FEAD",
+        "BEAD",
+        "LLM FEAD",
+      ].includes(doc.documentType ?? "")
     ).length;
 
   const totalCharacters =
@@ -49,13 +61,13 @@ export default async function KnowledgePage() {
               Knowledge
             </div>
 
-            <h1 className="text-4xl font-bold text-white">
+              <h1 className="text-4xl font-bold text-white">
               Knowledge Base
             </h1>
 
             <p className="mt-2 max-w-3xl text-slate-400">
-              Pentest playbooks, scanner notes, LLM guidance, MCP testing
-              notes, and uploaded reports for Security Copilot context.
+              Review artifacts, scan reports, playbooks, LLM FEAD guidance,
+              scope notes, and reusable controls for Security Copilot context.
             </p>
           </div>
         </div>
@@ -80,7 +92,7 @@ export default async function KnowledgePage() {
 
         <div className="rounded-2xl border border-emerald-500/20 bg-slate-900 p-5">
           <Upload className="mb-4 text-emerald-300" />
-          <p className="text-sm text-slate-400">Reports</p>
+          <p className="text-sm text-slate-400">Scan Reports</p>
           <p className="mt-2 text-3xl font-bold text-emerald-300">
             {uploadedReports}
           </p>
@@ -88,10 +100,35 @@ export default async function KnowledgePage() {
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <Brain className="mb-4 text-slate-300" />
-          <p className="text-sm text-slate-400">Context Size</p>
+          <p className="text-sm text-slate-400">Review Artifacts</p>
           <p className="mt-2 text-3xl font-bold text-white">
-            {Math.round(totalCharacters / 1000)}k
+            {reviewArtifacts}
           </p>
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-2xl border border-cyan-500/20 bg-slate-900 p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              Copilot Retrieval Context
+            </h2>
+            <p className="mt-2 max-w-4xl text-slate-400">
+              This library is the source material used by the agent workflows:
+              scope-call notes define review boundaries, FEAD/BEAD/LLM FEAD
+              artifacts define expected controls, scan reports provide evidence,
+              and playbooks guide peer-review checks.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-800 bg-slate-950 px-5 py-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+              Context Size
+            </p>
+            <p className="mt-1 text-2xl font-bold text-cyan-300">
+              {Math.round(totalCharacters / 1000)}k chars
+            </p>
+          </div>
         </div>
       </div>
 
@@ -107,53 +144,7 @@ export default async function KnowledgePage() {
           <ReportUpload />
         </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900">
-          <div className="border-b border-slate-800 px-6 py-4">
-            <h2 className="text-xl font-bold text-white">
-              Library
-            </h2>
-            <p className="text-sm text-slate-400">
-              Recent documents available to Copilot.
-            </p>
-          </div>
-
-          <div className="divide-y divide-slate-800">
-            {docs.length === 0 && (
-              <div className="p-8 text-center text-slate-500">
-                No knowledge documents yet.
-              </div>
-            )}
-
-            {docs.slice(0, 10).map((doc) => (
-              <div
-                key={doc.id}
-                className="px-6 py-4"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-white">
-                      {doc.title}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {doc.source}
-                      {doc.documentType
-                        ? ` · ${doc.documentType}`
-                        : ""}
-                    </p>
-                  </div>
-
-                  <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs text-cyan-300">
-                    {doc.content.length} chars
-                  </span>
-                </div>
-
-                <p className="mt-3 line-clamp-2 text-sm text-slate-400">
-                  {doc.content}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
+        <KnowledgeLibrary docs={docs} />
       </div>
     </div>
   );

@@ -220,6 +220,28 @@ export async function getSLAMetrics() {
       );
     });
 
+  const severityCounts =
+    activeFindings.reduce<Record<string, number>>(
+      (counts, finding) => {
+        counts[finding.severity] =
+          (counts[finding.severity] ?? 0) + 1;
+
+        return counts;
+      },
+      {}
+    );
+
+  const reviewStatusCounts =
+    activeReviews.reduce<Record<string, number>>(
+      (counts, review) => {
+        counts[review.status] =
+          (counts[review.status] ?? 0) + 1;
+
+        return counts;
+      },
+      {}
+    );
+
   return {
     total: findings.length,
     activeFindings:
@@ -244,6 +266,80 @@ export async function getSLAMetrics() {
       exceptionExpiringSoon.length,
     remediationDueSoon:
       remediationDueSoon.length,
+    severityCounts,
+    reviewStatusCounts,
+    extensionQueue:
+      extensionRequests.slice(0, 8),
+    cancellationQueue:
+      cancellationRequests
+        .slice(0, 8)
+        .map((review) => ({
+          id: review.id,
+          srId:
+            review.srId ??
+            review.title,
+          projectName:
+            review.project.name,
+          sprId:
+            review.project.sprId,
+          reason:
+            review.cancellation?.reason ??
+            "No reason captured",
+          status:
+            review.cancellation?.status ??
+            "Requested",
+        })),
+    remediationQueue:
+      remediationDueSoon
+        .slice(0, 8)
+        .map((plan) => ({
+          id: plan.id,
+          findingId:
+            plan.finding.id,
+          findingTitle:
+            plan.finding.title,
+          severity:
+            plan.finding.severity,
+          projectName:
+            plan.finding.project.name,
+          sprId:
+            plan.finding.project.sprId,
+          ownerName:
+            plan.owner?.name ??
+            "Unassigned",
+          targetDate:
+            plan.targetDate,
+          daysUntil:
+            plan.targetDate
+              ? daysUntil(plan.targetDate)
+              : null,
+          status:
+            plan.status,
+        })),
+    exceptionQueue:
+      exceptionExpiringSoon
+        .slice(0, 8)
+        .map((exception) => ({
+          id: exception.id,
+          findingId:
+            exception.finding.id,
+          findingTitle:
+            exception.finding.title,
+          severity:
+            exception.finding.severity,
+          projectName:
+            exception.finding.project.name,
+          sprId:
+            exception.finding.project.sprId,
+          expiresAt:
+            exception.expiresAt,
+          daysUntil:
+            exception.expiresAt
+              ? daysUntil(exception.expiresAt)
+              : null,
+          status:
+            exception.status,
+        })),
     overdueFindings:
       overdue.slice(0, 8).map((finding) => ({
         id: finding.id,
