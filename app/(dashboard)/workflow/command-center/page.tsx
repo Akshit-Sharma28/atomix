@@ -12,10 +12,10 @@ export default async function AgentCommandCenterPage() {
       <div className="p-8">
         <div className="rounded-2xl border border-red-500/20 bg-red-950/20 p-6">
           <h1 className="text-2xl font-bold text-white">
-            Agent action access restricted
+            DB action builder access restricted
           </h1>
           <p className="mt-2 text-slate-400">
-            Agent Action Builder is available to Admin and Governance Team roles.
+            DB Action Builder Agent is available to Admin and Governance Team roles.
           </p>
         </div>
       </div>
@@ -37,7 +37,7 @@ export default async function AgentCommandCenterPage() {
           Controlled DB Action Runner
         </div>
         <h1 className="text-3xl font-bold text-white">
-          Agent Action Builder
+          DB Action Builder Agent
         </h1>
         <p className="mt-2 max-w-3xl text-slate-400">
           Build safe database write commands through forms. Assignment and

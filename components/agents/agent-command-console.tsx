@@ -280,7 +280,7 @@ export default function AgentCommandConsole() {
       <div className="mb-5 flex items-start gap-3">
         <Bot className="text-cyan-300" size={24} />
         <div>
-          <h2 className="text-xl font-bold text-white">Agent Action Builder</h2>
+          <h2 className="text-xl font-bold text-white">DB Action Builder Agent</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
             Use friendly forms to build safe, whitelisted agent commands. Atomix
             converts the fields into the JSON payload and executes it through the

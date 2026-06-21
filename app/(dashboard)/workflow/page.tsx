@@ -53,7 +53,7 @@ const agentWorkflows = [
     icon: FileSearch,
   },
   {
-    title: "Agent Action Builder",
+    title: "DB Action Builder Agent",
     href: "/workflow/command-center",
     mode: "DB write actions",
     description:
