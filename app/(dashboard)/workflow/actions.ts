@@ -99,7 +99,7 @@ export async function assignReviewToReviewer(formData: FormData) {
   const reviewerProfileId = String(
     formData.get("reviewerProfileId") ?? "",
   );
-  const role = String(formData.get("role") ?? "Primary");
+  const role = String(formData.get("role") ?? "Reviewer");
   const allocatedHours = Number(formData.get("allocatedHours") ?? 8);
 
   if (!reviewId || !reviewerProfileId) {

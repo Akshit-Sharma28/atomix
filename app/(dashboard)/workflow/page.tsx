@@ -491,10 +491,9 @@ export default async function WorkflowPage() {
                 name="role"
                 className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
               >
-                <option>Primary</option>
-                <option>Peer Reviewer</option>
+                <option>Reviewer</option>
+                <option>Retester</option>
                 <option>QA Reviewer</option>
-                <option>Shadow</option>
               </select>
             </div>
             <div>
