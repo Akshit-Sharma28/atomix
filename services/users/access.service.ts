@@ -19,16 +19,16 @@ export function normalizeRole(role?: string | null) {
 }
 
 export async function getActiveRole() {
+  const appUser = await getCurrentUser();
+
+  if (appUser?.role) {
+    return normalizeRole(appUser.role);
+  }
+
   const session = await getServerSession(authOptions);
   const sessionRole = (session?.user as { role?: string } | undefined)?.role;
 
-  if (sessionRole) {
-    return normalizeRole(sessionRole);
-  }
-
-  const appUser = await getCurrentUser();
-
-  return normalizeRole(appUser?.role);
+  return normalizeRole(sessionRole);
 }
 
 export async function canAccess(allowedRoles: string[]) {

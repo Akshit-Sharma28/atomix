@@ -7,13 +7,20 @@ interface Props {
     high: number;
     open: number;
     closed: number;
+    role?: {
+      cards: {
+        title: string;
+        value: number;
+        variant: string;
+      }[];
+    };
   };
 }
 
 export default function KPIGrid({
   metrics,
 }: Props) {
-  const cards = [
+  const cards = metrics.role?.cards ?? [
     {
       title: "Total Findings",
       value: metrics.total,

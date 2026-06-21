@@ -20,10 +20,18 @@ import UserMenu from "@/components/users/user-menu";
 import { getDashboardMetrics } from "@/services/dashboard/dashboard.service";
 import { getProjectRiskSummary } from "@/services/dashboard/project-risk.service";
 import { getDeveloperWorkload } from "@/services/dashboard/workload.service";
+import { getCurrentUser } from "@/services/users/current-user.service";
+import { normalizeRole } from "@/services/users/access.service";
 
 export default async function DashboardPage() {
+  const currentUser = await getCurrentUser();
+  const activeRole = normalizeRole(currentUser?.role);
+
   const [metrics, projects, workload] = await Promise.all([
-    getDashboardMetrics(),
+    getDashboardMetrics({
+      role: activeRole,
+      userId: currentUser?.id,
+    }),
     getProjectRiskSummary(),
     getDeveloperWorkload(),
   ]);
@@ -40,8 +48,8 @@ export default async function DashboardPage() {
               </h1>
             </div>
             <p className="mt-2 max-w-3xl text-slate-400">
-              Operational snapshot of projects, findings, risk posture, AI
-              availability, and remediation progress.
+              {metrics.role?.description ??
+                "Operational snapshot of projects, findings, risk posture, AI availability, and remediation progress."}
             </p>
           </div>
 
@@ -50,6 +58,16 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mb-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-cyan-300">
+              {activeRole.replaceAll("_", " ")}
+            </p>
+            <h2 className="mt-1 text-xl font-bold text-white">
+              {metrics.role?.title ?? "Security Operations Dashboard"}
+            </h2>
+          </div>
+        </div>
         <KPIGrid metrics={metrics} />
       </div>
 

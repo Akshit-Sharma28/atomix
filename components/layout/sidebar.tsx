@@ -52,6 +52,7 @@ export default function Sidebar({
       icon: LayoutDashboard,
       roles: [
         "ADMIN",
+        "EXECUTIVE",
         "GOVERNANCE_TEAM",
         "QA_REVIEWER",
         "REVIEWER",

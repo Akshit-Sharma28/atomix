@@ -19,10 +19,19 @@ import {
   useEffect,
 } from "react";
 
+type ActiveUser = {
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+};
+
 export default function UserMenu() {
   const {
     data: session,
   } = useSession();
+
+  const [activeUser, setActiveUser] =
+    useState<ActiveUser | null>(null);
 
   const [open, setOpen] =
     useState(false);
@@ -57,8 +66,45 @@ export default function UserMenu() {
     };
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadActiveUser() {
+      try {
+        const response =
+          await fetch("/api/auth/me", {
+            cache: "no-store",
+          });
+
+        const data =
+          await response.json();
+
+        if (!ignore) {
+          setActiveUser(
+            data.user ?? null
+          );
+        }
+      } catch {
+        if (!ignore) {
+          setActiveUser(null);
+        }
+      }
+    }
+
+    loadActiveUser();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const displayUser =
+    activeUser ??
+    session?.user ??
+    {};
+
   const initials =
-    session?.user?.name
+    displayUser?.name
       ?.split(" ")
       .map((x) => x[0])
       .join("")
@@ -115,7 +161,7 @@ export default function UserMenu() {
             leading-none
             "
           >
-            {session?.user?.name}
+            {displayUser?.name}
           </p>
 
           <p
@@ -124,7 +170,7 @@ export default function UserMenu() {
             text-cyan-400
             "
           >
-            {(session?.user as any)?.role}
+            {(displayUser as any)?.role}
           </p>
         </div>
 
@@ -184,7 +230,7 @@ export default function UserMenu() {
 
             <div className="min-w-0">
               <p className="font-semibold text-white">
-                {session?.user?.name}
+                {displayUser?.name}
               </p>
 
               <p
@@ -194,7 +240,7 @@ export default function UserMenu() {
                 truncate
                 "
               >
-                {session?.user?.email}
+                {displayUser?.email}
               </p>
             </div>
           </div>
@@ -213,7 +259,7 @@ export default function UserMenu() {
               border-cyan-500/20
               "
             >
-              {(session?.user as any)?.role}
+              {(displayUser as any)?.role}
             </span>
           </div>
 
