@@ -4,14 +4,14 @@ import {
   AlertTriangle,
   CalendarDays,
   CalendarClock,
-  ClipboardCheck,
+  Filter,
+  Search,
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
 import { canAccess } from "@/services/users/access.service";
 import { getGovernanceDashboard } from "@/services/dashboard/governance.service";
 import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
-import { updateWeeklyGovernanceCall } from "./actions";
 
 function formatDate(date?: Date | null) {
   if (!date) {
@@ -49,7 +49,18 @@ function availabilityClass(availability: string) {
   return "bg-yellow-500/15 text-yellow-300 border-yellow-500/30";
 }
 
-export default async function ReviewersPage() {
+export default async function ReviewersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    q?: string;
+    availability?: string;
+  }>;
+}) {
+  const params = (await searchParams) ?? {};
+  const query = params.q?.trim().toLowerCase() ?? "";
+  const availabilityFilter = params.availability ?? "";
+
   const allowed = await canAccess([
     "ADMIN",
     "GOVERNANCE_TEAM",
@@ -77,8 +88,6 @@ export default async function ReviewersPage() {
     users,
     unassignedReviews,
     governance,
-    weeklyAssignments,
-    canRunWeeklyCheckIn,
   ] = await Promise.all([
     prisma.reviewerProfile.findMany({
       include: {
@@ -142,51 +151,6 @@ export default async function ReviewersPage() {
       },
     }),
     getGovernanceDashboard(),
-    prisma.reviewerAssignment.findMany({
-      where: {
-        status: {
-          in: ["Assigned", "Accepted", "In Progress"],
-        },
-        review: {
-          status: {
-            notIn: ["Completed", "Cancelled"],
-          },
-        },
-      },
-      include: {
-        user: true,
-        reviewerProfile: {
-          include: {
-            user: true,
-          },
-        },
-        review: {
-          include: {
-            project: true,
-            extensions: {
-              where: {
-                status: "Requested",
-              },
-              orderBy: {
-                createdAt: "desc",
-              },
-            },
-            cancellation: true,
-            activities: {
-              orderBy: {
-                createdAt: "desc",
-              },
-              take: 1,
-            },
-          },
-        },
-        workstream: true,
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    }),
-    canAccess(["ADMIN", "GOVERNANCE_TEAM"]),
   ]);
 
   const reviewerRows =
@@ -230,19 +194,60 @@ export default async function ReviewersPage() {
     (reviewer) => reviewer.availability === "Available",
   ).length;
 
+  const filteredReviewerRows = reviewerRows.filter((reviewer) => {
+    const queryMatches =
+      !query ||
+      reviewer.name.toLowerCase().includes(query) ||
+      reviewer.email.toLowerCase().includes(query) ||
+      reviewer.skills.some((skill) =>
+        skill.toLowerCase().includes(query),
+      ) ||
+      reviewer.assignments.some((assignment) =>
+        [
+          assignment.review.project.name,
+          assignment.review.project.sprId,
+          assignment.review.srId,
+          assignment.review.title,
+          assignment.workstream?.type,
+        ]
+          .filter(Boolean)
+          .some((value) =>
+            String(value).toLowerCase().includes(query),
+          ),
+      );
+
+    const availabilityMatches =
+      !availabilityFilter ||
+      reviewer.availability === availabilityFilter;
+
+    return queryMatches && availabilityMatches;
+  });
+
   return (
     <div className="w-full px-8 py-6">
-      <div className="mb-6 pb-5 border-b border-slate-800">
+      <div className="mb-6 border-b border-slate-800 pb-5">
         <div className="mb-2 text-sm text-slate-500">Pentester Tracker</div>
 
-        <h1 className="text-3xl font-bold text-white">
-          Reviewer Capacity & Assignments
-        </h1>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white">
+              Reviewer Capacity & Assignments
+            </h1>
 
-        <p className="text-slate-400 mt-2 max-w-3xl">
-          See which pentesters are available, what SRs they are working on,
-          where reviews need staffing, and where extension pressure is building.
-        </p>
+            <p className="mt-2 max-w-3xl text-slate-400">
+              See which pentesters are available, what SRs they are working on,
+              where reviews need staffing, and where extension pressure is
+              building.
+            </p>
+          </div>
+
+          <a
+            href="/reviewers/governance-call"
+            className="rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 hover:bg-cyan-300"
+          >
+            Open Weekly Governance Call
+          </a>
+        </div>
       </div>
 
       <div className="mb-6 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -332,194 +337,6 @@ export default async function ReviewersPage() {
           ]}
         />
       </div>
-
-      <section className="mb-8 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
-        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <ClipboardCheck className="mt-1 text-cyan-300" size={24} />
-            <div>
-              <h2 className="text-2xl font-bold text-white">
-                Weekly Governance Call
-              </h2>
-              <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
-                Use this during the weekly call with each reviewer. It lists
-                assigned SRs that are not completed, then records whether the
-                work is in progress, rescheduled, cancelled, completed, or needs
-                a one/two-week extension.
-              </p>
-            </div>
-          </div>
-          <div className="rounded-full border border-cyan-400/20 bg-slate-950 px-4 py-2 text-sm font-semibold text-cyan-200">
-            {weeklyAssignments.length} active assignments
-          </div>
-        </div>
-
-        <div className="grid gap-4">
-          {weeklyAssignments.length === 0 && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 text-center text-slate-400">
-              No active reviewer assignments need a weekly check-in.
-            </div>
-          )}
-
-          {weeklyAssignments.map((assignment) => {
-            const reviewerName =
-              assignment.user?.name ??
-              assignment.reviewerProfile?.user.name ??
-              "Unassigned reviewer";
-            const pendingExtension = assignment.review.extensions[0];
-            const latestActivity = assignment.review.activities[0];
-
-            return (
-              <div
-                key={assignment.id}
-                className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
-              >
-                <div className="mb-4 grid gap-4 lg:grid-cols-[1.2fr_1fr_1fr]">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                      Reviewer
-                    </p>
-                    <h3 className="mt-2 text-lg font-bold text-white">
-                      {reviewerName}
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {assignment.role} · {assignment.allocatedHours ?? 0}h
-                      allocated
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                      Project / SR
-                    </p>
-                    <p className="mt-2 font-semibold text-white">
-                      {assignment.review.project.sprId ??
-                        assignment.review.project.name}{" "}
-                      · {assignment.review.srId ?? assignment.review.title}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {assignment.review.project.name}
-                      {assignment.workstream
-                        ? ` · ${assignment.workstream.type}`
-                        : ""}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                      Current state
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200">
-                        {assignment.review.status}
-                      </span>
-                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">
-                        due {formatDate(assignment.review.dueDate)}
-                      </span>
-                      {pendingExtension && (
-                        <span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-200">
-                          extension requested to{" "}
-                          {formatDate(pendingExtension.requestedUntil)}
-                        </span>
-                      )}
-                    </div>
-                    {latestActivity && (
-                      <p className="mt-2 text-xs text-slate-500">
-                        Last update: {latestActivity.action}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {canRunWeeklyCheckIn ? (
-                  <form
-                    action={updateWeeklyGovernanceCall}
-                    className="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-4 lg:grid-cols-6"
-                  >
-                    <input
-                      type="hidden"
-                      name="reviewId"
-                      value={assignment.reviewId}
-                    />
-                    <input
-                      type="hidden"
-                      name="assignmentId"
-                      value={assignment.id}
-                    />
-
-                    <label className="lg:col-span-1">
-                      <span className="mb-2 block text-xs font-semibold text-slate-400">
-                        Status from call
-                      </span>
-                      <select
-                        name="callStatus"
-                        defaultValue="In Progress"
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-                      >
-                        <option>In Progress</option>
-                        <option>Completed</option>
-                        <option>Rescheduled</option>
-                        <option>Extension Needed</option>
-                        <option>Cancelled</option>
-                      </select>
-                    </label>
-
-                    <label className="lg:col-span-1">
-                      <span className="mb-2 block text-xs font-semibold text-slate-400">
-                        Extension
-                      </span>
-                      <select
-                        name="extensionDays"
-                        defaultValue="7"
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-                      >
-                        <option value="7">1 week</option>
-                        <option value="14">2 weeks</option>
-                        <option value="3">3 days</option>
-                        <option value="5">5 days</option>
-                        <option value="21">3 weeks</option>
-                      </select>
-                    </label>
-
-                    <label className="lg:col-span-1">
-                      <span className="mb-2 block text-xs font-semibold text-slate-400">
-                        New due date
-                      </span>
-                      <input
-                        name="newDueDate"
-                        type="date"
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-                      />
-                    </label>
-
-                    <label className="lg:col-span-2">
-                      <span className="mb-2 block text-xs font-semibold text-slate-400">
-                        Call notes
-                      </span>
-                      <input
-                        name="notes"
-                        placeholder="Blocked by access, app team requested 1 week, testing completed..."
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-                      />
-                    </label>
-
-                    <div className="flex items-end">
-                      <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950">
-                        Save Call Update
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-sm text-slate-400">
-                    Executive view is read-only. Governance Team or Admin can
-                    record weekly call updates.
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
 
       <div className="mb-8 grid gap-6 xl:grid-cols-3">
         <div className="rounded-2xl border border-cyan-500/10 bg-slate-900/60 p-4">
@@ -707,6 +524,49 @@ export default async function ReviewersPage() {
         </div>
       </div>
 
+      <form
+        action="/reviewers"
+        className="mb-4 rounded-2xl border border-slate-800 bg-slate-900 p-4"
+      >
+        <div className="grid gap-3 md:grid-cols-[1fr_240px_auto]">
+          <label className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3">
+            <Search size={18} className="text-slate-500" />
+            <input
+              name="q"
+              defaultValue={params.q ?? ""}
+              placeholder="Search reviewer, skill, SPR, SR, project..."
+              className="w-full bg-transparent text-white outline-none"
+            />
+          </label>
+
+          <select
+            name="availability"
+            defaultValue={availabilityFilter}
+            className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
+          >
+            <option value="">All availability</option>
+            <option>Available</option>
+            <option>Profile Needed</option>
+            <option>Busy</option>
+            <option>On Leave</option>
+            <option>Unavailable</option>
+          </select>
+
+          <div className="flex gap-2">
+            <button className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950">
+              <Filter size={16} />
+              Filter
+            </button>
+            <a
+              href="/reviewers"
+              className="rounded-xl border border-slate-700 px-4 py-3 text-slate-300 hover:bg-slate-800"
+            >
+              Reset
+            </a>
+          </div>
+        </div>
+      </form>
+
       <div className="rounded-2xl border border-slate-800 bg-slate-900">
         <div className="border-b border-slate-800 px-6 py-4">
           <h2 className="text-xl font-bold text-white">Pentester Workload</h2>
@@ -717,13 +577,13 @@ export default async function ReviewersPage() {
         </div>
 
         <div className="divide-y divide-slate-800">
-          {reviewerRows.length === 0 && (
+          {filteredReviewerRows.length === 0 && (
             <div className="p-10 text-center text-slate-500">
-              No active users or reviewer profiles found.
+              No reviewers match the current filters.
             </div>
           )}
 
-          {reviewerRows.map((reviewer) => {
+          {filteredReviewerRows.map((reviewer) => {
             const assignedHours = reviewer.assignments.reduce(
               (sum, assignment) => sum + (assignment.allocatedHours ?? 0),
               0,

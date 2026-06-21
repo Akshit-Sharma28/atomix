@@ -219,6 +219,7 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
   }
 
   revalidatePath("/reviewers");
+  revalidatePath("/reviewers/governance-call");
   revalidatePath("/reviews");
   revalidatePath("/projects");
   revalidatePath("/executive");

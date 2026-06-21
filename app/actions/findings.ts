@@ -9,6 +9,49 @@ export async function createFinding(formData: FormData) {
   const reviewId = String(formData.get("reviewId") ?? "") || undefined;
   const ownerId = String(formData.get("ownerId") ?? "") || undefined;
   const dueDate = String(formData.get("dueDate") ?? "");
+  const controlId = String(formData.get("controlId") ?? "").trim();
+  const controlDetail =
+    String(formData.get("controlDetail") ?? "").trim();
+  const controlRemediation =
+    String(formData.get("controlRemediation") ?? "").trim();
+  const reviewerComment =
+    String(formData.get("reviewerComment") ?? "").trim();
+  const aiAnalysis =
+    String(formData.get("aiAnalysis") ?? "").trim();
+  const evidenceImages = formData
+    .getAll("evidenceImages")
+    .filter((item): item is File => item instanceof File && item.size > 0)
+    .map((file) => `${file.name} (${Math.round(file.size / 1024)} KB)`);
+
+  const providedDescription =
+    String(formData.get("description") ?? "").trim();
+  const providedRemediation =
+    String(formData.get("remediation") ?? "").trim();
+
+  const description =
+    providedDescription ||
+    [
+      controlId ? `Control: ${controlId}` : "",
+      controlDetail ? `Control Detail: ${controlDetail}` : "",
+      reviewerComment ? `Reviewer Comment: ${reviewerComment}` : "",
+      aiAnalysis ? `AI Analysis: ${aiAnalysis}` : "",
+      evidenceImages.length > 0
+        ? `Evidence Images: ${evidenceImages.join(", ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+  const remediation =
+    providedRemediation ||
+    [
+      controlRemediation
+        ? `Recommended Remediation: ${controlRemediation}`
+        : "",
+      aiAnalysis ? `AI Suggested Detail: ${aiAnalysis}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
 
   await prisma.finding.create({
     data: {
@@ -20,8 +63,8 @@ export async function createFinding(formData: FormData) {
       reviewId,
       ownerId,
       dueDate: dueDate ? new Date(dueDate) : undefined,
-      description: String(formData.get("description") ?? "") || undefined,
-      remediation: String(formData.get("remediation") ?? "") || undefined,
+      description: description || undefined,
+      remediation: remediation || undefined,
       cweId: String(formData.get("cweId") ?? "") || undefined,
       owaspCategory:
         String(formData.get("owaspCategory") ?? "") || undefined,

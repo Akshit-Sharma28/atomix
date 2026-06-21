@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { createFinding } from "@/app/actions/findings";
 import { getCurrentUser } from "@/services/users/current-user.service";
+import ControlFindingForm from "@/components/findings/control-finding-form";
 import {
   Bot,
   CheckCircle2,
@@ -291,104 +291,16 @@ export default async function MyFindingsPage({
                 </div>
               </div>
 
-              <form action={createFinding} className="grid gap-4">
-                <input
-                  type="hidden"
-                  name="projectId"
-                  value={selectedProject.id}
-                />
-                <input
-                  type="hidden"
-                  name="ownerId"
-                  value={currentUser.id}
-                />
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label>
-                    <span className="mb-2 block text-sm text-slate-400">
-                      SR
-                    </span>
-                    <select
-                      name="reviewId"
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-                    >
-                      {selectedPackage?.reviews.map((review) => (
-                        <option key={review.id} value={review.id}>
-                          {review.srId ?? review.title} · {review.status}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span className="mb-2 block text-sm text-slate-400">
-                      Finding Source
-                    </span>
-                    <select
-                      name="source"
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-                    >
-                      <option>Initial Review</option>
-                      <option>Retest Validation</option>
-                      <option>Scanner Import</option>
-                      <option>Manual Evidence</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <TextInput name="title" label="Title" required />
-                  <SelectInput
-                    name="severity"
-                    label="Severity"
-                    options={["Critical", "High", "Medium", "Low", "Info"]}
-                  />
-                  <SelectInput
-                    name="status"
-                    label="Status"
-                    options={[
-                      "Open",
-                      "In Progress",
-                      "Ready For Retest",
-                      "Closed",
-                    ]}
-                  />
-                  <TextInput name="cweId" label="CWE" placeholder="CWE-79" />
-                  <TextInput
-                    name="owaspCategory"
-                    label="OWASP"
-                    placeholder="A03 Injection"
-                  />
-                  <TextInput name="dueDate" label="Due Date" type="date" />
-                </div>
-
-                <label>
-                  <span className="mb-2 block text-sm text-slate-400">
-                    Description / Evidence
-                  </span>
-                  <textarea
-                    name="description"
-                    rows={5}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-                    placeholder="Affected endpoint, role, test evidence, impact, and reproduction notes."
-                  />
-                </label>
-
-                <label>
-                  <span className="mb-2 block text-sm text-slate-400">
-                    Remediation / Retest Notes
-                  </span>
-                  <textarea
-                    name="remediation"
-                    rows={4}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-                    placeholder="Fix recommendation, validation criteria, retest observation, exception/remediation-plan decision if needed."
-                  />
-                </label>
-
-                <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 md:w-fit">
-                  Add Finding
-                </button>
-              </form>
+              <ControlFindingForm
+                projectId={selectedProject.id}
+                ownerId={currentUser.id}
+                reviews={
+                  selectedPackage?.reviews.map((review) => ({
+                    id: review.id,
+                    label: `${review.srId ?? review.title} · ${review.status}`,
+                  })) ?? []
+                }
+              />
             </div>
 
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
@@ -506,56 +418,5 @@ function FindingList({
         ))}
       </div>
     </section>
-  );
-}
-
-function TextInput({
-  name,
-  label,
-  type = "text",
-  placeholder,
-  required,
-}: {
-  name: string;
-  label: string;
-  type?: string;
-  placeholder?: string;
-  required?: boolean;
-}) {
-  return (
-    <label>
-      <span className="mb-2 block text-sm text-slate-400">{label}</span>
-      <input
-        name={name}
-        type={type}
-        placeholder={placeholder}
-        required={required}
-        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-      />
-    </label>
-  );
-}
-
-function SelectInput({
-  name,
-  label,
-  options,
-}: {
-  name: string;
-  label: string;
-  options: string[];
-}) {
-  return (
-    <label>
-      <span className="mb-2 block text-sm text-slate-400">{label}</span>
-      <select
-        name={name}
-        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-      >
-        {options.map((option) => (
-          <option key={option}>{option}</option>
-        ))}
-      </select>
-    </label>
   );
 }

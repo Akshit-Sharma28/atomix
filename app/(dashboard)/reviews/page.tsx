@@ -118,6 +118,18 @@ export default async function ReviewsPage() {
             >
               Back to Portfolio
             </Link>
+            <Link
+              href="/findings"
+              className="rounded-xl border border-slate-700 px-4 py-2.5 font-semibold text-slate-200 hover:bg-slate-800"
+            >
+              Findings Governance
+            </Link>
+            <Link
+              href="/my-findings"
+              className="rounded-xl border border-slate-700 px-4 py-2.5 font-semibold text-slate-200 hover:bg-slate-800"
+            >
+              My Reviews
+            </Link>
             {canCreateInformationSystem && (
               <Link
                 href="#create-information-system"

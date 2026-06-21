@@ -225,25 +225,39 @@ export default async function FindingsPage({
             </div>
           </div>
 
-          <Link
-            href="/my-findings"
-            className="
-            flex
-            items-center
-            gap-2
-            px-4
-            py-2.5
-            rounded-xl
-            bg-cyan-500
-            text-black
-            font-semibold
-            hover:bg-cyan-400
-            transition-all
-            "
-          >
-            <Plus size={16} />
-            Add Findings
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/projects"
+              className="rounded-xl border border-cyan-400/30 px-4 py-2.5 font-semibold text-cyan-200 hover:border-cyan-300"
+            >
+              Back to Portfolio
+            </Link>
+            <Link
+              href="/reviews"
+              className="rounded-xl border border-slate-700 px-4 py-2.5 font-semibold text-slate-200 hover:bg-slate-800"
+            >
+              SR Tracker
+            </Link>
+            <Link
+              href="/my-findings"
+              className="
+              flex
+              items-center
+              gap-2
+              px-4
+              py-2.5
+              rounded-xl
+              bg-cyan-500
+              text-black
+              font-semibold
+              hover:bg-cyan-400
+              transition-all
+              "
+            >
+              <Plus size={16} />
+              Add Findings
+            </Link>
+          </div>
         </div>
       </div>
 
