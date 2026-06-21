@@ -1,49 +1,85 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import NewProjectForm from "@/components/projects/new-project-form";
-import { canAccess } from "@/services/users/access.service";
+import { canAccess, getActiveRole } from "@/services/users/access.service";
+import { getCurrentUser } from "@/services/users/current-user.service";
 import { FileSearch, ShieldAlert, UserCheck } from "lucide-react";
 
 export default async function ProjectsPage() {
-  const [projects, canCreateInformationSystem] = await Promise.all([
-    prisma.project.findMany({
-      select: {
-        id: true,
-        sprId: true,
-        name: true,
-        client: true,
-        riskTier: true,
-        findings: {
-          select: {
-            severity: true,
-            status: true,
+  const [canCreateInformationSystem, activeRole, currentUser, projectManagers] =
+    await Promise.all([
+      canAccess(["ADMIN"]),
+      getActiveRole(),
+      getCurrentUser(),
+      prisma.user.findMany({
+        where: {
+          role: {
+            in: ["PROJECT_MANAGER", "ENGAGEMENT_MANAGER"],
           },
+          isActive: true,
         },
-        reviews: {
-          select: {
-            srId: true,
-            title: true,
-            status: true,
-            createdAt: true,
-          },
+        select: {
+          id: true,
+          name: true,
+          email: true,
         },
-        components: {
-          select: {
-            id: true,
-          },
+        orderBy: {
+          name: "asc",
         },
-        scopeProfiles: {
-          select: {
-            id: true,
-          },
+      }),
+    ]);
+
+  const projects = await prisma.project.findMany({
+    where:
+      activeRole === "PROJECT_MANAGER" && currentUser
+        ? {
+            projectManagerId: currentUser.id,
+          }
+        : undefined,
+    select: {
+      id: true,
+      sprId: true,
+      name: true,
+      client: true,
+      riskTier: true,
+      businessOwner: true,
+      technicalOwner: true,
+      projectManager: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
         },
       },
-      orderBy: {
-        updatedAt: "desc",
+      findings: {
+        select: {
+          severity: true,
+          status: true,
+        },
       },
-    }),
-    canAccess(["ADMIN"]),
-  ]);
+      reviews: {
+        select: {
+          srId: true,
+          title: true,
+          status: true,
+          createdAt: true,
+        },
+      },
+      components: {
+        select: {
+          id: true,
+        },
+      },
+      scopeProfiles: {
+        select: {
+          id: true,
+        },
+      },
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
 
   const totalSrs = projects.reduce(
     (sum, project) => sum + project.reviews.length,
@@ -135,7 +171,9 @@ export default async function ProjectsPage() {
         ))}
       </div>
 
-      {canCreateInformationSystem && <NewProjectForm />}
+      {canCreateInformationSystem && (
+        <NewProjectForm projectManagers={projectManagers} />
+      )}
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
         {projects.map((project) => {
@@ -186,6 +224,13 @@ export default async function ProjectsPage() {
               </div>
 
               <p className="text-slate-400 mb-4">{project.client}</p>
+
+              <div className="mb-4 rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm">
+                <p className="text-slate-500">Project Manager</p>
+                <p className="mt-1 font-semibold text-cyan-200">
+                  {project.projectManager?.name ?? "Not assigned"}
+                </p>
+              </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-xl bg-slate-950 p-3">

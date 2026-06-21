@@ -125,6 +125,7 @@ export default async function ExecutiveDashboardPage({
       <div className="mb-6">
         <AgenticCapabilityPanel
           context="executive"
+          runInline
           metrics={[
             {
               label: "Red projects",

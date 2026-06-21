@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useTransition } from "react";
 import {
   Bot,
   BrainCircuit,
   CheckCircle2,
   FileText,
+  Loader2,
   Radar,
   Sparkles,
   UserCheck,
@@ -21,6 +25,7 @@ type AgenticCapabilityPanelProps = {
     label: string;
     value: string | number;
   }[];
+  runInline?: boolean;
 };
 
 const agentConfigs: Record<
@@ -130,8 +135,46 @@ function promptHref(prompt: string) {
 export default function AgenticCapabilityPanel({
   context,
   metrics = [],
+  runInline = false,
 }: AgenticCapabilityPanelProps) {
   const config = agentConfigs[context];
+  const [activeAgent, setActiveAgent] =
+    useState<string | null>(null);
+  const [answer, setAnswer] =
+    useState("");
+  const [isPending, startTransition] =
+    useTransition();
+
+  function runAgent(agent: AgentAction) {
+    setActiveAgent(agent.title);
+    setAnswer("");
+
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/copilot", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question: agent.prompt,
+          }),
+        });
+
+        const data = await response.json();
+
+        setAnswer(
+          data.answer ??
+            data.error ??
+            "Agent response unavailable."
+        );
+      } catch {
+        setAnswer(
+          "Agent response unavailable. Check local/tunnel AI status and try again."
+        );
+      }
+    });
+  }
 
   return (
     <section className="rounded-[1.75rem] border border-cyan-400/20 bg-cyan-400/[0.04] p-5 shadow-lg shadow-cyan-950/20">
@@ -149,13 +192,29 @@ export default function AgenticCapabilityPanel({
           </p>
         </div>
 
-        <Link
-          href={promptHref(config.agents[0].prompt)}
-          className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
-        >
-          <Bot size={16} />
-          Ask Copilot
-        </Link>
+        {runInline ? (
+          <button
+            type="button"
+            onClick={() => runAgent(config.agents[0])}
+            disabled={isPending}
+            className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 disabled:opacity-60"
+          >
+            {isPending && activeAgent === config.agents[0].title ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <Bot size={16} />
+            )}
+            Run Executive Brief
+          </button>
+        ) : (
+          <Link
+            href={promptHref(config.agents[0].prompt)}
+            className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+          >
+            <Bot size={16} />
+            Ask Copilot
+          </Link>
+        )}
       </div>
 
       {metrics.length > 0 && (
@@ -198,17 +257,58 @@ export default function AgenticCapabilityPanel({
                   </p>
                 </div>
               </div>
-              <Link
-                href={promptHref(agent.prompt)}
-                className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200"
-              >
-                <FileText size={15} />
-                Open Copilot prompt
-              </Link>
+              {runInline ? (
+                <button
+                  type="button"
+                  onClick={() => runAgent(agent)}
+                  disabled={isPending}
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200 disabled:opacity-60"
+                >
+                  {isPending && activeAgent === agent.title ? (
+                    <Loader2 className="animate-spin" size={15} />
+                  ) : (
+                    <FileText size={15} />
+                  )}
+                  Run here
+                </button>
+              ) : (
+                <Link
+                  href={promptHref(agent.prompt)}
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200"
+                >
+                  <FileText size={15} />
+                  Open Copilot prompt
+                </Link>
+              )}
             </article>
           );
         })}
       </div>
+
+      {runInline && (activeAgent || answer) && (
+        <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-slate-950/80 p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-cyan-300">
+                Inline Agent Output
+              </p>
+              <h3 className="mt-1 text-lg font-bold text-white">
+                {activeAgent ?? "Executive Agent"}
+              </h3>
+            </div>
+            {isPending && (
+              <span className="inline-flex items-center gap-2 rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+                <Loader2 className="animate-spin" size={14} />
+                Thinking
+              </span>
+            )}
+          </div>
+          <div className="max-h-96 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-800 bg-black/20 p-4 text-sm leading-6 text-slate-300">
+            {answer ||
+              "Running the selected agent against the current portfolio context..."}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -13,6 +13,7 @@ enum Role {
   QA_REVIEWER
   REVIEWER
   EXECUTIVE
+  PROJECT_MANAGER
   ENGAGEMENT_MANAGER
   CONSULTANT
   SECURITY_LEAD
@@ -37,6 +38,7 @@ model User {
   reviewAssignments ReviewerAssignment[] @relation("AssignmentUser")
   ownedTasks Task[] @relation("TaskOwner")
   ownedRemediationPlans RemediationPlan[] @relation("RemediationPlanOwner")
+  managedProjects Project[] @relation("ProjectManager")
   appSessions      AppSession[]
 
   accounts Account[]
@@ -56,6 +58,9 @@ model Project {
   riskTier String?
   businessOwner String?
   technicalOwner String?
+  projectManagerId String?
+
+  projectManager User? @relation("ProjectManager", fields: [projectManagerId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

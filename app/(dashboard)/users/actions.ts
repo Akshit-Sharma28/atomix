@@ -10,6 +10,7 @@ const allowedRoles = [
   "ADMIN",
   "GOVERNANCE_TEAM",
   "EXECUTIVE",
+  "PROJECT_MANAGER",
   "ENGAGEMENT_MANAGER",
   "QA_REVIEWER",
   "REVIEWER",
@@ -122,6 +123,38 @@ export async function deactivateUser(formData: FormData) {
     },
     data: {
       isActive: false,
+    },
+  });
+
+  revalidatePath("/users");
+}
+
+export async function resetUserPassword(formData: FormData) {
+  await requireAccess(["ADMIN"]);
+
+  const userId = readString(formData, "userId");
+  const password = readString(formData, "password");
+
+  if (!userId) {
+    throw new Error("User is required");
+  }
+
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await prisma.account.upsert({
+    where: {
+      userId,
+    },
+    update: {
+      passwordHash,
+    },
+    create: {
+      userId,
+      passwordHash,
     },
   });
 

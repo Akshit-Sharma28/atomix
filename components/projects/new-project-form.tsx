@@ -10,6 +10,11 @@ type NewProjectFormProps = {
   description?: string;
   namePlaceholder?: string;
   submitLabel?: string;
+  projectManagers?: {
+    id: string;
+    name: string;
+    email: string;
+  }[];
 };
 
 export default function NewProjectForm({
@@ -18,6 +23,7 @@ export default function NewProjectForm({
   description = "Create the long-lived Information System / SPR record. SRs, scope profiles, components, findings, and retests can be attached afterwards.",
   namePlaceholder = "Information System / application name",
   submitLabel = "Create Information System / SPR",
+  projectManagers = [],
 }: NewProjectFormProps) {
   const router = useRouter();
 
@@ -41,6 +47,7 @@ export default function NewProjectForm({
         riskTier: formData.get("riskTier"),
         businessOwner: formData.get("businessOwner"),
         technicalOwner: formData.get("technicalOwner"),
+        projectManagerId: formData.get("projectManagerId"),
       }),
     });
 
@@ -121,6 +128,19 @@ export default function NewProjectForm({
               placeholder="Technical owner"
               className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-200 outline-none focus:border-cyan-400"
             />
+
+            <select
+              name="projectManagerId"
+              defaultValue=""
+              className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-200 outline-none focus:border-cyan-400"
+            >
+              <option value="">Project manager</option>
+              {projectManagers.map((manager) => (
+                <option key={manager.id} value={manager.id}>
+                  {manager.name} · {manager.email}
+                </option>
+              ))}
+            </select>
           </div>
 
           {error && <p className="mt-4 text-sm text-red-300">{error}</p>}

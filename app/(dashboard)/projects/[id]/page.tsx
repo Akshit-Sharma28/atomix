@@ -35,6 +35,7 @@ export default async function ProjectPage({ params }: Props) {
         },
       },
       components: true,
+      projectManager: true,
       scopeProfiles: {
         include: {
           requiredReviews: true,
@@ -200,6 +201,27 @@ export default async function ProjectPage({ params }: Props) {
             SPR:
             <span className="ml-2 text-cyan-400 font-semibold">
               {project.sprId ?? "Not assigned"}
+            </span>
+          </p>
+
+          <p>
+            Project Manager:
+            <span className="ml-2 text-cyan-400 font-semibold">
+              {project.projectManager?.name ?? "Not assigned"}
+            </span>
+          </p>
+
+          <p>
+            Business Owner:
+            <span className="ml-2 text-cyan-400 font-semibold">
+              {project.businessOwner ?? "Not assigned"}
+            </span>
+          </p>
+
+          <p>
+            Technical Owner:
+            <span className="ml-2 text-cyan-400 font-semibold">
+              {project.technicalOwner ?? "Not assigned"}
             </span>
           </p>
 

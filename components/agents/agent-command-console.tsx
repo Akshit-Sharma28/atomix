@@ -85,6 +85,7 @@ const emptyProject = {
   riskTier: "High",
   businessOwner: "Business Owner Name",
   technicalOwner: "Tech Owner Name",
+  projectManagerId: "",
 };
 
 const emptySr = {
@@ -206,6 +207,7 @@ export default function AgentCommandConsole() {
           riskTier: project.riskTier,
           businessOwner: optional(project.businessOwner),
           technicalOwner: optional(project.technicalOwner),
+          projectManagerId: optional(project.projectManagerId),
         },
       };
     }
@@ -568,6 +570,7 @@ export default function AgentCommandConsole() {
               ["SPR", "sprId"],
               ["Business Owner", "businessOwner"],
               ["Technical Owner", "technicalOwner"],
+              ["Project Manager User ID", "projectManagerId"],
             ].map(([label, key]) => (
               <Field key={key} label={label}>
                 <input
@@ -798,6 +801,7 @@ export default function AgentCommandConsole() {
                 <option>EXECUTIVE</option>
                 <option>QA_REVIEWER</option>
                 <option>REVIEWER</option>
+                <option>PROJECT_MANAGER</option>
                 <option>ENGAGEMENT_MANAGER</option>
                 <option>CONSULTANT</option>
               </select>

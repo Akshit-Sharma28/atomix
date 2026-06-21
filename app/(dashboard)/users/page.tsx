@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  KeyRound,
   Plus,
   Save,
   Trash2,
@@ -12,6 +13,7 @@ import { getUsers } from "@/services/users/user.service";
 import {
   createUser,
   deactivateUser,
+  resetUserPassword,
   updateUser,
 } from "./actions";
 
@@ -26,6 +28,11 @@ const roleDefinitions = [
     "EXECUTIVE",
     "Executive",
     "Leadership view for portfolio health, variance, project risk, and trend signals.",
+  ],
+  [
+    "PROJECT_MANAGER",
+    "Project Manager",
+    "Owns assigned SPR delivery context, app-team coordination, retest readiness, and remediation follow-up.",
   ],
   [
     "QA_REVIEWER",
@@ -45,6 +52,7 @@ const editableRoles = [
   ["ADMIN", "Admin"],
   ["GOVERNANCE_TEAM", "Governance Team"],
   ["EXECUTIVE", "Executive"],
+  ["PROJECT_MANAGER", "Project Manager"],
   ["ENGAGEMENT_MANAGER", "Engagement Manager"],
   ["QA_REVIEWER", "QA Reviewer"],
   ["REVIEWER", "Reviewer"],
@@ -289,6 +297,34 @@ export default async function UsersPage() {
                       </button>
                     </form>
                   </div>
+
+                  <form
+                    action={resetUserPassword}
+                    className="mt-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3"
+                  >
+                    <input type="hidden" name="userId" value={user.id} />
+                    <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      Admin password reset
+                    </label>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <input
+                        name="password"
+                        type="password"
+                        minLength={8}
+                        placeholder="New password"
+                        className="min-w-48 flex-1 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-600"
+                        required
+                      />
+                      <button className="inline-flex items-center gap-2 rounded-lg bg-amber-400/15 px-3 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-400/25">
+                        <KeyRound size={14} />
+                        Reset
+                      </button>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      Admin only. Sets a new password immediately for this
+                      account.
+                    </p>
+                  </form>
                 </td>
               </tr>
             ))}

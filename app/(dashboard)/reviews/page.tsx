@@ -34,6 +34,7 @@ export default async function ReviewsPage() {
     activeAssignments,
     extensionRequests,
     canCreateInformationSystem,
+    projectManagers,
   ] =
     await Promise.all([
       prisma.securityReview.findMany({
@@ -81,6 +82,22 @@ export default async function ReviewsPage() {
         },
       }),
       canAccess(["ADMIN"]),
+      prisma.user.findMany({
+        where: {
+          role: {
+            in: ["PROJECT_MANAGER", "ENGAGEMENT_MANAGER"],
+          },
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      }),
     ]);
 
   const activeReviews = reviews.filter(
@@ -144,7 +161,7 @@ export default async function ReviewsPage() {
 
       {canCreateInformationSystem && (
         <div id="create-information-system">
-          <NewProjectForm />
+          <NewProjectForm projectManagers={projectManagers} />
         </div>
       )}
 

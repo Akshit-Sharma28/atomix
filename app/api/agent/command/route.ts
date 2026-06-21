@@ -183,6 +183,9 @@ export async function POST(req: Request) {
           technicalOwner: data.technicalOwner
             ? String(data.technicalOwner)
             : undefined,
+          projectManagerId: data.projectManagerId
+            ? String(data.projectManagerId)
+            : undefined,
         },
       });
 

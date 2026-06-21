@@ -56,6 +56,10 @@ export async function POST(req: NextRequest) {
           normalizeOptional(
             body.technicalOwner
           ),
+        projectManagerId:
+          normalizeOptional(
+            body.projectManagerId
+          ),
       },
     });
 
