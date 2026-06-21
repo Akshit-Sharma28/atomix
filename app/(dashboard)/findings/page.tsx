@@ -211,6 +211,9 @@ export default async function FindingsPage({
             />
 
             <div>
+              <div className="mb-2 text-sm text-slate-500">
+                Portfolio / Findings
+              </div>
               <h1 className="text-3xl font-bold text-white">
                 Findings Governance
               </h1>

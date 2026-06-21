@@ -1,41 +1,67 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import NewProjectForm from "@/components/projects/new-project-form";
+import { canAccess } from "@/services/users/access.service";
+import { FileSearch, ShieldAlert, UserCheck } from "lucide-react";
 
 export default async function ProjectsPage() {
-  const projects = await prisma.project.findMany({
-    select: {
-      id: true,
-      sprId: true,
-      name: true,
-      client: true,
-      riskTier: true,
-      findings: {
-        select: {
-          severity: true,
-          status: true,
+  const [projects, canCreateInformationSystem] = await Promise.all([
+    prisma.project.findMany({
+      select: {
+        id: true,
+        sprId: true,
+        name: true,
+        client: true,
+        riskTier: true,
+        findings: {
+          select: {
+            severity: true,
+            status: true,
+          },
+        },
+        reviews: {
+          select: {
+            srId: true,
+            title: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+        components: {
+          select: {
+            id: true,
+          },
+        },
+        scopeProfiles: {
+          select: {
+            id: true,
+          },
         },
       },
-      reviews: {
-        select: {
-          srId: true,
-          title: true,
-          status: true,
-          createdAt: true,
-        },
+      orderBy: {
+        updatedAt: "desc",
       },
-      components: {
-        select: {
-          id: true,
-        },
-      },
-      scopeProfiles: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  });
+    }),
+    canAccess(["ADMIN"]),
+  ]);
+
+  const totalSrs = projects.reduce(
+    (sum, project) => sum + project.reviews.length,
+    0,
+  );
+  const openFindings = projects.reduce(
+    (sum, project) =>
+      sum + project.findings.filter((finding) => finding.status !== "Closed").length,
+    0,
+  );
+  const activeReviews = projects.reduce(
+    (sum, project) =>
+      sum +
+      project.reviews.filter(
+        (review) => !["Completed", "Cancelled"].includes(review.status),
+      ).length,
+    0,
+  );
 
   return (
     <div className="w-full px-8 py-6">
@@ -49,18 +75,67 @@ export default async function ProjectsPage() {
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="mb-2 text-sm text-slate-500">Projects</div>
+            <div className="mb-2 text-sm text-slate-500">
+              Portfolio
+            </div>
 
-            <h1 className="text-3xl font-bold text-white">Project Portfolio</h1>
+            <h1 className="text-3xl font-bold text-white">
+              SPR / Information System Portfolio
+            </h1>
 
-            <p className="text-slate-400 mt-2">
-              Security posture across all tracked projects.
+            <p className="mt-2 max-w-3xl text-slate-400">
+              One place for long-lived Information Systems / SPRs. Open a card
+              to see SRs, findings, components, scope, and review history.
             </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/reviews"
+              className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 px-4 py-2.5 font-semibold text-cyan-200 hover:border-cyan-300"
+            >
+              <FileSearch size={16} />
+              SR Tracker
+            </Link>
+            <Link
+              href="/findings"
+              className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 px-4 py-2.5 font-semibold text-cyan-200 hover:border-cyan-300"
+            >
+              <ShieldAlert size={16} />
+              Findings Governance
+            </Link>
+            <Link
+              href="/my-findings"
+              className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 font-semibold text-black hover:bg-cyan-400"
+            >
+              <UserCheck size={16} />
+              My Reviews
+            </Link>
           </div>
         </div>
       </div>
 
-      <NewProjectForm />
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
+        {[
+          ["Information Systems", projects.length, "tracked SPR records"],
+          ["Total SRs", totalSrs, "security review records"],
+          ["Active SRs", activeReviews, "in delivery or assignment"],
+          ["Open Findings", openFindings, "need closure or retest"],
+        ].map(([label, value, helper]) => (
+          <div
+            key={label as string}
+            className="rounded-2xl border border-cyan-500/10 bg-slate-900/70 p-5"
+          >
+            <p className="text-sm text-slate-400">{label as string}</p>
+            <p className="mt-3 text-3xl font-black text-cyan-300">
+              {value as number}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">{helper as string}</p>
+          </div>
+        ))}
+      </div>
+
+      {canCreateInformationSystem && <NewProjectForm />}
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
         {projects.map((project) => {

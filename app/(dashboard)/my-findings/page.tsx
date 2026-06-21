@@ -149,7 +149,7 @@ export default async function MyFindingsPage({
           <User size={40} className="text-cyan-400" />
           <div>
             <div className="mb-2 text-sm text-slate-500">
-              Reviewer Workspace
+              Reviewer Workspace / My Reviews
             </div>
             <h1 className="text-4xl font-bold text-white">
               My Assigned Reviews

@@ -94,17 +94,20 @@ export default async function ReviewsPage() {
   return (
     <div className="w-full px-8 py-6">
       <div className="mb-6 pb-5 border-b border-slate-800">
-        <div className="mb-2 text-sm text-slate-500">Security Reviews</div>
+        <div className="mb-2 text-sm text-slate-500">
+          Portfolio / SR Tracker
+        </div>
 
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white">
-              SR / Pentest Command Center
+              SR Tracker
             </h1>
 
             <p className="text-slate-400 mt-2 max-w-3xl">
-              Track dated security records, workstreams, assignments,
-              extension requests, cancellations, and finding versions per SPR.
+              Drill into dated security review records, workstreams,
+              assignments, extension requests, cancellations, and finding
+              versions across the Portfolio.
             </p>
           </div>
 
@@ -113,7 +116,7 @@ export default async function ReviewsPage() {
               href="/projects"
               className="rounded-xl border border-cyan-400/30 px-4 py-2.5 font-semibold text-cyan-200 hover:border-cyan-300"
             >
-              Open SPR Portfolio
+              Back to Portfolio
             </Link>
             {canCreateInformationSystem && (
               <Link

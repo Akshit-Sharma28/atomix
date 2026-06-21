@@ -9,7 +9,6 @@ import {
   FolderOpen,
   ShieldAlert,
   KanbanSquare,
-  FileSearch,
   Upload,
   Users,
   UserCheck,
@@ -68,34 +67,8 @@ export default function Sidebar({
     },
     {
       href: "/projects",
-      label: "Projects",
+      label: "Portfolio",
       icon: FolderOpen,
-      roles: [
-        "ADMIN",
-        "GOVERNANCE_TEAM",
-        "QA_REVIEWER",
-        "REVIEWER",
-        "ENGAGEMENT_MANAGER",
-        "CONSULTANT",
-      ],
-    },
-    {
-      href: "/findings",
-      label: "Findings",
-      icon: ShieldAlert,
-      roles: [
-        "ADMIN",
-        "GOVERNANCE_TEAM",
-        "QA_REVIEWER",
-        "REVIEWER",
-        "ENGAGEMENT_MANAGER",
-        "CONSULTANT",
-      ],
-    },
-    {
-      href: "/reviews",
-      label: "Security Reviews",
-      icon: FileSearch,
       roles: [
         "ADMIN",
         "GOVERNANCE_TEAM",
@@ -125,7 +98,7 @@ export default function Sidebar({
     },
     {
       href: "/my-findings",
-      label: "My Findings",
+      label: "My Reviews",
       icon: ShieldAlert,
       roles: ["ADMIN", "QA_REVIEWER", "REVIEWER", "CONSULTANT"],
     },
@@ -263,7 +236,11 @@ export default function Sidebar({
             const Icon = item.icon;
 
             const active =
-              pathname === item.href;
+              pathname === item.href ||
+              (item.href === "/projects" &&
+                ["/projects", "/reviews", "/findings"].some((prefix) =>
+                  pathname.startsWith(prefix),
+                ));
 
             return (
               <Link
