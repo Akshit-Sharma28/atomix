@@ -28,19 +28,15 @@ function normalizeRole(role: string) {
     return "GOVERNANCE_TEAM";
   }
 
-  if (role === "DEVELOPER") {
+  if (role === "DEVELOPER" || role === "VIEWER" || role === "CONSULTANT") {
     return "REVIEWER";
-  }
-
-  if (role === "VIEWER") {
-    return "CONSULTANT";
   }
 
   return role;
 }
 
 export default function Sidebar({
-  role = "CONSULTANT",
+  role = "REVIEWER",
 }: Props) {
   const pathname = usePathname();
   const normalizedRole = normalizeRole(role);
@@ -54,11 +50,11 @@ export default function Sidebar({
         "ADMIN",
         "EXECUTIVE",
         "GOVERNANCE_TEAM",
+        "VALIDATOR",
         "QA_REVIEWER",
         "REVIEWER",
         "PROJECT_MANAGER",
         "ENGAGEMENT_MANAGER",
-        "CONSULTANT",
       ],
     },
     {
@@ -69,29 +65,29 @@ export default function Sidebar({
     },
     {
       href: "/projects",
-      label: "Portfolio",
+      label: "Governance Portfolio",
       icon: FolderOpen,
       roles: [
         "ADMIN",
         "GOVERNANCE_TEAM",
+        "VALIDATOR",
         "QA_REVIEWER",
         "REVIEWER",
         "PROJECT_MANAGER",
         "ENGAGEMENT_MANAGER",
-        "CONSULTANT",
       ],
     },
     {
       href: "/reviewers",
-      label: "Pentester Tracker",
+      label: "Reviewer Governance",
       icon: UserCheck,
       roles: ["ADMIN", "GOVERNANCE_TEAM", "EXECUTIVE"],
     },
     {
       href: "/workflow",
-      label: "Workflow",
+      label: "Validator Workflow",
       icon: Workflow,
-      roles: ["ADMIN", "GOVERNANCE_TEAM"],
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR"],
     },
     {
       href: "/retest-governance",
@@ -103,7 +99,7 @@ export default function Sidebar({
       href: "/my-findings",
       label: "My Reviews",
       icon: ShieldAlert,
-      roles: ["ADMIN", "QA_REVIEWER", "REVIEWER", "CONSULTANT"],
+      roles: ["ADMIN", "QA_REVIEWER", "REVIEWER", "VALIDATOR"],
     },
     {
       href: "/timeline",
@@ -112,18 +108,18 @@ export default function Sidebar({
       roles: [
         "ADMIN",
         "GOVERNANCE_TEAM",
+        "VALIDATOR",
         "QA_REVIEWER",
         "REVIEWER",
         "PROJECT_MANAGER",
         "ENGAGEMENT_MANAGER",
-        "CONSULTANT",
       ],
     },
     {
       href: "/import",
       label: "Import",
       icon: Upload,
-      roles: ["ADMIN", "GOVERNANCE_TEAM", "ENGAGEMENT_MANAGER", "CONSULTANT"],
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "ENGAGEMENT_MANAGER"],
     },
     {
       href: "/users",
@@ -138,11 +134,11 @@ export default function Sidebar({
       roles: [
         "ADMIN",
         "GOVERNANCE_TEAM",
+        "VALIDATOR",
         "QA_REVIEWER",
         "REVIEWER",
         "PROJECT_MANAGER",
         "ENGAGEMENT_MANAGER",
-        "CONSULTANT",
       ],
     },
     {
@@ -152,11 +148,11 @@ export default function Sidebar({
       roles: [
         "ADMIN",
         "GOVERNANCE_TEAM",
+        "VALIDATOR",
         "QA_REVIEWER",
         "REVIEWER",
         "PROJECT_MANAGER",
         "ENGAGEMENT_MANAGER",
-        "CONSULTANT",
       ],
     },
     {
@@ -166,11 +162,11 @@ export default function Sidebar({
       roles: [
         "ADMIN",
         "GOVERNANCE_TEAM",
+        "VALIDATOR",
         "QA_REVIEWER",
         "REVIEWER",
         "PROJECT_MANAGER",
         "ENGAGEMENT_MANAGER",
-        "CONSULTANT",
       ],
     },
   ];
@@ -224,7 +220,7 @@ export default function Sidebar({
           mt-1
           "
         >
-          AI-Powered Pentest Platform
+          Governance Dashboard
         </p>
       </div>
 

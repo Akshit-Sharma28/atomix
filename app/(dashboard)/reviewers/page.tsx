@@ -72,7 +72,7 @@ export default async function ReviewersPage({
       <div className="p-8">
         <div className="rounded-2xl border border-red-500/20 bg-red-950/20 p-6">
           <h1 className="text-2xl font-bold text-white">
-            Pentester Tracker access restricted
+            Reviewer Governance access restricted
           </h1>
           <p className="mt-2 text-slate-400">
             This governance view is available to Admin, Governance Team, and
@@ -226,7 +226,7 @@ export default async function ReviewersPage({
   return (
     <div className="w-full px-8 py-6">
       <div className="mb-6 border-b border-slate-800 pb-5">
-        <div className="mb-2 text-sm text-slate-500">Pentester Tracker</div>
+        <div className="mb-2 text-sm text-slate-500">Reviewer Governance</div>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -235,9 +235,8 @@ export default async function ReviewersPage({
             </h1>
 
             <p className="mt-2 max-w-3xl text-slate-400">
-              See which pentesters are available, what SRs they are working on,
-              where reviews need staffing, and where extension pressure is
-              building.
+              See reviewer availability, active SR assignments, staffing gaps,
+              weekly call outcomes, and extension pressure across the governance pool.
             </p>
           </div>
 
@@ -569,7 +568,7 @@ export default async function ReviewersPage({
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900">
         <div className="border-b border-slate-800 px-6 py-4">
-          <h2 className="text-xl font-bold text-white">Pentester Workload</h2>
+          <h2 className="text-xl font-bold text-white">Reviewer Workload</h2>
           <p className="text-sm text-slate-400">
             Profiles use reviewer capacity when present, otherwise active users
             are shown as needing profile setup.

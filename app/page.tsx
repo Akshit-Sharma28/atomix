@@ -21,13 +21,13 @@ const metrics = [
 const capabilities = [
   {
     icon: ShieldCheck,
-    title: "Pentest Delivery Cockpit",
-    text: "Track review scope, reviewer activity, deadlines, evidence, remediation status, and report readiness from one operating layer.",
+    title: "Governance Delivery Cockpit",
+    text: "Track validator readiness, reviewer activity, deadlines, evidence quality, retest pressure, and leadership signals from one governance layer.",
   },
   {
     icon: BrainCircuit,
-    title: "Agentic Security Intelligence",
-    text: "Use local or tunneled AI agents to summarize risk, generate reports, suggest remediation, triage findings, and unblock review flows.",
+    title: "Agent-Assisted Governance Intelligence",
+    text: "Use local or tunneled AI agents to summarize readiness, peer review gaps, retest pressure, capacity variance, and governance actions.",
   },
   {
     icon: Radar,
@@ -36,41 +36,41 @@ const capabilities = [
   },
   {
     icon: FileText,
-    title: "Report Automation",
-    text: "Turn imported scans, manual findings, and review notes into structured pentest-ready outputs.",
+    title: "Governance Reporting",
+    text: "Turn scope notes, artifacts, scan reports, and review evidence into structured governance-ready outputs.",
   },
 ];
 
 const workflow = [
-  "Import review scope, artifacts, and scan reports into the delivery cockpit",
-  "Map reviews to reviewers, peer review gates, owners, and SLA commitments",
-  "Use Atomix agents to analyze delivery risk, capacity, and remediation paths",
-  "Generate executive packs and track closure from dashboard to delivery",
+  "Capture review scope, prerequisites, artifacts, and scan reports in the validator workflow",
+  "Map reviews to reviewers, peer review gates, retest queues, and SLA commitments",
+  "Use Atomix agents to analyze readiness risk, capacity, variance, and retest pressure",
+  "Generate executive packs and track governance signals through closure",
 ];
 
 const deliveryGaps = [
   {
     icon: Building2,
     title: "From system context to delivery action.",
-    text: "Atomix makes review execution visible by reviewer, due date, workload, status, and delivery risk.",
+    text: "Atomix makes review governance visible by validator readiness, reviewer assignment, due date, workload, status, and escalation risk.",
   },
   {
     icon: Users,
     title: "Capacity is operational, not static.",
-    text: "Atomix shows who is available, what they are assigned to, how many peer reviews are waiting, and which engagements need rescue.",
+    text: "Atomix shows who is available, what they are assigned to, how many peer reviews are waiting, and which reviews need governance action.",
   },
   {
     icon: ClipboardCheck,
     title: "Delivery needs workflow intelligence.",
-    text: "Review metadata becomes actionable through red engagement flags, extension tracking, chargeability variance, and agent-assisted summaries.",
+    text: "Review metadata becomes actionable through readiness flags, extension tracking, chargeability variance, retest pressure, and agent-assisted summaries.",
   },
 ];
 
 const agents = [
-  "Delivery Triage Agent",
+  "Governance Triage Agent",
   "Executive Agent",
   "Peer Review Agent",
-  "Pentest Copilot Agent",
+  "Governance Copilot Agent",
 ];
 
 export default function Home() {
@@ -90,7 +90,7 @@ export default function Home() {
               ATOMIX
             </p>
             <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-              AI-Powered Pentest Platform
+              Governance Dashboard
             </p>
           </div>
         </Link>
@@ -122,18 +122,18 @@ export default function Home() {
         <div className="lg:col-span-7">
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
             <Sparkles size={16} />
-            AI cockpit for modern pentest teams
+            Governance cockpit for security review operations
           </div>
 
           <h1 className="max-w-5xl text-5xl font-black tracking-tight md:text-6xl">
-            Pentest delivery,
-            <span className="block text-cyan-300">reviewed with AI assistance.</span>
+            Security review governance,
+            <span className="block text-cyan-300">coordinated with AI assistance.</span>
           </h1>
 
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            Atomix turns review scope, Word artifacts, scan reports, findings,
-            and reviewer activity into a live operating surface for peer review,
-            SLA work, chargeability, and executive reporting.
+            Atomix turns review scope, prerequisites, Word artifacts, scan reports,
+            reviewer activity, and retest signals into a live governance surface
+            for validators, peer review, SLA work, chargeability, and leadership reporting.
           </p>
 
           <div className="mt-8 flex flex-col gap-4 sm:flex-row">
@@ -177,7 +177,7 @@ export default function Home() {
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
                   Live Preview
                 </p>
-                <h2 className="text-2xl font-bold">Delivery Dashboard</h2>
+                <h2 className="text-2xl font-bold">Governance Dashboard</h2>
               </div>
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-300 text-slate-950">
                 <Bot size={24} />
@@ -211,9 +211,9 @@ export default function Home() {
                 </span>
               </div>
               {[
-                "Generate Pentest Report",
-                "Review Findings",
-                "Suggest Remediation",
+                "Generate Governance Brief",
+                "Review Evidence Gaps",
+                "Summarize Retest Pressure",
                 "Check Peer Review Gaps",
               ].map((item) => (
                 <div
@@ -364,10 +364,10 @@ export default function Home() {
               Powered by Twenty Eight Labs
             </p>
             <h2 className="mt-3 text-3xl font-black">
-              Agentic workflows for pentest delivery.
+              Agent-assisted workflows for review governance.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-400">
-              Atomix is built by Twenty Eight Labs to turn pentest operations
+              Atomix is built by Twenty Eight Labs to turn review governance operations
               into assisted workflows: delivery triage, executive reporting,
               peer review, and practitioner copilot support.
             </p>

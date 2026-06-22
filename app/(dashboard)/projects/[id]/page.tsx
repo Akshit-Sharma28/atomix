@@ -418,7 +418,7 @@ export default async function ProjectPage({ params }: Props) {
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-8">
         <div className="flex items-center gap-3 mb-6">
           <CalendarClock size={24} className="text-cyan-400" />
-          <h2 className="text-2xl font-bold">SR / Pentest History</h2>
+          <h2 className="text-2xl font-bold">SR Governance History</h2>
         </div>
 
         <div className="space-y-3">
@@ -439,8 +439,9 @@ export default async function ProjectPage({ params }: Props) {
               .join(", ");
 
             return (
-              <div
+              <Link
                 key={review.id}
+                href={`/reviews/${review.id}`}
                 className="rounded-xl border border-slate-800 bg-slate-950 p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -452,6 +453,9 @@ export default async function ProjectPage({ params }: Props) {
                       {review.type} • {review.status}
                     </p>
                   </div>
+                  <span className="rounded-full border border-cyan-400/30 px-3 py-1 text-xs font-semibold text-cyan-200">
+                    Open SR
+                  </span>
 
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     {review.workstreams.map((workstream) => (
@@ -500,7 +504,7 @@ export default async function ProjectPage({ params }: Props) {
                     </p>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

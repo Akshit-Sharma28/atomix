@@ -25,6 +25,11 @@ const roleDefinitions = [
     "Owns reviewer allocation, workflow intake, tracker health, and SR assignment.",
   ],
   [
+    "VALIDATOR",
+    "Validator",
+    "Coordinates pre-review readiness, demo-call intake, artifacts, and prerequisite checks.",
+  ],
+  [
     "EXECUTIVE",
     "Executive",
     "Leadership view for portfolio health, variance, project risk, and trend signals.",
@@ -45,12 +50,12 @@ const roleDefinitions = [
     "Engagement Manager",
     "Coordinates delivery across projects without user administration access.",
   ],
-  ["REVIEWER", "Reviewer", "Primary execution role for reviewers and legacy consultant users."],
 ];
 
 const editableRoles = [
   ["ADMIN", "Admin"],
   ["GOVERNANCE_TEAM", "Governance Team"],
+  ["VALIDATOR", "Validator"],
   ["EXECUTIVE", "Executive"],
   ["PROJECT_MANAGER", "Project Manager"],
   ["ENGAGEMENT_MANAGER", "Engagement Manager"],
@@ -94,7 +99,7 @@ export default async function UsersPage() {
           <p className="mt-3 max-w-3xl text-slate-400">
             Keep this page focused on identity, role visibility, and account
             state. Reviewer workload, QA pool, availability, assigned work, and
-            peer review operations now live in Pentester Tracker.
+            peer review operations now live in Reviewer Governance.
           </p>
         </div>
 

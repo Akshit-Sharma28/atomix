@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   ADMIN
   GOVERNANCE_TEAM
+  VALIDATOR
   QA_REVIEWER
   REVIEWER
   EXECUTIVE
@@ -27,7 +28,7 @@ model User {
   name  String
   email String @unique
 
-  role Role @default(CONSULTANT)
+  role Role @default(REVIEWER)
 
   isActive Boolean @default(true)
 

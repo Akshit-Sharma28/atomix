@@ -9,6 +9,7 @@ import { requireAccess } from "@/services/users/access.service";
 const allowedRoles = [
   "ADMIN",
   "GOVERNANCE_TEAM",
+  "VALIDATOR",
   "EXECUTIVE",
   "PROJECT_MANAGER",
   "ENGAGEMENT_MANAGER",

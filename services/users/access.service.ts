@@ -7,15 +7,11 @@ export function normalizeRole(role?: string | null) {
     return "GOVERNANCE_TEAM";
   }
 
-  if (role === "DEVELOPER") {
+  if (role === "DEVELOPER" || role === "VIEWER" || role === "CONSULTANT") {
     return "REVIEWER";
   }
 
-  if (role === "VIEWER") {
-    return "CONSULTANT";
-  }
-
-  return role ?? "CONSULTANT";
+  return role ?? "REVIEWER";
 }
 
 export async function getActiveRole() {

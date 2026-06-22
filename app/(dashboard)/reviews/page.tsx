@@ -112,7 +112,7 @@ export default async function ReviewsPage() {
     <div className="w-full px-8 py-6">
       <div className="mb-6 pb-5 border-b border-slate-800">
         <div className="mb-2 text-sm text-slate-500">
-          Portfolio / SR Tracker
+          Governance Portfolio / SR Tracker
         </div>
 
         <div className="flex items-start justify-between gap-4">
@@ -123,8 +123,8 @@ export default async function ReviewsPage() {
 
             <p className="text-slate-400 mt-2 max-w-3xl">
               Drill into dated security review records, workstreams,
-              assignments, extension requests, cancellations, and finding
-              versions across the Portfolio.
+              assignments, extension requests, cancellations, retest signals,
+              and governance readiness across the Portfolio.
             </p>
           </div>
 
@@ -134,12 +134,6 @@ export default async function ReviewsPage() {
               className="rounded-xl border border-cyan-400/30 px-4 py-2.5 font-semibold text-cyan-200 hover:border-cyan-300"
             >
               Back to Portfolio
-            </Link>
-            <Link
-              href="/findings"
-              className="rounded-xl border border-slate-700 px-4 py-2.5 font-semibold text-slate-200 hover:bg-slate-800"
-            >
-              Findings Governance
             </Link>
             <Link
               href="/my-findings"
@@ -261,9 +255,12 @@ export default async function ReviewsPage() {
                     className="border-b border-slate-800/70 hover:bg-slate-800/40"
                   >
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-white">
+                      <Link
+                        href={`/reviews/${review.id}`}
+                        className="font-semibold text-white hover:text-cyan-200"
+                      >
                         {review.srId ?? review.title}
-                      </div>
+                      </Link>
                       <div className="text-slate-500">{review.type}</div>
                     </td>
 
@@ -322,9 +319,9 @@ export default async function ReviewsPage() {
           <div>
             <h3 className="font-semibold text-white">V1 operating model</h3>
             <p className="mt-1 text-sm text-slate-400">
-              Use Project as SPR, SecurityReview as SR, ReviewWorkstream for
-              frontend/backend/API/MSB/LLM streams, and Findings as versioned
-              review evidence.
+              Use Information System as the long-lived package, SR as the dated
+              review record, ReviewWorkstream for frontend/backend/API/MSB/LLM
+              streams, and evidence records for control observations.
             </p>
           </div>
         </div>

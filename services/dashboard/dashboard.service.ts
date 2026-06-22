@@ -158,9 +158,9 @@ async function getRoleDashboardSummary({
         "Platform-wide identity, portfolio, review, and exception health.",
       cards: [
         { title: "Active Users", value: users, variant: "default" },
-        { title: "Active SPRs", value: activeProjects, variant: "open" },
+        { title: "Active Packages", value: activeProjects, variant: "open" },
         { title: "Active SRs", value: activeReviews, variant: "high" },
-        { title: "Open Findings", value: openFindings, variant: "critical" },
+        { title: "Open Evidence", value: openFindings, variant: "critical" },
         { title: "Extensions", value: pendingExtensions, variant: "closed" },
       ],
     };
@@ -220,6 +220,54 @@ async function getRoleDashboardSummary({
         { title: "Unassigned", value: unassignedReviews, variant: "high" },
         { title: "Overdue", value: overdueReviews, variant: "critical" },
         { title: "Extensions", value: pendingExtensions, variant: "default" },
+      ],
+    };
+  }
+
+  if (normalizedRole === "VALIDATOR") {
+    const [
+      prereqPending,
+      readyForReview,
+      missingAssignments,
+      scopeProfiles,
+      activeReviews,
+    ] = await Promise.all([
+      prisma.securityReview.count({
+        where: {
+          status: {
+            in: ["Requested", "Prerequisites Pending", "Blocked"],
+          },
+        },
+      }),
+      prisma.securityReview.count({
+        where: {
+          status: "Ready for Review",
+        },
+      }),
+      prisma.securityReview.count({
+        where: {
+          ...activeReviewWhere(),
+          assignments: {
+            none: {},
+          },
+        },
+      }),
+      prisma.scopeProfile.count(),
+      prisma.securityReview.count({
+        where: activeReviewWhere(),
+      }),
+    ]);
+
+    return {
+      title: "Validator Dashboard",
+      description:
+        "Pre-review readiness, demo-call intake, missing prerequisites, and handoff signals.",
+      cards: [
+        { title: "Prereq Pending", value: prereqPending, variant: "high" },
+        { title: "Ready for Review", value: readyForReview, variant: "closed" },
+        { title: "Needs Assignment", value: missingAssignments, variant: "critical" },
+        { title: "Scope Profiles", value: scopeProfiles, variant: "default" },
+        { title: "Active SRs", value: activeReviews, variant: "open" },
       ],
     };
   }
@@ -319,9 +367,9 @@ async function getRoleDashboardSummary({
       description:
         "Assigned SPRs, active reviews, open findings, due-soon work, and retest readiness.",
       cards: [
-        { title: "Assigned SPRs", value: managedProjects, variant: "default" },
+        { title: "Assigned Packages", value: managedProjects, variant: "default" },
         { title: "Active SRs", value: activeReviews, variant: "open" },
-        { title: "Open Findings", value: openFindings, variant: "critical" },
+        { title: "Open Evidence", value: openFindings, variant: "critical" },
         { title: "Due Soon", value: dueSoonReviews, variant: "high" },
         { title: "Retests", value: pendingRetests, variant: "closed" },
       ],
@@ -402,7 +450,7 @@ async function getRoleDashboardSummary({
         { title: "QA Assignments", value: qaAssignments, variant: "default" },
         { title: "Peer Reviews", value: peerReviews, variant: "open" },
         { title: "Active SRs", value: activeReviews, variant: "high" },
-        { title: "Open Findings", value: openFindings, variant: "critical" },
+        { title: "Open Evidence", value: openFindings, variant: "critical" },
         { title: "Due Soon", value: dueSoonReviews, variant: "closed" },
       ],
     };

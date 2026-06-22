@@ -28,8 +28,8 @@ function cleanRole(role: string) {
     return "REVIEWER";
   }
 
-  if (role === "VIEWER") {
-    return "CONSULTANT";
+  if (role === "VIEWER" || role === "CONSULTANT") {
+    return "REVIEWER";
   }
 
   return role.replaceAll("_", " ");
@@ -37,7 +37,7 @@ function cleanRole(role: string) {
 
 const agentWorkflows = [
   {
-    title: "Scope Call Agent",
+    title: "Validator / Demo Call Agent",
     href: "/workflow/scope-call",
     mode: "Structured intake",
     description:
@@ -71,7 +71,7 @@ const agentWorkflows = [
 ];
 
 export default async function WorkflowPage() {
-  const allowed = await canAccess(["ADMIN", "GOVERNANCE_TEAM"]);
+  const allowed = await canAccess(["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR"]);
 
   if (!allowed) {
     return (
@@ -81,8 +81,8 @@ export default async function WorkflowPage() {
             Workflow access restricted
           </h1>
           <p className="mt-2 text-slate-400">
-            Project assignment workflow is available to Admin and Governance
-            Team roles only.
+            Validator workflow is available to Admin, Governance Team, and
+            Validator roles only.
           </p>
         </div>
       </div>
@@ -131,9 +131,9 @@ export default async function WorkflowPage() {
 
   const reviewerCandidateRoles = [
     "GOVERNANCE_TEAM",
+    "VALIDATOR",
     "QA_REVIEWER",
     "REVIEWER",
-    "CONSULTANT",
     "SECURITY_LEAD",
     "DEVELOPER",
   ];
@@ -146,15 +146,15 @@ export default async function WorkflowPage() {
       <div className="mb-6 border-b border-slate-800 pb-5">
         <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
           <GitBranch size={16} />
-          Governance Workflow
+          Governance Readiness Workflow
         </div>
         <h1 className="text-3xl font-bold text-white">
-          Project Assignment Workflow
+          Validator & Assignment Workflow
         </h1>
         <p className="mt-2 max-w-3xl text-slate-400">
-          Governance layer for creating reviewer capacity, creating SR work,
-          and assigning projects/reviews to reviewers. Dedicated agent flows now
-          live in separate workspaces so the page stays focused.
+          Governance layer for validator intake, review readiness, reviewer
+          capacity, and SR assignment. Dedicated agent flows live in separate
+          workspaces so the page stays focused.
         </p>
       </div>
 
