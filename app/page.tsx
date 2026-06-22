@@ -90,7 +90,7 @@ export default function Home() {
               ATOMIX
             </p>
             <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-              Governance Dashboard
+              AI-powered Governance Dashboard
             </p>
           </div>
         </Link>
@@ -122,7 +122,7 @@ export default function Home() {
         <div className="lg:col-span-7">
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
             <Sparkles size={16} />
-            Governance cockpit for security review operations
+            Agentic governance cockpit for security review operations
           </div>
 
           <h1 className="max-w-5xl text-5xl font-black tracking-tight md:text-6xl">
@@ -177,7 +177,7 @@ export default function Home() {
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
                   Live Preview
                 </p>
-                <h2 className="text-2xl font-bold">Governance Dashboard</h2>
+                <h2 className="text-2xl font-bold">AI-powered Governance Dashboard</h2>
               </div>
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-300 text-slate-950">
                 <Bot size={24} />
@@ -364,7 +364,7 @@ export default function Home() {
               Powered by Twenty Eight Labs
             </p>
             <h2 className="mt-3 text-3xl font-black">
-              Agent-assisted workflows for review governance.
+              Agentic workflows for review governance.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-400">
               Atomix is built by Twenty Eight Labs to turn review governance operations

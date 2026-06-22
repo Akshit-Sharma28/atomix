@@ -108,7 +108,7 @@ export default function FloatingAgentChat() {
                   Atomix Agent
                 </p>
                 <p className="text-xs text-cyan-200">
-                  Agentic workflow copilot
+                  Agentic governance copilot
                 </p>
               </div>
             </div>

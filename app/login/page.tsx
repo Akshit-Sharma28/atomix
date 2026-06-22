@@ -128,7 +128,7 @@ function LoginForm() {
               <h1 className="text-5xl font-black tracking-tight">
                 Continue your
                 <span className="block text-cyan-300">
-                  AI-powered security work.
+                  AI-powered governance work.
                 </span>
               </h1>
 

@@ -41,7 +41,7 @@ export default async function Page({
             </h1>
 
             <p className="text-slate-400">
-              AI-powered security assistant
+              AI-powered governance assistant
             </p>
 
           </div>

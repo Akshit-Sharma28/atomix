@@ -211,7 +211,7 @@ async function getRoleDashboardSummary({
     ]);
 
     return {
-      title: "Governance Dashboard",
+      title: "AI-powered Governance Dashboard",
       description:
         "Reviewer pool, unassigned work, overdue reviews, and extension pressure.",
       cards: [

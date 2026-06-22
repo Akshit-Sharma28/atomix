@@ -226,7 +226,7 @@ export default function Sidebar({
           mt-1
           "
         >
-          Governance Dashboard
+          AI-powered Governance Dashboard
         </p>
       </div>
 
