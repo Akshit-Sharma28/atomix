@@ -11,6 +11,8 @@ import {
   LogOut,
   ChevronDown,
   User,
+  Eye,
+  RotateCcw,
 } from "lucide-react";
 
 import {
@@ -20,9 +22,18 @@ import {
 } from "react";
 
 type ActiveUser = {
+  id?: string | null;
   name?: string | null;
   email?: string | null;
   role?: string | null;
+  previewedBy?: ActiveUser | null;
+};
+
+type SwitchableUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
 };
 
 export default function UserMenu() {
@@ -34,6 +45,12 @@ export default function UserMenu() {
     useState<ActiveUser | null>(null);
 
   const [open, setOpen] =
+    useState(false);
+
+  const [switchableUsers, setSwitchableUsers] =
+    useState<SwitchableUser[]>([]);
+
+  const [switching, setSwitching] =
     useState(false);
 
   const menuRef =
@@ -98,6 +115,40 @@ export default function UserMenu() {
     };
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadSwitchableUsers() {
+      try {
+        const response =
+          await fetch("/api/auth/switch-user", {
+            cache: "no-store",
+          });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data =
+          await response.json();
+
+        if (!ignore) {
+          setSwitchableUsers(data.users ?? []);
+        }
+      } catch {
+        if (!ignore) {
+          setSwitchableUsers([]);
+        }
+      }
+    }
+
+    loadSwitchableUsers();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const displayUser =
     activeUser ??
     session?.user ??
@@ -110,6 +161,36 @@ export default function UserMenu() {
       .join("")
       .slice(0, 2)
       .toUpperCase() || "A";
+
+  async function previewUser(userId: string) {
+    if (!userId) {
+      return;
+    }
+
+    setSwitching(true);
+
+    await fetch("/api/auth/switch-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+      }),
+    });
+
+    window.location.reload();
+  }
+
+  async function clearPreview() {
+    setSwitching(true);
+
+    await fetch("/api/auth/switch-user", {
+      method: "DELETE",
+    });
+
+    window.location.reload();
+  }
 
   return (
     <div
@@ -261,7 +342,51 @@ export default function UserMenu() {
             >
               {(displayUser as any)?.role}
             </span>
+
+            {(displayUser as ActiveUser)?.previewedBy && (
+              <span className="ml-2 inline-flex rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs text-amber-300">
+                Preview mode
+              </span>
+            )}
           </div>
+
+          {switchableUsers.length > 0 && (
+            <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/60 p-2">
+              <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                <Eye size={13} />
+                Admin role preview
+              </div>
+
+              <select
+                value={(displayUser as ActiveUser)?.id ?? ""}
+                disabled={switching}
+                onChange={(event) =>
+                  previewUser(event.target.value)
+                }
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-2 text-sm text-white outline-none focus:border-cyan-400"
+              >
+                {switchableUsers.map((user) => (
+                  <option
+                    key={user.id}
+                    value={user.id}
+                  >
+                    {user.name} · {user.role}
+                  </option>
+                ))}
+              </select>
+
+              {(displayUser as ActiveUser)?.previewedBy && (
+                <button
+                  onClick={clearPreview}
+                  disabled={switching}
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-cyan-500/20 px-3 py-2 text-xs font-semibold text-cyan-300 transition-all hover:bg-cyan-500/10 disabled:opacity-60"
+                >
+                  <RotateCcw size={14} />
+                  Return to logged-in admin
+                </button>
+              )}
+            </div>
+          )}
 
           <Link
             href="/profile"

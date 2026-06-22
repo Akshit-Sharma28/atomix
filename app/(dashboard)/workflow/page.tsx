@@ -5,19 +5,18 @@ import {
   FileSearch,
   GitBranch,
   ListChecks,
-  ShieldCheck,
   TerminalSquare,
   UserPlus,
 } from "lucide-react";
 
-import { canAccess } from "@/services/users/access.service";
+import { canAccess, normalizeRole } from "@/services/users/access.service";
+import { getCurrentUser } from "@/services/users/current-user.service";
 import { prisma } from "@/lib/prisma";
 import {
   assignReviewToReviewer,
   createReviewerProfile,
   createSecurityReview,
 } from "./actions";
-import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
 
 function cleanRole(role: string) {
   if (role === "SECURITY_LEAD") {
@@ -43,6 +42,7 @@ const agentWorkflows = [
     description:
       "Collect demo-call scope, URL/IP, risk, AV/Au, RBAC roles, artifacts, and scan evidence into a pre-review scope document.",
     icon: ClipboardList,
+    roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "PROJECT_MANAGER"],
   },
   {
     title: "Peer Review Agent",
@@ -51,6 +51,7 @@ const agentWorkflows = [
     description:
       "Review FEAD, BEAD, LLM FEAD, and scan evidence against scope and control coverage before reviewer sign-off.",
     icon: FileSearch,
+    roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "QA_REVIEWER", "REVIEWER"],
   },
   {
     title: "DB Action Builder Agent",
@@ -59,6 +60,7 @@ const agentWorkflows = [
     description:
       "Use forms to create governed user/project/SR/finding records through whitelisted, role-checked API commands.",
     icon: TerminalSquare,
+    roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR"],
   },
   {
     title: "Security Copilot",
@@ -67,11 +69,32 @@ const agentWorkflows = [
     description:
       "Ask portfolio or finding questions. Copilot helps draft and reason, but does not autonomously change records.",
     icon: Bot,
+    roles: [
+      "ADMIN",
+      "GOVERNANCE_TEAM",
+      "VALIDATOR",
+      "QA_REVIEWER",
+      "REVIEWER",
+      "RETESTER",
+      "PROJECT_MANAGER",
+      "ENGAGEMENT_MANAGER",
+    ],
   },
 ];
 
 export default async function WorkflowPage() {
-  const allowed = await canAccess(["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR"]);
+  const currentUser = await getCurrentUser();
+  const activeRole = normalizeRole(currentUser?.role);
+  const allowed = await canAccess([
+    "ADMIN",
+    "GOVERNANCE_TEAM",
+    "VALIDATOR",
+    "QA_REVIEWER",
+    "REVIEWER",
+    "RETESTER",
+    "PROJECT_MANAGER",
+    "ENGAGEMENT_MANAGER",
+  ]);
 
   if (!allowed) {
     return (
@@ -81,8 +104,8 @@ export default async function WorkflowPage() {
             Workflow access restricted
           </h1>
           <p className="mt-2 text-slate-400">
-            Validator workflow is available to Admin, Governance Team, and
-            Validator roles only.
+            Workflow is available to Atomix governance, validator, reviewer,
+            retester, project manager, and engagement roles only.
           </p>
         </div>
       </div>
@@ -141,6 +164,14 @@ export default async function WorkflowPage() {
   const reviewerCandidates = users.filter((user) =>
     reviewerCandidateRoles.includes(user.role),
   );
+  const visibleAgentWorkflows = agentWorkflows.filter((workflow) =>
+    workflow.roles.includes(activeRole),
+  );
+  const canManageCapacity = ["ADMIN", "GOVERNANCE_TEAM"].includes(activeRole);
+  const canCreateReview = ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR"].includes(
+    activeRole,
+  );
+  const canAssignReview = ["ADMIN", "GOVERNANCE_TEAM"].includes(activeRole);
 
   return (
     <div className="w-full px-8 py-6">
@@ -150,12 +181,11 @@ export default async function WorkflowPage() {
           Governance Readiness Workflow
         </div>
         <h1 className="text-3xl font-bold text-white">
-          Validator & Assignment Workflow
+          Workflow
         </h1>
         <p className="mt-2 max-w-3xl text-slate-400">
-          Governance layer for validator intake, review readiness, reviewer
-          capacity, and SR assignment. Dedicated agent flows live in separate
-          workspaces so the page stays focused.
+          Role-specific workspace for the current user. Atomix only shows the
+          workflow agents and actions that match your RBAC context.
         </p>
       </div>
 
@@ -184,48 +214,27 @@ export default async function WorkflowPage() {
         ))}
       </div>
 
-      <div className="mb-8">
-        <AgenticCapabilityPanel
-          context="workflow"
-          metrics={[
-            {
-              label: "Projects ready",
-              value: projects.length,
-            },
-            {
-              label: "Reviewer profiles",
-              value: reviewerProfiles.length,
-            },
-            {
-              label: "Open SRs",
-              value: reviews.length,
-            },
-          ]}
-        />
-      </div>
-
       <section className="mb-8 rounded-[1.75rem] border border-cyan-400/20 bg-slate-900/70 p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-cyan-200">
-              <ShieldCheck size={17} />
-              Agent Workbench
+              <GitBranch size={17} />
+              Your Workflow Agents
             </div>
             <h2 className="text-2xl font-bold text-white">
-              Separate flows for each agent-assisted task.
+              Available for {cleanRole(activeRole)}.
             </h2>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
-              These are human-in-the-loop workflow agents. Structured flows post
-              typed data and files to dedicated APIs; Copilot shortcuts are
-              advisory prompts and do not automatically mutate records.
-              Assignment and intake stay on this page; the Action Builder is
-              only for explicit database write actions.
+              Agents are separated in the sidebar for quick access. This page
+              only surfaces the agent-assisted workflows relevant to the current
+              role so validators, reviewers, retesters, and governance users do
+              not see the same crowded workspace.
             </p>
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-4">
-          {agentWorkflows.map((workflow) => {
+        <div className="grid gap-4 lg:grid-cols-3">
+          {visibleAgentWorkflows.map((workflow) => {
             const Icon = workflow.icon;
 
             return (
@@ -287,11 +296,13 @@ export default async function WorkflowPage() {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <form
-          action={createReviewerProfile}
-          className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
-        >
+      {(canManageCapacity || canCreateReview || canAssignReview) && (
+        <div className="grid gap-6 xl:grid-cols-3">
+          {canManageCapacity && (
+            <form
+              action={createReviewerProfile}
+              className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
+            >
           <div className="mb-5 flex items-center gap-3">
             <UserPlus className="text-cyan-300" size={22} />
             <h2 className="text-xl font-bold text-white">
@@ -348,12 +359,14 @@ export default async function WorkflowPage() {
           <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950">
             Save Capacity
           </button>
-        </form>
+            </form>
+          )}
 
-        <form
-          action={createSecurityReview}
-          className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
-        >
+          {canCreateReview && (
+            <form
+              action={createSecurityReview}
+              className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
+            >
           <div className="mb-5 flex items-center gap-3">
             <ClipboardList className="text-cyan-300" size={22} />
             <h2 className="text-xl font-bold text-white">2. Create SR Work</h2>
@@ -439,12 +452,14 @@ export default async function WorkflowPage() {
           <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950">
             Create SR
           </button>
-        </form>
+            </form>
+          )}
 
-        <form
-          action={assignReviewToReviewer}
-          className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
-        >
+          {canAssignReview && (
+            <form
+              action={assignReviewToReviewer}
+              className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
+            >
           <div className="mb-5 flex items-center gap-3">
             <ListChecks className="text-cyan-300" size={22} />
             <h2 className="text-xl font-bold text-white">
@@ -514,8 +529,10 @@ export default async function WorkflowPage() {
           <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950">
             Assign Reviewer
           </button>
-        </form>
-      </div>
+            </form>
+          )}
+        </div>
+      )}
     </div>
   );
 }

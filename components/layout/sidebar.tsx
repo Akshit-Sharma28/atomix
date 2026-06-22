@@ -17,6 +17,9 @@ import {
   Bot,
   Brain,
   RotateCcw,
+  ClipboardList,
+  FileSearch,
+  TerminalSquare,
 } from "lucide-react";
 
 interface Props {
@@ -87,9 +90,18 @@ export default function Sidebar({
     },
     {
       href: "/workflow",
-      label: "Validator Workflow",
+      label: "Workflow",
       icon: Workflow,
-      roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR"],
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "VALIDATOR",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "RETESTER",
+        "PROJECT_MANAGER",
+        "ENGAGEMENT_MANAGER",
+      ],
     },
     {
       href: "/retest-governance",
@@ -145,6 +157,27 @@ export default function Sidebar({
         "ENGAGEMENT_MANAGER",
       ],
     },
+  ];
+
+  const agentItems = [
+    {
+      href: "/workflow/scope-call",
+      label: "Demo Call Agent",
+      icon: ClipboardList,
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "PROJECT_MANAGER"],
+    },
+    {
+      href: "/workflow/peer-review",
+      label: "Peer Review Agent",
+      icon: FileSearch,
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "QA_REVIEWER", "REVIEWER"],
+    },
+    {
+      href: "/workflow/command-center",
+      label: "DB Action Builder",
+      icon: TerminalSquare,
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR"],
+    },
     {
       href: "/copilot",
       label: "Security Copilot",
@@ -178,6 +211,9 @@ export default function Sidebar({
   ];
 
   const visibleItems = navItems.filter((item) =>
+    item.roles.includes(normalizedRole)
+  );
+  const visibleAgentItems = agentItems.filter((item) =>
     item.roles.includes(normalizedRole)
   );
 
@@ -315,6 +351,85 @@ export default function Sidebar({
             );
           })}
         </div>
+
+        {visibleAgentItems.length > 0 && (
+          <div className="mt-6">
+            <p className="mb-2 px-4 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-600">
+              Agents
+            </p>
+
+            <div className="space-y-2">
+              {visibleAgentItems.map((item) => {
+                const Icon = item.icon;
+
+                const active =
+                  pathname === item.href ||
+                  (item.href !== "/copilot" &&
+                    item.href !== "/knowledge" &&
+                    pathname.startsWith(item.href));
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`
+                      relative
+                      flex
+                      items-center
+                      gap-3
+                      px-4
+                      py-3
+                      rounded-xl
+                      transition-all
+                      duration-200
+                      overflow-hidden
+
+                      ${
+                        active
+                          ? `
+                          bg-cyan-500/10
+                          text-cyan-400
+                          border
+                          border-cyan-500/20
+                          shadow-lg
+                          shadow-cyan-500/5
+                          `
+                          : `
+                          text-slate-300
+                          hover:bg-slate-900
+                          hover:text-cyan-400
+                          `
+                      }
+                    `}
+                  >
+                    {active && (
+                      <div
+                        className="
+                        absolute
+                        left-0
+                        top-2
+                        bottom-2
+                        w-1
+                        rounded-r-full
+                        bg-cyan-400
+                        "
+                      />
+                    )}
+
+                    <Icon
+                      size={18}
+                      className={active ? "text-cyan-400" : ""}
+                    />
+
+                    <span className="font-medium">
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </nav>
     </aside>
   );

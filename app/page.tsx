@@ -126,8 +126,10 @@ export default function Home() {
           </div>
 
           <h1 className="max-w-5xl text-5xl font-black tracking-tight md:text-6xl">
-            Security review governance,
-            <span className="block text-cyan-300">coordinated with AI assistance.</span>
+            Security Review Governance,
+            <span className="block text-cyan-300">
+              Coordinated with AI Assistance.
+            </span>
           </h1>
 
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">

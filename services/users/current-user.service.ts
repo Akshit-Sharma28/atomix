@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "../../lib/prisma";
 
@@ -20,6 +21,30 @@ export async function getCurrentUser() {
     });
 
     if (user) {
+      const cookieStore = await cookies();
+      const previewUserId = cookieStore.get("atomix_preview_user_id")?.value;
+
+      if (user.role === "ADMIN" && previewUserId) {
+        const previewUser = await prisma.user.findUnique({
+          where: {
+            id: previewUserId,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        });
+
+        if (previewUser?.id && previewUser.id !== user.id) {
+          return {
+            ...previewUser,
+            previewedBy: user,
+          };
+        }
+      }
+
       return user;
     }
   }
