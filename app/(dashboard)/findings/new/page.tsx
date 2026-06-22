@@ -50,6 +50,7 @@ export default async function NewFindingPage() {
     [
       "CONSULTANT",
       "REVIEWER",
+        "RETESTER",
       "QA_REVIEWER",
       "DEVELOPER",
     ].includes(user.role)

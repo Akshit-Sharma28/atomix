@@ -21,6 +21,7 @@ export async function getDeveloperWorkload() {
   const workloadRoles = [
     "QA_REVIEWER",
     "REVIEWER",
+        "RETESTER",
     "SECURITY_LEAD",
     "DEVELOPER",
     "CONSULTANT",

@@ -47,6 +47,7 @@ export default async function FindingDetailPage({ params }: Props) {
   const users = allUsers.filter((user) =>
     [
       "REVIEWER",
+        "RETESTER",
       "CONSULTANT",
       "QA_REVIEWER",
       "DEVELOPER",

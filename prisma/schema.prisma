@@ -13,6 +13,7 @@ enum Role {
   VALIDATOR
   QA_REVIEWER
   REVIEWER
+  RETESTER
   EXECUTIVE
   PROJECT_MANAGER
   ENGAGEMENT_MANAGER
@@ -42,7 +43,7 @@ model User {
   managedProjects Project[] @relation("ProjectManager")
   appSessions      AppSession[]
 
-  accounts Account[]
+  accounts Account?
 }
 
 model Project {

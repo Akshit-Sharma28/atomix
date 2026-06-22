@@ -134,6 +134,7 @@ export default async function WorkflowPage() {
     "VALIDATOR",
     "QA_REVIEWER",
     "REVIEWER",
+        "RETESTER",
     "SECURITY_LEAD",
     "DEVELOPER",
   ];

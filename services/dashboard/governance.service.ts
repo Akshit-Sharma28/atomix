@@ -13,6 +13,7 @@ const reviewerRoles = [
   "SECURITY_LEAD",
   "QA_REVIEWER",
   "REVIEWER",
+        "RETESTER",
   "DEVELOPER",
   "CONSULTANT",
   "VIEWER",

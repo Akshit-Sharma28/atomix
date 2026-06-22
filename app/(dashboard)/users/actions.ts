@@ -2,6 +2,8 @@
 
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireAccess } from "@/services/users/access.service";
@@ -15,6 +17,7 @@ const allowedRoles = [
   "ENGAGEMENT_MANAGER",
   "QA_REVIEWER",
   "REVIEWER",
+  "RETESTER",
 ];
 
 function readString(formData: FormData, key: string) {
@@ -31,8 +34,31 @@ function readRole(formData: FormData) {
   return role;
 }
 
+function usersRedirect(kind: "error" | "success", message: string): never {
+  redirect(`/users?${kind}=${encodeURIComponent(message)}`);
+}
+
+function friendlyPrismaError(error: unknown) {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    return "That email is already assigned to another user. Use a unique email.";
+  }
+
+  return "Unable to save the user change. Please check the fields and try again.";
+}
+
+async function requireAdminOrRedirect() {
+  try {
+    await requireAccess(["ADMIN"]);
+  } catch {
+    usersRedirect("error", "Only admin users can manage accounts.");
+  }
+}
+
 export async function createUser(formData: FormData) {
-  await requireAccess(["ADMIN"]);
+  await requireAdminOrRedirect();
 
   const name = readString(formData, "name");
   const email = readString(formData, "email").toLowerCase();
@@ -40,48 +66,57 @@ export async function createUser(formData: FormData) {
   const password = readString(formData, "password");
 
   if (!name || !email) {
-    throw new Error("Name and email are required");
+    usersRedirect("error", "Name and email are required.");
   }
 
-  const user = await prisma.user.upsert({
-    where: {
-      email,
-    },
-    update: {
-      name,
-      role: role as any,
-      isActive: true,
-    },
-    create: {
-      name,
-      email,
-      role: role as any,
-      isActive: true,
-    },
-  });
+  if (password && password.length < 8) {
+    usersRedirect("error", "Password must be at least 8 characters.");
+  }
 
-  if (password) {
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    await prisma.account.upsert({
+  try {
+    const user = await prisma.user.upsert({
       where: {
-        userId: user.id,
+        email,
       },
       update: {
-        passwordHash,
+        name,
+        role: role as any,
+        isActive: true,
       },
       create: {
-        userId: user.id,
-        passwordHash,
+        name,
+        email,
+        role: role as any,
+        isActive: true,
       },
     });
+
+    if (password) {
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      await prisma.account.upsert({
+        where: {
+          userId: user.id,
+        },
+        update: {
+          passwordHash,
+        },
+        create: {
+          userId: user.id,
+          passwordHash,
+        },
+      });
+    }
+  } catch (error) {
+    usersRedirect("error", friendlyPrismaError(error));
   }
 
   revalidatePath("/users");
+  usersRedirect("success", `${name} was saved.`);
 }
 
 export async function updateUser(formData: FormData) {
-  await requireAccess(["ADMIN"]);
+  await requireAdminOrRedirect();
 
   const userId = readString(formData, "userId");
   const name = readString(formData, "name");
@@ -90,32 +125,56 @@ export async function updateUser(formData: FormData) {
   const isActive = formData.get("isActive") === "on";
 
   if (!userId || !name || !email) {
-    throw new Error("User, name, and email are required");
+    usersRedirect("error", "User, name, and email are required.");
   }
 
-  await prisma.user.update({
+  const duplicateEmail = await prisma.user.findFirst({
     where: {
-      id: userId,
-    },
-    data: {
-      name,
       email,
-      role: role as any,
-      isActive,
+      id: {
+        not: userId,
+      },
+    },
+    select: {
+      name: true,
     },
   });
 
+  if (duplicateEmail) {
+    usersRedirect(
+      "error",
+      `Email is already assigned to ${duplicateEmail.name}. Use a unique email.`,
+    );
+  }
+
+  try {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        name,
+        email,
+        role: role as any,
+        isActive,
+      },
+    });
+  } catch (error) {
+    usersRedirect("error", friendlyPrismaError(error));
+  }
+
   revalidatePath("/users");
   revalidatePath("/profile");
+  usersRedirect("success", `${name} was updated.`);
 }
 
 export async function deactivateUser(formData: FormData) {
-  await requireAccess(["ADMIN"]);
+  await requireAdminOrRedirect();
 
   const userId = readString(formData, "userId");
 
   if (!userId) {
-    throw new Error("User is required");
+    usersRedirect("error", "User is required.");
   }
 
   await prisma.user.update({
@@ -128,20 +187,21 @@ export async function deactivateUser(formData: FormData) {
   });
 
   revalidatePath("/users");
+  usersRedirect("success", "User was deactivated.");
 }
 
 export async function resetUserPassword(formData: FormData) {
-  await requireAccess(["ADMIN"]);
+  await requireAdminOrRedirect();
 
   const userId = readString(formData, "userId");
   const password = readString(formData, "password");
 
   if (!userId) {
-    throw new Error("User is required");
+    usersRedirect("error", "User is required.");
   }
 
   if (password.length < 8) {
-    throw new Error("Password must be at least 8 characters");
+    usersRedirect("error", "Password must be at least 8 characters.");
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -160,4 +220,5 @@ export async function resetUserPassword(formData: FormData) {
   });
 
   revalidatePath("/users");
+  usersRedirect("success", "Password was reset.");
 }
