@@ -447,6 +447,26 @@ model KnowledgeDocument {
 
   documentType String?
 
+  projectId String?
+
+  reviewId String?
+
+  sprId String?
+
+  srId String?
+
+  iteration String @default("1.0")
+
+  artifactType String @default("Review Artifact")
+
+  scanner String?
+
+  fileName String?
+
+  uploadedById String?
+
+  visibility String @default("REVIEW_TEAM")
+
   createdAt DateTime @default(now())
 }
 

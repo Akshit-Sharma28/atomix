@@ -12,15 +12,29 @@ interface ProjectOption {
   sprId?: string | null;
 }
 
+interface ReviewOption {
+  id: string;
+  srId?: string | null;
+  title: string;
+  status: string;
+  projectId: string;
+}
+
 export default function ImportUploader({
   projects,
+  reviews,
 }: {
   projects: ProjectOption[];
+  reviews: ReviewOption[];
 }) {
   const [file, setFile] =
     useState<File | null>(null);
   const [projectId, setProjectId] =
     useState(projects[0]?.id ?? "");
+  const [reviewId, setReviewId] =
+    useState("");
+  const [iteration, setIteration] =
+    useState("1.0");
   const [loading, setLoading] =
     useState(false);
   const [message, setMessage] =
@@ -30,9 +44,7 @@ export default function ImportUploader({
 
   async function upload() {
     if (!file || !projectId) {
-      setError(
-        "Choose a project and a Burp XML file."
-      );
+      setError("Choose an SPR/project and a Burp XML file.");
       return;
     }
 
@@ -43,6 +55,9 @@ export default function ImportUploader({
     const formData = new FormData();
     formData.append("file", file);
     formData.append("projectId", projectId);
+    formData.append("reviewId", reviewId);
+    formData.append("iteration", iteration);
+    formData.append("visibility", "REVIEW_TEAM");
 
     const response = await fetch(
       "/api/import/burp",
@@ -67,11 +82,13 @@ export default function ImportUploader({
       return;
     }
 
-    setMessage(
-      `Imported ${data.imported} findings`
-    );
+    setMessage(`Stored XML and imported ${data.imported} findings`);
     setFile(null);
   }
+
+  const projectReviews = reviews.filter(
+    (review) => review.projectId === projectId
+  );
 
   return (
     <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-6">
@@ -82,19 +99,23 @@ export default function ImportUploader({
         />
         <div>
           <h2 className="text-xl font-bold text-white">
-            Scanner Import
+            Burp XML finding import
           </h2>
           <p className="text-sm text-slate-400">
-            Import Burp Suite XML into a selected SPR/project.
+            Store the Burp XML in the review vault and optionally map issues to
+            the selected SR.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-4">
         <select
           value={projectId}
           onChange={(event) =>
-            setProjectId(event.target.value)
+            {
+              setProjectId(event.target.value);
+              setReviewId("");
+            }
           }
           className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300 outline-none focus:border-cyan-400"
         >
@@ -114,6 +135,31 @@ export default function ImportUploader({
                 : project.name}
             </option>
           ))}
+        </select>
+
+        <select
+          value={reviewId}
+          onChange={(event) => setReviewId(event.target.value)}
+          className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300 outline-none focus:border-cyan-400"
+        >
+          <option value="">Select SR / review</option>
+          {projectReviews.map((review) => (
+            <option key={review.id} value={review.id}>
+              {review.srId ?? review.title} · {review.status}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={iteration}
+          onChange={(event) => setIteration(event.target.value)}
+          className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300 outline-none focus:border-cyan-400"
+        >
+          <option value="1.0">1.0 · First review</option>
+          <option value="1.2">1.2 · Retest 1</option>
+          <option value="1.3">1.3 · Retest 2</option>
+          <option value="1.4">1.4 · Retest 3</option>
+          <option value="2.0">2.0 · New review cycle</option>
         </select>
 
         <input
