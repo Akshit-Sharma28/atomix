@@ -19,6 +19,7 @@ import {
   RotateCcw,
   ClipboardList,
   FileSearch,
+  ShieldCheck,
   TerminalSquare,
 } from "lucide-react";
 
@@ -171,6 +172,19 @@ export default function Sidebar({
       label: "Peer Review Agent",
       icon: FileSearch,
       roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "QA_REVIEWER", "REVIEWER"],
+    },
+    {
+      href: "/workflow/reviewer-copilot",
+      label: "Reviewer Copilot",
+      icon: ShieldCheck,
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "VALIDATOR",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "RETESTER",
+      ],
     },
     {
       href: "/workflow/command-center",

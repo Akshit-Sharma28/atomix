@@ -637,6 +637,11 @@ export async function getDashboardWorkspace({
         href: "/workflow/peer-review",
         detail: "Cross-check scope, artifacts, controls, and scan evidence.",
       },
+      {
+        label: "Reviewer Copilot",
+        href: "/workflow/reviewer-copilot",
+        detail: "Run passive web checks and use LLM review prompt scenarios.",
+      },
     ],
     sections: [
       {

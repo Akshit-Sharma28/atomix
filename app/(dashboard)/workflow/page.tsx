@@ -5,6 +5,7 @@ import {
   FileSearch,
   GitBranch,
   ListChecks,
+  ShieldCheck,
   TerminalSquare,
   UserPlus,
 } from "lucide-react";
@@ -52,6 +53,22 @@ const agentWorkflows = [
       "Review FEAD, BEAD, LLM FEAD, and scan evidence against scope and control coverage before reviewer sign-off.",
     icon: FileSearch,
     roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "QA_REVIEWER", "REVIEWER"],
+  },
+  {
+    title: "Reviewer Copilot Agent",
+    href: "/workflow/reviewer-copilot",
+    mode: "Reviewer assist",
+    description:
+      "Run passive web posture checks, build reviewer test plans, and use an authorized LLM prompt library during infosec reviews.",
+    icon: ShieldCheck,
+    roles: [
+      "ADMIN",
+      "GOVERNANCE_TEAM",
+      "VALIDATOR",
+      "QA_REVIEWER",
+      "REVIEWER",
+      "RETESTER",
+    ],
   },
   {
     title: "DB Action Builder Agent",
