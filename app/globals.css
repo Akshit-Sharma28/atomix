@@ -265,7 +265,8 @@ a {
     #020617;
   background-size: 18px 18px, 18px 18px, auto, auto;
   border: 1px solid rgba(34, 211, 238, 0.14);
-  height: 170px;
+  aspect-ratio: 16 / 9;
+  min-height: 210px;
   image-rendering: pixelated;
   overflow: hidden;
   position: relative;

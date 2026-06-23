@@ -171,7 +171,7 @@ export default function Home() {
         </div>
 
         <div className="rounded-[2rem] border border-cyan-300/20 bg-slate-950/80 p-5 shadow-2xl backdrop-blur">
-          <div className="grid gap-4 lg:grid-cols-[1fr_0.92fr]">
+          <div className="grid gap-4 xl:grid-cols-[0.95fr_1.25fr]">
             <div>
               <div className="mb-4 flex items-center justify-between gap-4">
                 <div>
@@ -226,10 +226,7 @@ export default function Home() {
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-cyan-300/20 bg-black p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="font-mono text-xs uppercase tracking-[0.22em] text-cyan-200">
-                  8-bit intro
-                </p>
+              <div className="mb-3 flex justify-end">
                 <span className="rounded bg-cyan-300 px-2 py-1 font-mono text-[10px] font-black text-slate-950">
                   ROUND 01
                 </span>
