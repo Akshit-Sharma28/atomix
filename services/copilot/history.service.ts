@@ -6,6 +6,6 @@ getConversationHistory() {
     orderBy: {
       createdAt: "desc",
     },
-    take: 20,
+    take: 5,
   });
 }
