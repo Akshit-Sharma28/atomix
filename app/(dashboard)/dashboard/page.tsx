@@ -8,7 +8,6 @@ import {
 
 import KPIGrid from "@/components/dashboard/kpi-grid";
 import OllamaStatus from "@/components/ai/ollama-status";
-import UserMenu from "@/components/users/user-menu";
 
 import {
   getDashboardMetrics,
@@ -35,7 +34,7 @@ export default async function DashboardPage() {
   return (
     <div className="w-full px-8 py-6">
       <div className="-ml-8 mb-6 border-b border-slate-800 pb-5 pl-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pr-48">
           <div>
             <div className="flex items-center gap-3">
               <Shield size={28} className="text-cyan-400" />
@@ -49,7 +48,6 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <UserMenu />
         </div>
       </div>
 
