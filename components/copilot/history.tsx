@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Clock3, MessageSquareText } from "lucide-react";
 
 interface Props {
@@ -38,11 +39,11 @@ export default function History({ history }: Props) {
         )}
 
         {recent.map((item, index) => (
-          <article
+          <details
             key={item.id}
-            className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
+            className="group rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
           >
-            <div className="flex items-start gap-3">
+            <summary className="flex cursor-pointer list-none items-start gap-3">
               <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300">
                 <MessageSquareText size={16} />
               </div>
@@ -58,8 +59,17 @@ export default function History({ history }: Props) {
                   {item.answer.length > 170 ? "..." : ""}
                 </p>
               </div>
+            </summary>
+            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/80 p-4 text-sm leading-6 text-slate-300">
+              <p className="whitespace-pre-wrap">{item.answer}</p>
+              <Link
+                href={`/copilot?prompt=${encodeURIComponent(item.question)}`}
+                className="mt-4 inline-flex rounded-xl border border-cyan-400/30 px-3 py-2 font-semibold text-cyan-200 hover:bg-cyan-400/10"
+              >
+                Open this prompt
+              </Link>
             </div>
-          </article>
+          </details>
         ))}
       </div>
     </aside>

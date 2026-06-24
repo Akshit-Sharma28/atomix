@@ -18,6 +18,7 @@ interface ReviewOption {
   title: string;
   status: string;
   projectId: string;
+  iteration: string;
 }
 
 export default function ImportUploader({
@@ -33,8 +34,6 @@ export default function ImportUploader({
     useState(projects[0]?.id ?? "");
   const [reviewId, setReviewId] =
     useState("");
-  const [iteration, setIteration] =
-    useState("1.0");
   const [loading, setLoading] =
     useState(false);
   const [message, setMessage] =
@@ -43,8 +42,8 @@ export default function ImportUploader({
     useState("");
 
   async function upload() {
-    if (!file || !projectId) {
-      setError("Choose an SPR/project and a Burp XML file.");
+    if (!file || !projectId || !reviewId) {
+      setError("Choose an SPR, SR, and Burp XML file.");
       return;
     }
 
@@ -56,7 +55,7 @@ export default function ImportUploader({
     formData.append("file", file);
     formData.append("projectId", projectId);
     formData.append("reviewId", reviewId);
-    formData.append("iteration", iteration);
+    formData.append("iteration", selectedReview?.iteration ?? "1.0");
     formData.append("visibility", "REVIEW_TEAM");
 
     const response = await fetch(
@@ -89,6 +88,9 @@ export default function ImportUploader({
   const projectReviews = reviews.filter(
     (review) => review.projectId === projectId
   );
+  const selectedReview = projectReviews.find(
+    (review) => review.id === reviewId
+  );
 
   return (
     <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-6">
@@ -108,7 +110,7 @@ export default function ImportUploader({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-[1fr_1fr_0.65fr_1.15fr]">
         <select
           value={projectId}
           onChange={(event) =>
@@ -150,17 +152,14 @@ export default function ImportUploader({
           ))}
         </select>
 
-        <select
-          value={iteration}
-          onChange={(event) => setIteration(event.target.value)}
-          className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300 outline-none focus:border-cyan-400"
-        >
-          <option value="1.0">1.0 · First review</option>
-          <option value="1.2">1.2 · Retest 1</option>
-          <option value="1.3">1.3 · Retest 2</option>
-          <option value="1.4">1.4 · Retest 3</option>
-          <option value="2.0">2.0 · New review cycle</option>
-        </select>
+        <div className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300">
+          <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Iteration
+          </span>
+          <span className="font-semibold text-white">
+            {selectedReview?.iteration ?? "Select SR"}
+          </span>
+        </div>
 
         <input
           type="file"

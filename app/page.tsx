@@ -15,10 +15,10 @@ import {
 } from "lucide-react";
 
 const heroStats = [
-  ["Validator", "scope readiness"],
-  ["Governance", "capacity signals"],
-  ["Reviewer", "evidence quality"],
-  ["Executive", "delivery view"],
+  ["Scope", "readiness"],
+  ["Capacity", "reviewer coverage"],
+  ["Quality", "peer review"],
+  ["Retest", "closure signals"],
 ];
 
 const capabilityCards = [
@@ -131,9 +131,9 @@ export default function Home() {
           </h1>
 
           <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
-            Atomix helps governance teams coordinate validator readiness,
-            reviewer capacity, peer review, retest queues, SLA signals, and
-            executive reporting without replacing existing review systems.
+            Atomix brings scope readiness, reviewer capacity, evidence quality,
+            retest coordination, SLA signals, and leadership reporting into one
+            governed operating view for security review teams.
           </p>
 
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -171,7 +171,34 @@ export default function Home() {
         </div>
 
         <div className="rounded-[2rem] border border-cyan-300/20 bg-slate-950/80 p-5 shadow-2xl backdrop-blur">
-          <div className="grid gap-4 xl:grid-cols-[0.95fr_1.25fr]">
+          <div className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr]">
+            <div className="overflow-hidden rounded-2xl border border-cyan-300/20 bg-black p-4">
+              <div className="mb-3 flex justify-end">
+                <span className="rounded bg-cyan-300 px-2 py-1 font-mono text-[10px] font-black text-slate-950">
+                  ROUND 01
+                </span>
+              </div>
+              <div className="atomix-arcade-stage">
+                <div className="atomix-pixel atomix-hero-sprite">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className="atomix-pixel atomix-attacker-sprite">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className="atomix-laser" />
+                <div className="atomix-shield-burst" />
+                <div className="atomix-packet atomix-packet-a">0101</div>
+                <div className="atomix-packet atomix-packet-b">XSS</div>
+                <div className="atomix-fight-caption">
+                  ATOMIX BLOCKED INTRUSION
+                </div>
+              </div>
+            </div>
+
             <div>
               <div className="mb-4 flex items-center justify-between gap-4">
                 <div>
@@ -225,32 +252,6 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-cyan-300/20 bg-black p-4">
-              <div className="mb-3 flex justify-end">
-                <span className="rounded bg-cyan-300 px-2 py-1 font-mono text-[10px] font-black text-slate-950">
-                  ROUND 01
-                </span>
-              </div>
-              <div className="atomix-arcade-stage">
-                <div className="atomix-pixel atomix-hero-sprite">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="atomix-pixel atomix-attacker-sprite">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="atomix-laser" />
-                <div className="atomix-shield-burst" />
-                <div className="atomix-packet atomix-packet-a">0101</div>
-                <div className="atomix-packet atomix-packet-b">XSS</div>
-                <div className="atomix-fight-caption">
-                  ATOMIX BLOCKED INTRUSION
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>

@@ -82,7 +82,7 @@ export default async function SLAPage() {
   return (
     <div className="w-full px-8 py-6">
       <div className="mb-8 border-b border-slate-800 pb-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4 pr-0 xl:pr-72">
           <div className="flex items-center gap-4">
             <AlertTriangle
               size={40}

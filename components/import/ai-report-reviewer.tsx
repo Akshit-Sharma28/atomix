@@ -15,6 +15,7 @@ type ReviewOption = {
   title: string;
   status: string;
   projectId: string;
+  iteration: string;
 };
 
 export default function AIReportReviewer({
@@ -27,10 +28,13 @@ export default function AIReportReviewer({
   const [analysis, setAnalysis] = useState("");
   const [loading, setLoading] = useState(false);
   const [projectId, setProjectId] = useState("");
+  const [reviewId, setReviewId] = useState("");
 
   const projectReviews = reviews.filter(
     (review) => review.projectId === projectId
   );
+  const selectedReview = projectReviews.find((review) => review.id === reviewId);
+  const iteration = selectedReview?.iteration ?? "Select SR first";
 
   async function submit(formData: FormData) {
     setLoading(true);
@@ -45,7 +49,7 @@ export default function AIReportReviewer({
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-6">
+    <section className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-6">
       <div className="mb-5 flex items-start gap-3">
         <Bot className="text-cyan-300" size={24} />
         <div>
@@ -61,11 +65,14 @@ export default function AIReportReviewer({
         </div>
       </div>
 
-      <form action={submit} className="grid gap-3 lg:grid-cols-5">
+      <form action={submit} className="grid gap-3 lg:grid-cols-6">
         <select
           name="projectId"
           value={projectId}
-          onChange={(event) => setProjectId(event.target.value)}
+          onChange={(event) => {
+            setProjectId(event.target.value);
+            setReviewId("");
+          }}
           className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
           required
         >
@@ -78,7 +85,10 @@ export default function AIReportReviewer({
         </select>
         <select
           name="reviewId"
+          value={reviewId}
+          onChange={(event) => setReviewId(event.target.value)}
           className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+          required
         >
           <option value="">Select SR / review</option>
           {projectReviews.map((review) => (
@@ -87,16 +97,13 @@ export default function AIReportReviewer({
             </option>
           ))}
         </select>
-        <select
-          name="iteration"
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-        >
-          <option value="1.0">1.0 · First review</option>
-          <option value="1.2">1.2 · Retest 1</option>
-          <option value="1.3">1.3 · Retest 2</option>
-          <option value="1.4">1.4 · Retest 3</option>
-          <option value="2.0">2.0 · New review cycle</option>
-        </select>
+        <input type="hidden" name="iteration" value={selectedReview?.iteration ?? "1.0"} />
+        <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-300">
+          <span className="block text-[11px] uppercase tracking-[0.18em] text-slate-500">
+            Review iteration
+          </span>
+          <span className="font-semibold text-white">{iteration}</span>
+        </div>
         <select
           name="artifactType"
           className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
@@ -145,12 +152,12 @@ export default function AIReportReviewer({
           name="file"
           type="file"
           accept=".pdf,.xml,.json,.csv,.txt,.html,.md,.doc,.docx,.png,.jpg,.jpeg"
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white lg:col-span-3"
+          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white lg:col-span-4"
           required
         />
         <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 lg:col-span-2">
           {loading ? <Loader2 className="animate-spin" size={16} /> : <FileSearch size={16} />}
-          Store + AI Analyze
+          Add document to folder
         </button>
       </form>
 

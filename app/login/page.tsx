@@ -98,7 +98,7 @@ function LoginForm() {
           <div className="max-w-2xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
               <Sparkles size={16} />
-              Role-based access for governance workflows
+              Secure governance workspace
             </div>
 
             <h1 className="text-4xl font-black tracking-tight md:text-6xl">
@@ -109,17 +109,17 @@ function LoginForm() {
             </h1>
 
             <p className="mt-5 max-w-xl text-base leading-8 text-slate-300">
-              Your dashboard changes based on your role: Admin, Governance
-              Team, Validator, Reviewer, Retester, QA Reviewer, Project Manager,
-              Engagement Manager, or Executive.
+              Access a governed workspace for scope readiness, review
+              coordination, evidence tracking, retest status, SLA signals, and
+              leadership reporting.
             </p>
 
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
               {[
-                ["Validators", "scope and prerequisites"],
-                ["Governance", "capacity and weekly calls"],
-                ["Reviewers", "assigned reviews and evidence"],
-                ["Executives", "delivery signals and reports"],
+                ["Scope readiness", "prerequisites and review boundaries"],
+                ["Capacity signals", "assignments and weekly updates"],
+                ["Evidence quality", "artifacts, scans, and peer review"],
+                ["Delivery insight", "SLA, retest, and reporting views"],
               ].map(([title, text]) => (
                 <div
                   key={title}
@@ -133,9 +133,9 @@ function LoginForm() {
 
             <div className="mt-6 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4">
               <p className="text-sm leading-6 text-slate-300">
-                Atomix is a governance coordination layer: it tracks readiness,
-                assignments, review quality, retest status, SLA pressure, and
-                leadership reporting with AI assistance.
+                Atomix acts as a coordination layer for security review
+                governance, helping teams maintain clear ownership, evidence
+                traceability, and timely delivery follow-up.
               </p>
             </div>
           </div>
@@ -168,8 +168,9 @@ function LoginForm() {
                 </p>
               </div>
               <p className="text-sm leading-6 text-slate-400">
-                After login, Atomix loads your RBAC-specific dashboard, sidebar,
-                workflow agents, and assigned records.
+                Atomix opens the right operating view for your work, with
+                governed access to relevant records, workflows, and AI-assisted
+                review actions.
               </p>
             </div>
 

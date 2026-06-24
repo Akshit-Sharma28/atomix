@@ -228,7 +228,7 @@ export default async function ReviewersPage({
       <div className="mb-6 border-b border-slate-800 pb-5">
         <div className="mb-2 text-sm text-slate-500">Reviewer Governance</div>
 
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4 pr-0 xl:pr-72">
           <div>
             <h1 className="text-3xl font-bold text-white">
               Reviewer Capacity & Assignments

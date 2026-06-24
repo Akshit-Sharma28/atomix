@@ -59,6 +59,14 @@ export default async function GovernanceCallPage({
   const status = params.status ?? "";
   const reviewer = params.reviewer ?? "";
   const project = params.project ?? "";
+  const returnParams = new URLSearchParams();
+  if (query) returnParams.set("q", query);
+  if (status) returnParams.set("status", status);
+  if (reviewer) returnParams.set("reviewer", reviewer);
+  if (project) returnParams.set("project", project);
+  const returnTo = `/reviewers/governance-call${
+    returnParams.toString() ? `?${returnParams.toString()}` : ""
+  }`;
 
   const [weeklyAssignments, canRunWeeklyCheckIn] = await Promise.all([
     prisma.reviewerAssignment.findMany({
@@ -390,6 +398,7 @@ export default async function GovernanceCallPage({
                       name="assignmentId"
                       value={assignment.id}
                     />
+                    <input type="hidden" name="returnTo" value={returnTo} />
 
                     <label>
                       <span className="mb-2 block text-xs font-semibold text-slate-400">

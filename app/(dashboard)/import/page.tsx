@@ -76,25 +76,55 @@ export default async function ImportPage() {
       })
     : [];
 
-  const visibleReviewIds = assignmentScope.map((item) => item.reviewId);
-  const visibleProjectIds = [
-    ...assignmentScope.map((item) => item.review.projectId),
-    ...managedProjects.map((project) => project.id),
-  ];
+  const visibleReviewIds = Array.from(
+    new Set(assignmentScope.map((item) => item.reviewId))
+  );
+  const managedProjectIds = managedProjects.map((project) => project.id);
+  const visibleProjectIds = Array.from(
+    new Set([
+      ...assignmentScope.map((item) => item.review.projectId),
+      ...managedProjectIds,
+    ])
+  );
 
   const [projects, documents] = await Promise.all([
     prisma.project.findMany({
+      where: canSeeAll
+        ? undefined
+        : {
+            id: {
+              in: visibleProjectIds,
+            },
+          },
       select: {
         id: true,
         name: true,
         sprId: true,
         reviews: {
+          where: canSeeAll
+            ? undefined
+            : {
+                OR: [
+                  {
+                    id: {
+                      in: visibleReviewIds,
+                    },
+                  },
+                  {
+                    projectId: {
+                      in: managedProjectIds,
+                    },
+                  },
+                ],
+              },
           select: {
             id: true,
             srId: true,
             title: true,
+            type: true,
             status: true,
             projectId: true,
+            createdAt: true,
           },
           orderBy: {
             createdAt: "desc",
@@ -132,7 +162,34 @@ export default async function ImportPage() {
     }),
   ]);
 
-  const reviews = projects.flatMap((project) => project.reviews);
+  const reviews = projects
+    .flatMap((project) => {
+      let retestCounter = 1;
+
+      return [...project.reviews]
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map((review) => {
+          const isRetest = `${review.type} ${review.title}`
+            .toLowerCase()
+            .includes("retest");
+          const iteration = isRetest ? `1.${++retestCounter}` : "1.0";
+
+          return {
+            id: review.id,
+            srId: review.srId,
+            title: review.title,
+            status: review.status,
+            projectId: review.projectId,
+            iteration,
+          };
+        });
+    })
+    .sort((a, b) => (a.srId ?? a.title).localeCompare(b.srId ?? b.title));
+  const projectOptions = projects.map((project) => ({
+    id: project.id,
+    name: project.name,
+    sprId: project.sprId,
+  }));
   const mappedDocuments = documents.filter((document) => document.projectId);
   const iterations = new Set(documents.map((document) => document.iteration));
 
@@ -209,8 +266,18 @@ export default async function ImportPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-6">
-          <AIReportReviewer projects={projects} reviews={reviews} />
-          <ImportUploader projects={projects} reviews={reviews} />
+          <AIReportReviewer projects={projectOptions} reviews={reviews} />
+          <details className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <summary className="cursor-pointer list-none text-lg font-bold text-white">
+              Advanced: Burp XML finding import
+              <span className="ml-3 text-sm font-normal text-slate-500">
+                Store scanner XML against the same SPR/SR folder
+              </span>
+            </summary>
+            <div className="mt-5">
+              <ImportUploader projects={projectOptions} reviews={reviews} />
+            </div>
+          </details>
         </div>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900">

@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clipboard,
   ExternalLink,
+  FileDown,
   FileText,
   Loader2,
   Search,
@@ -45,6 +46,24 @@ const appTypes = ["Web", "API", "Web + API", "Web + LLM", "LLM only", "Thick Cli
 const authModels = ["SSO", "Form login", "JWT/API token", "No auth", "Multiple auth paths"];
 const riskLevels = ["High", "Medium", "Low"];
 
+function normalizePublicUrl(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (/^(localhost|127\.0\.0\.1|\[::1\])/i.test(trimmed)) {
+    return `http://${trimmed}`;
+  }
+
+  return `https://www.${trimmed.replace(/^www\./i, "")}`;
+}
+
 function severityClass(severity: string) {
   if (severity === "critical" || severity === "high") {
     return "border-red-500/30 bg-red-950/20 text-red-200";
@@ -75,7 +94,7 @@ function promptToCopilot(
   return [
     "Act as Atomix Reviewer Copilot for an authorized security review.",
     "Create a concise reviewer test plan with FEAD/BEAD controls, evidence to collect, and manual validation steps.",
-    `Target URL: ${plan.targetUrl || "Not provided"}`,
+    `Target URL: ${normalizePublicUrl(plan.targetUrl) || "Not provided"}`,
     `Application type: ${plan.appType}`,
     `Authentication model: ${plan.authModel}`,
     `Roles/RBAC in scope: ${plan.roles || "Not provided"}`,
@@ -141,9 +160,12 @@ export default function ReviewerCopilotAgent() {
   }
 
   async function runWebReview() {
+    const normalizedUrl = normalizePublicUrl(targetUrl);
+
     setWebLoading(true);
     setWebError("");
     setWebResult(null);
+    setTargetUrl(normalizedUrl);
 
     try {
       const response = await fetch("/api/reviewer-copilot/web-review", {
@@ -151,7 +173,7 @@ export default function ReviewerCopilotAgent() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url: targetUrl }),
+        body: JSON.stringify({ url: normalizedUrl }),
       });
       const data = await response.json();
 
@@ -162,7 +184,7 @@ export default function ReviewerCopilotAgent() {
       setWebResult(data);
       setPlan((current) => ({
         ...current,
-        targetUrl,
+        targetUrl: normalizedUrl,
         scopeNotes:
           current.scopeNotes ||
           `Passive web posture score ${data.score}/100 (${data.grade}). Review high/medium findings before manual testing.`,
@@ -179,7 +201,13 @@ export default function ReviewerCopilotAgent() {
     setCopilotResponse("");
 
     try {
-      const question = promptToCopilot(plan, selectedPrompt);
+      const question = promptToCopilot(
+        {
+          ...plan,
+          targetUrl: normalizePublicUrl(plan.targetUrl),
+        },
+        selectedPrompt
+      );
       const response = await fetch("/api/copilot", {
         method: "POST",
         headers: {
@@ -196,9 +224,112 @@ export default function ReviewerCopilotAgent() {
     setCopilotLoading(false);
   }
 
+  async function downloadWebReviewPdf() {
+    if (!webResult) {
+      return;
+    }
+
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 42;
+    let y = 54;
+
+    function addPageIfNeeded(height = 60) {
+      if (y + height > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    }
+
+    function writeWrapped(text: string, x: number, size = 10, color: [number, number, number] = [47, 57, 72]) {
+      doc.setFontSize(size);
+      doc.setTextColor(...color);
+      const lines = doc.splitTextToSize(text, pageWidth - x - margin);
+      doc.text(lines, x, y);
+      y += lines.length * (size + 4);
+    }
+
+    doc.setFillColor(2, 6, 23);
+    doc.rect(0, 0, pageWidth, 128, "F");
+    doc.setTextColor(103, 232, 249);
+    doc.setFontSize(12);
+    doc.text("ATOMIX REVIEWER COPILOT", margin, y);
+    y += 28;
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(26);
+    doc.text("Quick Web Security Review", margin, y);
+    y += 28;
+    doc.setTextColor(203, 213, 225);
+    doc.setFontSize(10);
+    doc.text(`Target: ${webResult.target}`, margin, y);
+    y += 16;
+    doc.text(`Final URL: ${webResult.finalUrl}`, margin, y);
+    y += 16;
+    doc.text(`Scanned: ${new Date(webResult.scannedAt).toLocaleString()} · Duration: ${webResult.durationMs}ms`, margin, y);
+    y = 166;
+
+    const cards = [
+      ["Score", `${webResult.score}/100`],
+      ["Grade", webResult.grade],
+      ["Posture", webResult.posture],
+      ["Findings", `${webResult.findings.length}`],
+    ];
+    cards.forEach(([label, value], index) => {
+      const cardWidth = (pageWidth - margin * 2 - 24) / 4;
+      const x = margin + index * (cardWidth + 8);
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(x, y, cardWidth, 74, 10, 10, "F");
+      doc.setTextColor(71, 85, 105);
+      doc.setFontSize(9);
+      doc.text(label.toUpperCase(), x + 14, y + 24);
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(index === 2 ? 12 : 20);
+      doc.text(doc.splitTextToSize(value, cardWidth - 28), x + 14, y + 50);
+    });
+    y += 112;
+
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Executive Summary", margin, y);
+    y += 20;
+    writeWrapped(webResult.summary, margin, 11);
+    y += 12;
+
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Reviewer Next Actions", margin, y);
+    y += 20;
+    webResult.quickReviewActions.forEach((action) => {
+      addPageIfNeeded(28);
+      writeWrapped(`• ${action}`, margin, 10);
+    });
+    y += 8;
+
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Findings", margin, y);
+    y += 20;
+    webResult.findings.forEach((finding, index) => {
+      addPageIfNeeded(92);
+      doc.setFillColor(index % 2 === 0 ? 248 : 241, 250, 252);
+      doc.roundedRect(margin, y - 12, pageWidth - margin * 2, 86, 8, 8, "F");
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(12);
+      doc.text(`${finding.check} — ${finding.severity.toUpperCase()} / ${finding.status.toUpperCase()}`, margin + 14, y + 8);
+      y += 28;
+      writeWrapped(`${finding.control}. ${finding.evidence}`, margin + 14, 9);
+      writeWrapped(`Recommendation: ${finding.recommendation}`, margin + 14, 9, [8, 100, 116]);
+      y += 14;
+    });
+
+    doc.save(`atomix-quick-web-security-review-${webResult.grade}.pdf`);
+  }
+
   return (
     <div className="space-y-8">
-      <section className="rounded-[2rem] border border-cyan-500/20 bg-slate-900/70 p-8">
+      <section className="rounded-[2rem] border border-cyan-500/20 bg-slate-900/70 p-6">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.35em] text-cyan-300">
@@ -224,16 +355,16 @@ export default function ReviewerCopilotAgent() {
           </a>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="flex flex-wrap gap-2">
           {[
             ["Passive posture", "Headers, TLS, CSP, CORS, cookies"],
             ["Reviewer checklist", "Scope, RBAC, evidence, controls"],
             ["LLM prompt bank", `${llmPromptLibrary.length} scenarios`],
             ["Copilot ready", "Structured prompts, not raw JSON"],
           ].map(([title, text]) => (
-            <div key={title} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
-              <p className="text-lg font-bold text-white">{title}</p>
-              <p className="mt-2 text-sm text-slate-400">{text}</p>
+            <div key={title} className="rounded-full border border-slate-800 bg-slate-950/70 px-4 py-2">
+              <p className="text-sm font-bold text-white">{title}</p>
+              <p className="text-xs text-slate-500">{text}</p>
             </div>
           ))}
         </div>
@@ -257,7 +388,7 @@ export default function ReviewerCopilotAgent() {
             <input
               value={targetUrl}
               onChange={(event) => setTargetUrl(event.target.value)}
-              placeholder="https://example.com"
+              placeholder="example.com"
               className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-white outline-none focus:border-cyan-400"
             />
             <button
@@ -278,6 +409,22 @@ export default function ReviewerCopilotAgent() {
 
           {webResult && (
             <div className="mt-6 space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-950/10 p-4">
+                <div>
+                  <p className="font-bold text-white">Quick results ready</p>
+                  <p className="text-sm text-slate-400">
+                    Export a reviewer-friendly PDF summary for evidence notes or handoff.
+                  </p>
+                </div>
+                <button
+                  onClick={downloadWebReviewPdf}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-cyan-400/30 px-5 py-3 font-bold text-cyan-100 hover:bg-cyan-400/10"
+                >
+                  <FileDown size={18} />
+                  Download PDF
+                </button>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="rounded-2xl border border-cyan-500/20 bg-cyan-950/20 p-5">
                   <p className="text-sm uppercase tracking-[0.2em] text-cyan-200">Score</p>
@@ -345,6 +492,12 @@ export default function ReviewerCopilotAgent() {
               <input
                 value={plan.targetUrl}
                 onChange={(event) => setPlan({ ...plan, targetUrl: event.target.value })}
+                onBlur={() =>
+                  setPlan((current) => ({
+                    ...current,
+                    targetUrl: normalizePublicUrl(current.targetUrl),
+                  }))
+                }
                 className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
               />
             </label>
@@ -418,7 +571,18 @@ export default function ReviewerCopilotAgent() {
               Generate review plan
             </button>
             <button
-              onClick={() => copy(promptToCopilot(plan, selectedPrompt), "plan")}
+              onClick={() =>
+                copy(
+                  promptToCopilot(
+                    {
+                      ...plan,
+                      targetUrl: normalizePublicUrl(plan.targetUrl),
+                    },
+                    selectedPrompt
+                  ),
+                  "plan"
+                )
+              }
               className="inline-flex items-center gap-2 rounded-2xl border border-slate-700 px-6 py-3 font-bold text-white hover:bg-slate-800"
             >
               <Clipboard size={18} />
@@ -435,19 +599,33 @@ export default function ReviewerCopilotAgent() {
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-7">
-        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <details className="rounded-[2rem] border border-slate-800 bg-slate-900/70 p-7">
+        <summary className="flex cursor-pointer list-none flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.35em] text-cyan-300">
               <FileText size={18} />
               LLM Prompt Library
             </div>
             <h3 className="text-2xl font-bold text-white">
-              Authorized LLM test scenarios for reviewer-led assessments.
+              Open authorized LLM test scenarios when needed.
             </h3>
             <p className="mt-2 max-w-4xl text-slate-400">
-              Payloads are designed for controlled lower-environment testing. Select a scenario, copy the payload,
-              and record pass/fail evidence against the expected safe signal.
+              Payloads are designed for controlled lower-environment testing.
+              Keep this closed when you only need the quick posture review.
+            </p>
+          </div>
+          <span className="rounded-2xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-200">
+            {llmPromptLibrary.length} scenarios
+          </span>
+        </summary>
+        <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-white">
+              Prompt bank workspace
+            </h3>
+            <p className="mt-2 max-w-3xl text-sm text-slate-400">
+              Select a scenario, copy the payload, and record pass/fail evidence
+              against the expected safe signal.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -547,7 +725,7 @@ export default function ReviewerCopilotAgent() {
             )}
           </div>
         </div>
-      </section>
+      </details>
     </div>
   );
 }

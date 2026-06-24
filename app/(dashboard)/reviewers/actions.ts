@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { requireAccess } from "@/services/users/access.service";
@@ -27,7 +28,11 @@ function extensionTarget(formData: FormData) {
     return customDate;
   }
 
-  const extensionDays = Number(formData.get("extensionDays") ?? 7);
+  const extensionValue = formData.get("extensionDays");
+  const extensionDays =
+    typeof extensionValue === "string" && extensionValue
+      ? Number(extensionValue)
+      : 7;
   return dateFromDays(Number.isFinite(extensionDays) ? extensionDays : 7);
 }
 
@@ -39,6 +44,9 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
   const callStatus = String(formData.get("callStatus") ?? "In Progress");
   const notes = String(formData.get("notes") ?? "").trim();
   const newDueDate = optionalDate(formData.get("newDueDate"));
+  const returnTo =
+    String(formData.get("returnTo") ?? "").trim() ||
+    "/reviewers/governance-call";
 
   if (!reviewId) {
     throw new Error("Review is required");
@@ -223,4 +231,5 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
   revalidatePath("/reviews");
   revalidatePath("/projects");
   revalidatePath("/executive");
+  redirect(returnTo);
 }
