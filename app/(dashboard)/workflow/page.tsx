@@ -71,6 +71,24 @@ const agentWorkflows = [
     ],
   },
   {
+    title: "Interview Agent",
+    href: "/workflow/interview-agent",
+    mode: "Recruitment governance",
+    description:
+      "Replace Excel-based mock/GIS/interview tracking with governed profiles, assignments, feedback, capability matrix, reminders, and audit history.",
+    icon: UserPlus,
+    roles: [
+      "ADMIN",
+      "GOVERNANCE_TEAM",
+      "ENGAGEMENT_MANAGER",
+      "PROJECT_MANAGER",
+      "VALIDATOR",
+      "QA_REVIEWER",
+      "REVIEWER",
+      "RETESTER",
+    ],
+  },
+  {
     title: "DB Action Builder Agent",
     href: "/workflow/command-center",
     mode: "DB write actions",

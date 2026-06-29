@@ -21,6 +21,7 @@ import {
   FileSearch,
   ShieldCheck,
   TerminalSquare,
+  UserPlus,
 } from "lucide-react";
 
 interface Props {
@@ -181,6 +182,21 @@ export default function Sidebar({
       roles: [
         "ADMIN",
         "GOVERNANCE_TEAM",
+        "VALIDATOR",
+        "QA_REVIEWER",
+        "REVIEWER",
+        "RETESTER",
+      ],
+    },
+    {
+      href: "/workflow/interview-agent",
+      label: "Interview Agent",
+      icon: UserPlus,
+      roles: [
+        "ADMIN",
+        "GOVERNANCE_TEAM",
+        "ENGAGEMENT_MANAGER",
+        "PROJECT_MANAGER",
         "VALIDATOR",
         "QA_REVIEWER",
         "REVIEWER",

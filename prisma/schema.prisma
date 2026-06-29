@@ -44,6 +44,13 @@ model User {
   managedProjects Project[] @relation("ProjectManager")
   validatedProjects Project[] @relation("ProjectValidator")
   appSessions      AppSession[]
+  recruitedInterviewProfiles InterviewProfile[] @relation("InterviewRecruiter")
+  managedInterviewProfiles InterviewProfile[] @relation("InterviewHiringManager")
+  ownedInterviewRounds InterviewRound[] @relation("InterviewOwner")
+  primaryInterviewRounds InterviewRound[] @relation("PrimaryInterviewer")
+  secondaryInterviewRounds InterviewRound[] @relation("SecondaryInterviewer")
+  observedInterviewRounds InterviewRound[] @relation("ObserverInterviewer")
+  ownedInterviewActions InterviewAction[] @relation("InterviewActionOwner")
 
   accounts Account?
 }
@@ -480,6 +487,144 @@ model CopilotConversation {
   question String
 
   answer String
+
+  createdAt DateTime @default(now())
+}
+
+model InterviewProfile {
+  id String @id @default(cuid())
+
+  candidateCode String @unique
+  interviewKind String @default("External")
+  name String
+  employeeId String?
+  currentTeam String?
+  currentRole String?
+  experience String?
+  skills String?
+  certifications String?
+  currentProject String?
+  resumeFileName String?
+  linkedIn String?
+  source String?
+  assignedRecruiterId String?
+  hiringManagerId String?
+  priority String @default("Medium")
+  tags String?
+  status String @default("Applied / Nominated")
+  aiEnabled Boolean @default(false)
+
+  assignedRecruiter User? @relation("InterviewRecruiter", fields: [assignedRecruiterId], references: [id])
+  hiringManager User? @relation("InterviewHiringManager", fields: [hiringManagerId], references: [id])
+  rounds InterviewRound[]
+  capabilities InterviewCapability[]
+  actions InterviewAction[]
+  audits InterviewAudit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InterviewRound {
+  id String @id @default(cuid())
+
+  profileId String
+  category String @default("Mock Interview")
+  stage String @default("Mock Interview Scheduled")
+  status String @default("Scheduled")
+  ownerId String?
+  primaryInterviewerId String?
+  secondaryInterviewerId String?
+  observerId String?
+  scheduledAt DateTime?
+  completedAt DateTime?
+  durationMinutes Int?
+  meetingLink String?
+  comments String?
+  attachments String?
+
+  profile InterviewProfile @relation(fields: [profileId], references: [id])
+  owner User? @relation("InterviewOwner", fields: [ownerId], references: [id])
+  primaryInterviewer User? @relation("PrimaryInterviewer", fields: [primaryInterviewerId], references: [id])
+  secondaryInterviewer User? @relation("SecondaryInterviewer", fields: [secondaryInterviewerId], references: [id])
+  observer User? @relation("ObserverInterviewer", fields: [observerId], references: [id])
+  feedback InterviewFeedback?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InterviewFeedback {
+  id String @id @default(cuid())
+
+  roundId String @unique
+  technicalKnowledge Int @default(0)
+  communication Int @default(0)
+  problemSolving Int @default(0)
+  securityFundamentals Int @default(0)
+  webApplicationSecurity Int @default(0)
+  apiSecurity Int @default(0)
+  burpSuite Int @default(0)
+  owasp Int @default(0)
+  cloudSecurity Int @default(0)
+  aiLlmSecurity Int @default(0)
+  documentation Int @default(0)
+  overallConfidence Int @default(0)
+  strengths String?
+  areasForImprovement String?
+  additionalNotes String?
+  recommendedLearning String?
+  finalRecommendation String @default("Borderline")
+
+  round InterviewRound @relation(fields: [roundId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InterviewCapability {
+  id String @id @default(cuid())
+
+  profileId String
+  technology String
+  rating String @default("Beginner")
+
+  profile InterviewProfile @relation(fields: [profileId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([profileId, technology])
+}
+
+model InterviewAction {
+  id String @id @default(cuid())
+
+  profileId String
+  actionType String
+  ownerId String?
+  dueDate DateTime?
+  status String @default("Open")
+  notes String?
+
+  profile InterviewProfile @relation(fields: [profileId], references: [id])
+  owner User? @relation("InterviewActionOwner", fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InterviewAudit {
+  id String @id @default(cuid())
+
+  profileId String
+  user String?
+  action String
+  fieldChanged String?
+  previousValue String?
+  newValue String?
+
+  profile InterviewProfile @relation(fields: [profileId], references: [id])
 
   createdAt DateTime @default(now())
 }
