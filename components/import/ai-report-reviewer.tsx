@@ -1,6 +1,7 @@
 "use client";
 
 import { Bot, FileSearch, Loader2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useState } from "react";
 
 type ProjectOption = {
@@ -17,6 +18,23 @@ type ReviewOption = {
   projectId: string;
   iteration: string;
 };
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="min-w-0 space-y-2">
+      <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
 
 export default function AIReportReviewer({
   projects,
@@ -49,7 +67,7 @@ export default function AIReportReviewer({
   }
 
   return (
-    <section className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-6">
+    <section className="min-w-0 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4 sm:p-6">
       <div className="mb-5 flex items-start gap-3">
         <Bot className="text-cyan-300" size={24} />
         <div>
@@ -65,97 +83,115 @@ export default function AIReportReviewer({
         </div>
       </div>
 
-      <form action={submit} className="grid gap-3 lg:grid-cols-6">
-        <select
-          name="projectId"
-          value={projectId}
-          onChange={(event) => {
-            setProjectId(event.target.value);
-            setReviewId("");
-          }}
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-          required
-        >
-          <option value="">Select project / SPR</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.sprId ?? "SPR pending"} · {project.name}
-            </option>
-          ))}
-        </select>
-        <select
-          name="reviewId"
-          value={reviewId}
-          onChange={(event) => setReviewId(event.target.value)}
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-          required
-        >
-          <option value="">Select SR / review</option>
-          {projectReviews.map((review) => (
-            <option key={review.id} value={review.id}>
-              {review.srId ?? review.title} · {review.status}
-            </option>
-          ))}
-        </select>
-        <input type="hidden" name="iteration" value={selectedReview?.iteration ?? "1.0"} />
-        <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-300">
-          <span className="block text-[11px] uppercase tracking-[0.18em] text-slate-500">
-            Review iteration
-          </span>
-          <span className="font-semibold text-white">{iteration}</span>
+      <form action={submit} className="space-y-4">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+          <Field label="SPR / information system">
+            <select
+              name="projectId"
+              value={projectId}
+              onChange={(event) => {
+                setProjectId(event.target.value);
+                setReviewId("");
+              }}
+              className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+              required
+            >
+              <option value="">Select project / SPR</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.sprId ?? "SPR pending"} · {project.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="SR / review">
+            <select
+              name="reviewId"
+              value={reviewId}
+              onChange={(event) => setReviewId(event.target.value)}
+              className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+              required
+            >
+              <option value="">Select SR / review</option>
+              {projectReviews.map((review) => (
+                <option key={review.id} value={review.id}>
+                  {review.srId ?? review.title} · {review.status}
+                </option>
+              ))}
+            </select>
+          </Field>
         </div>
-        <select
-          name="artifactType"
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-        >
-          {[
-            "FEAD",
-            "BEAD",
-            "LLM FEAD",
-            "Scan Report",
-            "Architecture Diagram",
-            "Demo Call Notes",
-            "Evidence Images",
-            "Remediation Evidence",
-            "Exception Evidence",
-          ].map((type) => (
-            <option key={type}>{type}</option>
-          ))}
-        </select>
-        <select
-          name="scanner"
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-        >
-          {[
-            "Manual / Evidence",
-            "Burp",
-            "Mend",
-            "AquaSec",
-            "Checkmarx",
-            "Qualys",
-            "MSB",
-            "LLM FEAD",
-            "Generic",
-          ].map((scanner) => (
-            <option key={scanner}>{scanner}</option>
-          ))}
-        </select>
-        <select
-          name="visibility"
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-        >
-          <option value="REVIEW_TEAM">Review team only</option>
-          <option value="GOVERNANCE">Governance visible</option>
-          <option value="LEADERSHIP">Leadership summary visible</option>
-        </select>
-        <input
-          name="file"
-          type="file"
-          accept=".pdf,.xml,.json,.csv,.txt,.html,.md,.doc,.docx,.png,.jpg,.jpeg"
-          className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white lg:col-span-4"
-          required
-        />
-        <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 lg:col-span-2">
+        <input type="hidden" name="iteration" value={selectedReview?.iteration ?? "1.0"} />
+        <div className="grid min-w-0 gap-4 md:grid-cols-3">
+          <div className="min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300">
+            <span className="block text-[11px] uppercase tracking-[0.18em] text-slate-500">
+              Review iteration
+            </span>
+            <span className="font-semibold text-white">{iteration}</span>
+          </div>
+          <Field label="Document type">
+            <select
+              name="artifactType"
+              className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+            >
+              {[
+                "FEAD",
+                "BEAD",
+                "LLM FEAD",
+                "Scan Report",
+                "Architecture Diagram",
+                "Demo Call Notes",
+                "Evidence Images",
+                "Remediation Evidence",
+                "Exception Evidence",
+              ].map((type) => (
+                <option key={type}>{type}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Source">
+            <select
+              name="scanner"
+              className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+            >
+              {[
+                "Manual / Evidence",
+                "Burp",
+                "Mend",
+                "AquaSec",
+                "Checkmarx",
+                "Qualys",
+                "MSB",
+                "LLM FEAD",
+                "Generic",
+              ].map((scanner) => (
+                <option key={scanner}>{scanner}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+          <Field label="Visibility">
+            <select
+              name="visibility"
+              className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+            >
+              <option value="REVIEW_TEAM">Review team only</option>
+              <option value="GOVERNANCE">Governance visible</option>
+              <option value="LEADERSHIP">Leadership summary visible</option>
+            </select>
+          </Field>
+          <Field label="File">
+            <input
+              name="file"
+              type="file"
+              accept=".pdf,.xml,.json,.csv,.txt,.html,.md,.doc,.docx,.png,.jpg,.jpeg"
+              className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-black"
+              required
+            />
+          </Field>
+        </div>
+        <button className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 md:w-auto">
           {loading ? <Loader2 className="animate-spin" size={16} /> : <FileSearch size={16} />}
           Add document to folder
         </button>

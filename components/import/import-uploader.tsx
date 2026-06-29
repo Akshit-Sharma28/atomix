@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   CheckCircle2,
@@ -93,7 +94,7 @@ export default function ImportUploader({
   );
 
   return (
-    <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-6">
+    <div className="min-w-0 rounded-2xl border border-cyan-500/20 bg-slate-900 p-4 sm:p-6">
       <div className="mb-5 flex items-center gap-3">
         <Upload
           size={22}
@@ -110,68 +111,75 @@ export default function ImportUploader({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-[1fr_1fr_0.65fr_1.15fr]">
-        <select
-          value={projectId}
-          onChange={(event) =>
-            {
-              setProjectId(event.target.value);
-              setReviewId("");
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <Field label="SPR / information system">
+          <select
+            value={projectId}
+            onChange={(event) =>
+              {
+                setProjectId(event.target.value);
+                setReviewId("");
+              }
             }
-          }
-          className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300 outline-none focus:border-cyan-400"
-        >
-          {projects.length === 0 && (
-            <option value="">
-              No projects available
-            </option>
-          )}
+            className="w-full min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300 outline-none focus:border-cyan-400"
+          >
+            {projects.length === 0 && (
+              <option value="">
+                No projects available
+              </option>
+            )}
 
-          {projects.map((project) => (
-            <option
-              key={project.id}
-              value={project.id}
-            >
-              {project.sprId
-                ? `${project.sprId} · ${project.name}`
-                : project.name}
-            </option>
-          ))}
-        </select>
+            {projects.map((project) => (
+              <option
+                key={project.id}
+                value={project.id}
+              >
+                {project.sprId
+                  ? `${project.sprId} · ${project.name}`
+                  : project.name}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-        <select
-          value={reviewId}
-          onChange={(event) => setReviewId(event.target.value)}
-          className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300 outline-none focus:border-cyan-400"
-        >
-          <option value="">Select SR / review</option>
-          {projectReviews.map((review) => (
-            <option key={review.id} value={review.id}>
-              {review.srId ?? review.title} · {review.status}
-            </option>
-          ))}
-        </select>
+        <Field label="SR / review">
+          <select
+            value={reviewId}
+            onChange={(event) => setReviewId(event.target.value)}
+            className="w-full min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300 outline-none focus:border-cyan-400"
+          >
+            <option value="">Select SR / review</option>
+            {projectReviews.map((review) => (
+              <option key={review.id} value={review.id}>
+                {review.srId ?? review.title} · {review.status}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300">
-          <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Iteration
-          </span>
-          <span className="font-semibold text-white">
-            {selectedReview?.iteration ?? "Select SR"}
-          </span>
-        </div>
+      <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(9rem,0.45fr)_minmax(0,1fr)]">
+        <Field label="Review iteration">
+          <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300">
+            <span className="font-semibold text-white">
+              {selectedReview?.iteration ?? "Select SR"}
+            </span>
+          </div>
+        </Field>
 
-        <input
-          type="file"
-          accept=".xml"
-          onChange={(event) =>
-            setFile(
-              event.target.files?.[0] ??
-                null
-            )
-          }
-          className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-black"
-        />
+        <Field label="Burp XML file">
+          <input
+            type="file"
+            accept=".xml"
+            onChange={(event) =>
+              setFile(
+                event.target.files?.[0] ??
+                  null
+              )
+            }
+            className="w-full min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-black"
+          />
+        </Field>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-4">
@@ -200,5 +208,22 @@ export default function ImportUploader({
         )}
       </div>
     </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block min-w-0">
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }

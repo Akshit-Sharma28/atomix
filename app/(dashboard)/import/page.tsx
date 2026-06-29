@@ -194,8 +194,8 @@ export default async function ImportPage() {
   const iterations = new Set(documents.map((document) => document.iteration));
 
   return (
-    <div className="w-full px-8 py-6">
-      <div className="mb-8 border-b border-slate-800 pb-6 pr-48">
+    <div className="w-full max-w-full overflow-x-hidden px-4 py-6 sm:px-6 xl:px-8">
+      <div className="mb-8 border-b border-slate-800 pb-6 xl:pr-32">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="flex items-center gap-4">
             <FolderOpen size={42} className="text-cyan-300" />
@@ -264,23 +264,23 @@ export default async function ImportPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-6">
+      <div className="grid min-w-0 max-w-full gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.45fr)]">
+        <div className="min-w-0 space-y-6">
           <AIReportReviewer projects={projectOptions} reviews={reviews} />
-          <details className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-            <summary className="cursor-pointer list-none text-lg font-bold text-white">
-              Advanced: Burp XML finding import
+          <details className="group min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 text-lg font-bold text-white">
+              <span>Advanced: Burp XML finding import</span>
               <span className="ml-3 text-sm font-normal text-slate-500">
                 Store scanner XML against the same SPR/SR folder
               </span>
             </summary>
-            <div className="mt-5">
+            <div className="mt-5 min-w-0">
               <ImportUploader projects={projectOptions} reviews={reviews} />
             </div>
           </details>
         </div>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900">
+        <section className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
           <div className="border-b border-slate-800 px-6 py-5">
             <div className="flex items-start gap-3">
               <Upload className="text-cyan-300" />
@@ -296,7 +296,7 @@ export default async function ImportPage() {
             </div>
           </div>
 
-          <div className="max-h-[680px] overflow-auto divide-y divide-slate-800">
+          <div className="max-h-[680px] divide-y divide-slate-800 overflow-y-auto overflow-x-hidden">
             {documents.length === 0 && (
               <div className="p-8 text-center text-slate-500">
                 No review documents are visible for your current role.
@@ -304,10 +304,10 @@ export default async function ImportPage() {
             )}
 
             {documents.map((document) => (
-              <div key={document.id} className="px-6 py-5">
+              <div key={document.id} className="min-w-0 px-6 py-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-white">{document.title}</p>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-white">{document.title}</p>
                     <p className="mt-1 text-sm text-slate-500">
                       {document.sprId ?? "SPR pending"} ·{" "}
                       {document.srId ?? "SR not selected"} · Iteration{" "}
@@ -323,22 +323,22 @@ export default async function ImportPage() {
                   </span>
                 </div>
 
-                <div className="mt-4 grid gap-3 text-xs text-slate-400 sm:grid-cols-3">
-                  <div className="rounded-xl bg-slate-950 px-3 py-2">
+                <div className="mt-4 grid min-w-0 gap-3 text-xs text-slate-400 sm:grid-cols-3 2xl:grid-cols-1">
+                  <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-2">
                     <p className="text-slate-500">Source</p>
-                    <p className="mt-1 text-slate-300">
+                    <p className="mt-1 truncate text-slate-300">
                       {document.scanner ?? document.source}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-950 px-3 py-2">
+                  <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-2">
                     <p className="text-slate-500">Visibility</p>
-                    <p className="mt-1 text-slate-300">
+                    <p className="mt-1 truncate text-slate-300">
                       {document.visibility.replaceAll("_", " ")}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-950 px-3 py-2">
+                  <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-2">
                     <p className="text-slate-500">Uploaded</p>
-                    <p className="mt-1 text-slate-300">
+                    <p className="mt-1 truncate text-slate-300">
                       {formatDate(document.createdAt)}
                     </p>
                   </div>
