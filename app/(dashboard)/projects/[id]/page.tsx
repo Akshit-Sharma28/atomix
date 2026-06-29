@@ -6,9 +6,12 @@ import {
   CalendarClock,
   FileSearch,
   FolderOpen,
+  Plus,
   ShieldAlert,
   Target,
 } from "lucide-react";
+
+import { createProjectSecurityReview } from "./actions";
 
 interface Props {
   params: Promise<{
@@ -113,11 +116,11 @@ export default async function ProjectPage({ params }: Props) {
     criticalCount > 0 ? "HIGH" : highCount > 3 ? "MEDIUM" : "LOW";
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
+    <div className="mx-auto max-w-7xl p-8">
       {/* Header */}
 
      <div className="mb-10">
-  <div className="flex items-start justify-between">
+  <div className="flex flex-wrap items-start justify-between gap-5 xl:pr-56">
 
     <div className="flex items-center gap-4">
       <FolderOpen
@@ -159,21 +162,49 @@ export default async function ProjectPage({ params }: Props) {
       </div>
     </div>
 
-    <Link
-      href={`/findings/new?project=${project.id}`}
-      className="
-      px-4
-      py-2.5
-      rounded-xl
-      bg-cyan-500
-      text-black
-      font-semibold
-      hover:bg-cyan-400
-      transition-all
-      "
-    >
-      New Finding
-    </Link>
+    <div className="flex flex-wrap items-center gap-3">
+      <a
+        href="#create-sr"
+        className="
+        inline-flex
+        items-center
+        gap-2
+        rounded-xl
+        border
+        border-cyan-400/40
+        px-4
+        py-2.5
+        font-semibold
+        text-cyan-100
+        transition-all
+        hover:border-cyan-300
+        hover:bg-cyan-400/10
+        "
+      >
+        <Plus size={17} />
+        Create SR
+      </a>
+
+      <Link
+        href={`/findings/new?project=${project.id}`}
+        className="
+        inline-flex
+        items-center
+        gap-2
+        rounded-xl
+        bg-cyan-500
+        px-4
+        py-2.5
+        font-semibold
+        text-black
+        transition-all
+        hover:bg-cyan-400
+        "
+      >
+        <ShieldAlert size={17} />
+        New Finding
+      </Link>
+    </div>
 
   </div>
 </div>
@@ -416,10 +447,129 @@ export default async function ProjectPage({ params }: Props) {
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-8">
-        <div className="flex items-center gap-3 mb-6">
-          <CalendarClock size={24} className="text-cyan-400" />
-          <h2 className="text-2xl font-bold">SR Governance History</h2>
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <CalendarClock size={24} className="text-cyan-400" />
+            <div>
+              <h2 className="text-2xl font-bold">SR Governance History</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Create Security Review records directly under this SPR, then assign
+                them through governance.
+              </p>
+            </div>
+          </div>
+          <a
+            href="#create-sr"
+            className="rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-bold text-cyan-200 hover:bg-cyan-400/10"
+          >
+            Add SR to SPR
+          </a>
         </div>
+
+        <form
+          id="create-sr"
+          action={createProjectSecurityReview}
+          className="mb-6 scroll-mt-28 rounded-2xl border border-cyan-400/20 bg-slate-950/70 p-5"
+        >
+          <input type="hidden" name="projectId" value={project.id} />
+
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
+                Create SR inside {project.sprId ?? "this SPR"}
+              </p>
+              <h3 className="mt-2 text-xl font-bold text-white">
+                New Security Review
+              </h3>
+            </div>
+            <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-200">
+              Auto-generates next SR ID
+            </span>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-5">
+            <label className="lg:col-span-2">
+              <span className="mb-2 block text-sm text-slate-400">SR title</span>
+              <input
+                name="title"
+                required
+                defaultValue={`${project.name} Security Review`}
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+                placeholder="MCP Review API Security Review"
+              />
+            </label>
+
+            <label>
+              <span className="mb-2 block text-sm text-slate-400">Review type</span>
+              <select
+                name="type"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+              >
+                <option>PENTEST</option>
+                <option>WEB</option>
+                <option>API</option>
+                <option>LLM</option>
+                <option>MOBILE</option>
+                <option>RETEST</option>
+              </select>
+            </label>
+
+            <label>
+              <span className="mb-2 block text-sm text-slate-400">Priority</span>
+              <select
+                name="priority"
+                defaultValue={project.riskTier ?? "Medium"}
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+              >
+                <option>Critical</option>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+            </label>
+
+            <label>
+              <span className="mb-2 block text-sm text-slate-400">Workstream</span>
+              <select
+                name="workstream"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+              >
+                <option>WEB</option>
+                <option>API</option>
+                <option>LLM</option>
+                <option>MOBILE</option>
+                <option>BEAD</option>
+                <option>FEAD</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+            <label>
+              <span className="mb-2 block text-sm text-slate-400">
+                Requested start
+              </span>
+              <input
+                name="requestedStartDate"
+                type="date"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+              />
+            </label>
+
+            <label>
+              <span className="mb-2 block text-sm text-slate-400">Due date</span>
+              <input
+                name="dueDate"
+                type="date"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+              />
+            </label>
+
+            <button className="mt-7 rounded-xl bg-cyan-400 px-6 py-3 font-bold text-slate-950 transition hover:bg-cyan-300">
+              Create SR
+            </button>
+          </div>
+        </form>
 
         <div className="space-y-3">
           {project.reviews.length === 0 && (
