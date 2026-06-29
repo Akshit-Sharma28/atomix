@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "../../../../lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 async function getSessionAdmin() {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email;
@@ -59,9 +61,16 @@ export async function GET() {
     ],
   });
 
-  return Response.json({
-    users,
-  });
+  return Response.json(
+    {
+      users,
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    },
+  );
 }
 
 export async function POST(req: Request) {

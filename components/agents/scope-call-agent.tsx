@@ -17,6 +17,21 @@ type ScopeResult = {
   error?: string;
 };
 
+type DemoCallProject = {
+  id: string;
+  name: string;
+  sprId: string | null;
+  riskTier: string | null;
+  businessOwner: string | null;
+  validatorName: string | null;
+  reviews: {
+    id: string;
+    srId: string | null;
+    title: string;
+    status: string;
+  }[];
+};
+
 const riskLevels = ["High", "Medium", "Low"];
 const tenantTypes = ["Single tenant", "Multi tenant"];
 const scanReports = [
@@ -29,9 +44,20 @@ const scanReports = [
   "Manual Evidence",
 ];
 
-export default function ScopeCallAgent() {
+export default function ScopeCallAgent({
+  projects = [],
+}: {
+  projects?: DemoCallProject[];
+}) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScopeResult | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [selectedReviewId, setSelectedReviewId] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [applicationName, setApplicationName] = useState("");
+  const [businessOwner, setBusinessOwner] = useState("");
+  const [spr, setSpr] = useState("");
+  const [sr, setSr] = useState("");
   const [overallRisk, setOverallRisk] = useState("High");
   const [confidentiality, setConfidentiality] = useState("High");
   const [integrity, setIntegrity] = useState("High");
@@ -55,6 +81,40 @@ export default function ScopeCallAgent() {
     apiAvailable,
     llmUsage,
   });
+  const selectedProject = projects.find(
+    (project) => project.id === selectedProjectId,
+  );
+  function selectProject(projectId: string) {
+    const project = projects.find((item) => item.id === projectId);
+
+    setSelectedProjectId(projectId);
+    setSelectedReviewId("");
+
+    if (!project) {
+      setProjectName("");
+      setApplicationName("");
+      setBusinessOwner("");
+      setSpr("");
+      setSr("");
+      return;
+    }
+
+    setProjectName(project.name);
+    setApplicationName(project.name);
+    setBusinessOwner(project.businessOwner ?? "");
+    setSpr(project.sprId ?? "");
+
+    if (project.riskTier && riskLevels.includes(project.riskTier)) {
+      setOverallRisk(project.riskTier);
+    }
+  }
+
+  function selectReview(reviewId: string) {
+    const review = selectedProject?.reviews.find((item) => item.id === reviewId);
+
+    setSelectedReviewId(reviewId);
+    setSr(review?.srId ?? review?.title ?? "");
+  }
 
   async function submit(formData: FormData) {
     setLoading(true);
@@ -138,13 +198,79 @@ export default function ScopeCallAgent() {
       </div>
 
       <form action={submit} className="grid gap-5">
+        {projects.length > 0 && (
+          <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-cyan-200">
+                  Assigned SPR for Demo Call
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Select an assigned SPR to prefill the intake fields and keep
+                  validator routing visible in the handoff.
+                </p>
+              </div>
+              {selectedProject?.validatorName && (
+                <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+                  Validator: {selectedProject.validatorName}
+                </span>
+              )}
+            </div>
+            <div className="grid gap-3 lg:grid-cols-2">
+              <select
+                value={selectedProjectId}
+                onChange={(event) => selectProject(event.target.value)}
+                className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white"
+              >
+                <option value="">Select assigned SPR</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.sprId ?? "SPR pending"} · {project.name}
+                    {project.validatorName
+                      ? ` · ${project.validatorName}`
+                      : ""}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedReviewId}
+                onChange={(event) => selectReview(event.target.value)}
+                className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white"
+                disabled={!selectedProject}
+              >
+                <option value="">Select SR / review</option>
+                {(selectedProject?.reviews ?? []).map((review) => (
+                  <option key={review.id} value={review.id}>
+                    {review.srId ?? review.title} · {review.status}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <TextField name="projectName" label="Project Name" />
-          <TextField name="applicationName" label="Application Name" />
-          <TextField name="businessOwner" label="Business Owner" />
+          <TextField
+            name="projectName"
+            label="Project Name"
+            value={projectName}
+            onChange={setProjectName}
+          />
+          <TextField
+            name="applicationName"
+            label="Application Name"
+            value={applicationName}
+            onChange={setApplicationName}
+          />
+          <TextField
+            name="businessOwner"
+            label="Business Owner"
+            value={businessOwner}
+            onChange={setBusinessOwner}
+          />
           <TextField name="numberOfRoles" label="Number of Roles" />
-          <TextField name="spr" label="SPR" />
-          <TextField name="sr" label="SR" />
+          <TextField name="spr" label="SPR" value={spr} onChange={setSpr} />
+          <TextField name="sr" label="SR" value={sr} onChange={setSr} />
           <TextField name="chargeCode" label="Charge Code" />
           <TextField name="targetUrl" label="URL" />
           <TextField name="ipAddress" label="IP Address" />
@@ -516,10 +642,14 @@ function TextField({
   name,
   label,
   placeholder,
+  value,
+  onChange,
 }: {
   name: string;
   label: string;
   placeholder?: string;
+  value?: string;
+  onChange?: (value: string) => void;
 }) {
   return (
     <label className="block">
@@ -529,6 +659,8 @@ function TextField({
       <input
         name={name}
         placeholder={placeholder}
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
         className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
       />
     </label>
@@ -543,23 +675,14 @@ function validateRiskPermutation(
 ) {
   const cia = [confidentiality, integrity, availability];
 
-  if (overallRisk === "High" && cia.every((value) => value === "High")) {
-    return {
-      valid: false,
-      message:
-        "Overall Risk is High, but C/I/A are all High. Mark an exception or reduce one CIA dimension after peer validation.",
-    };
-  }
-
   if (
     overallRisk === "High" &&
-    integrity !== "High" &&
-    availability !== "High"
+    !cia.includes("High")
   ) {
     return {
       valid: false,
       message:
-        "Overall Risk is High, but both Integrity and Availability are unrestricted. At least one should remain High or require validation.",
+        "Overall Risk is High requires at least one CIA dimension to remain High or an explicit governance override.",
     };
   }
 

@@ -19,6 +19,7 @@ import {
   useState,
   useRef,
   useEffect,
+  useCallback,
 } from "react";
 
 type ActiveUser = {
@@ -115,43 +116,39 @@ export default function UserMenu() {
     };
   }, []);
 
-  useEffect(() => {
-    let ignore = false;
+  const loadSwitchableUsers = useCallback(async () => {
+    try {
+      const response =
+        await fetch("/api/auth/switch-user", {
+          cache: "no-store",
+        });
 
-    async function loadSwitchableUsers() {
-      try {
-        const response =
-          await fetch("/api/auth/switch-user", {
-            cache: "no-store",
-          });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const data =
-          await response.json();
-
-        if (!ignore) {
-          setSwitchableUsers(data.users ?? []);
-        }
-      } catch {
-        if (!ignore) {
-          setSwitchableUsers([]);
-        }
+      if (!response.ok) {
+        return;
       }
+
+      const data =
+        await response.json();
+
+      setSwitchableUsers(data.users ?? []);
+    } catch {
+      setSwitchableUsers([]);
     }
-
-    loadSwitchableUsers();
-
-    return () => {
-      ignore = true;
-    };
   }, []);
 
-  const displayUser =
+  useEffect(() => {
+    void Promise.resolve().then(loadSwitchableUsers);
+  }, [loadSwitchableUsers]);
+
+  useEffect(() => {
+    if (open) {
+      void Promise.resolve().then(loadSwitchableUsers);
+    }
+  }, [loadSwitchableUsers, open]);
+
+  const displayUser: ActiveUser =
     activeUser ??
-    session?.user ??
+    (session?.user as ActiveUser | undefined) ??
     {};
 
   const initials =
@@ -251,7 +248,7 @@ export default function UserMenu() {
             text-cyan-400
             "
           >
-            {(displayUser as any)?.role}
+            {displayUser?.role}
           </p>
         </div>
 
@@ -340,7 +337,7 @@ export default function UserMenu() {
               border-cyan-500/20
               "
             >
-              {(displayUser as any)?.role}
+              {displayUser?.role}
             </span>
 
             {(displayUser as ActiveUser)?.previewedBy && (
