@@ -71,6 +71,10 @@ function roleLabel(role: string) {
   return editableRoles.find(([value]) => value === normalized)?.[1] ?? cleanRole(role);
 }
 
+function normalizedReviewerPool(pool?: string | null) {
+  return pool === "Dedicated" ? "Dedicated" : "Augmentation";
+}
+
 export default async function UsersPage({
   searchParams,
 }: {
@@ -130,7 +134,7 @@ export default async function UsersPage({
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-5">
+        <div className="grid gap-3 lg:grid-cols-6">
           <input
             name="name"
             placeholder="Full name"
@@ -153,6 +157,14 @@ export default async function UsersPage({
                 {label}
               </option>
             ))}
+          </select>
+          <select
+            name="reviewerPool"
+            defaultValue="Augmentation"
+            className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+          >
+            <option value="Augmentation">Augmentation Pool</option>
+            <option value="Dedicated">Dedicated Pool</option>
           </select>
           <input
             name="password"
@@ -215,6 +227,9 @@ export default async function UsersPage({
                     >
                       {user.isActive ? "Active" : "Inactive"}
                     </span>
+                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                      {normalizedReviewerPool(user.reviewerPool)} Pool
+                    </span>
                   </div>
                   <p className="mt-1 text-sm text-slate-400">{user.email}</p>
                 </div>
@@ -274,6 +289,17 @@ export default async function UsersPage({
                             {label}
                           </option>
                         ))}
+                      </select>
+                    </label>
+                    <label className="text-sm text-slate-400">
+                      Reviewer Pool
+                      <select
+                        name="reviewerPool"
+                        defaultValue={normalizedReviewerPool(user.reviewerPool)}
+                        className="mt-2 w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-cyan-200"
+                      >
+                        <option value="Augmentation">Augmentation Pool</option>
+                        <option value="Dedicated">Dedicated Pool</option>
                       </select>
                     </label>
                     <label className="mt-8 inline-flex items-center gap-2 text-sm text-slate-300">

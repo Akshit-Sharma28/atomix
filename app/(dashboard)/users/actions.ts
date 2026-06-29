@@ -3,12 +3,12 @@
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { Prisma } from "@prisma/client";
+import { Prisma, type Role } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireAccess } from "@/services/users/access.service";
 
-const allowedRoles = [
+const allowedRoles: readonly Role[] = [
   "ADMIN",
   "GOVERNANCE_TEAM",
   "VALIDATOR",
@@ -20,6 +20,8 @@ const allowedRoles = [
   "RETESTER",
 ];
 
+const allowedReviewerPools = ["Augmentation", "Dedicated"];
+
 function readString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
@@ -27,11 +29,21 @@ function readString(formData: FormData, key: string) {
 function readRole(formData: FormData) {
   const role = readString(formData, "role");
 
-  if (!allowedRoles.includes(role)) {
+  if (!allowedRoles.includes(role as Role)) {
     return "REVIEWER";
   }
 
-  return role;
+  return role as Role;
+}
+
+function readReviewerPool(formData: FormData) {
+  const reviewerPool = readString(formData, "reviewerPool");
+
+  if (!allowedReviewerPools.includes(reviewerPool)) {
+    return "Augmentation";
+  }
+
+  return reviewerPool;
 }
 
 function usersRedirect(kind: "error" | "success", message: string): never {
@@ -63,6 +75,7 @@ export async function createUser(formData: FormData) {
   const name = readString(formData, "name");
   const email = readString(formData, "email").toLowerCase();
   const role = readRole(formData);
+  const reviewerPool = readReviewerPool(formData);
   const password = readString(formData, "password");
 
   if (!name || !email) {
@@ -80,13 +93,15 @@ export async function createUser(formData: FormData) {
       },
       update: {
         name,
-        role: role as any,
+        role,
+        reviewerPool,
         isActive: true,
       },
       create: {
         name,
         email,
-        role: role as any,
+        role,
+        reviewerPool,
         isActive: true,
       },
     });
@@ -122,6 +137,7 @@ export async function updateUser(formData: FormData) {
   const name = readString(formData, "name");
   const email = readString(formData, "email").toLowerCase();
   const role = readRole(formData);
+  const reviewerPool = readReviewerPool(formData);
   const isActive = formData.get("isActive") === "on";
 
   if (!userId || !name || !email) {
@@ -155,7 +171,8 @@ export async function updateUser(formData: FormData) {
       data: {
         name,
         email,
-        role: role as any,
+        role,
+        reviewerPool,
         isActive,
       },
     });

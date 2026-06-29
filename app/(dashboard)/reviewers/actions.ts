@@ -36,14 +36,22 @@ function extensionTarget(formData: FormData) {
   return dateFromDays(Number.isFinite(extensionDays) ? extensionDays : 7);
 }
 
+function normalizeAttendanceStatus(value: string) {
+  if (["Present", "Absent", "Out of office"].includes(value)) {
+    return value;
+  }
+
+  return "Present";
+}
+
 export async function updateWeeklyGovernanceCall(formData: FormData) {
   await requireAccess(["ADMIN", "GOVERNANCE_TEAM"]);
 
   const reviewId = String(formData.get("reviewId") ?? "");
   const assignmentId = String(formData.get("assignmentId") ?? "");
   const callStatus = String(formData.get("callStatus") ?? "In Progress");
-  const attendanceStatus = String(
-    formData.get("attendanceStatus") ?? "Not Marked",
+  const attendanceStatus = normalizeAttendanceStatus(
+    String(formData.get("attendanceStatus") ?? "Present"),
   );
   const notes = String(formData.get("notes") ?? "").trim();
   const callNotes = [

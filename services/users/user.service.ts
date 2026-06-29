@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import type { Role } from "@prisma/client";
 
 export async function getUsers() {
   return prisma.user.findMany({
@@ -8,6 +9,7 @@ export async function getUsers() {
       email: true,
       role: true,
       isActive: true,
+      reviewerPool: true,
       createdAt: true,
     },
     orderBy: {
@@ -18,14 +20,14 @@ export async function getUsers() {
 
 export async function updateUserRole(
   userId: string,
-  role: string
+  role: Role
 ) {
   return prisma.user.update({
     where: {
       id: userId,
     },
     data: {
-      role: role as any,
+      role,
     },
   });
 }

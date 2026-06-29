@@ -26,9 +26,9 @@ function includes(value: string | null | undefined, query: string) {
 }
 
 function defaultAttendanceStatus(availability?: string | null) {
-  if (availability === "On Leave") return "Leave";
-  if (availability === "Unavailable") return "Holiday";
-  if (availability === "Limited") return "Training";
+  if (availability === "On Leave" || availability === "Unavailable") {
+    return "Out of office";
+  }
   return "Present";
 }
 
@@ -42,11 +42,27 @@ function daysBetween(start?: Date | null, end?: Date | null) {
 function poolTypeForAssignment(assignment: {
   allocatedHours?: number | null;
   startDate?: Date | null;
+  user?: {
+    reviewerPool?: string | null;
+  } | null;
+  reviewerProfile?: {
+    user?: {
+      reviewerPool?: string | null;
+    } | null;
+  } | null;
   review: {
     requestedStartDate?: Date | null;
     dueDate?: Date | null;
   };
 }) {
+  const mappedPool =
+    assignment.user?.reviewerPool ??
+    assignment.reviewerProfile?.user?.reviewerPool;
+
+  if (mappedPool === "Dedicated" || mappedPool === "Augmentation") {
+    return mappedPool;
+  }
+
   const startDate = assignment.review.requestedStartDate ?? assignment.startDate;
   const plannedDays = daysBetween(startDate, assignment.review.dueDate);
 
@@ -236,10 +252,8 @@ export default async function GovernanceCallPage({
   });
   const attendanceSummary = [
     "Present",
-    "Leave",
-    "Training",
-    "Holiday",
-    "Not Marked",
+    "Absent",
+    "Out of office",
   ]
     .map(
       (attendanceStatus) =>
@@ -521,13 +535,11 @@ Atomix Governance Dashboard`;
             <CalendarCheck size={18} />
             Attendance Snapshot
           </div>
-          <div className="grid gap-3 sm:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-3">
             {[
               "Present",
-              "Leave",
-              "Training",
-              "Holiday",
-              "Not Marked",
+              "Absent",
+              "Out of office",
             ].map((attendanceStatus) => (
               <div
                 key={attendanceStatus}
@@ -703,7 +715,7 @@ Atomix Governance Dashboard`;
                 {canRunWeeklyCheckIn ? (
                   <form
                     action={updateWeeklyGovernanceCall}
-                    className="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-4 lg:grid-cols-7"
+                    className="relative z-10 grid gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-4 xl:grid-cols-[minmax(9rem,0.8fr)_minmax(10rem,0.9fr)_minmax(10rem,0.9fr)_minmax(10rem,0.9fr)_minmax(14rem,1.4fr)_minmax(11rem,0.8fr)]"
                   >
                     <input
                       type="hidden"
@@ -727,10 +739,8 @@ Atomix Governance Dashboard`;
                         className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
                       >
                         <option>Present</option>
-                        <option>Leave</option>
-                        <option>Training</option>
-                        <option>Holiday</option>
-                        <option>Not Marked</option>
+                        <option>Absent</option>
+                        <option>Out of office</option>
                       </select>
                     </label>
 
@@ -780,7 +790,7 @@ Atomix Governance Dashboard`;
                       />
                     </label>
 
-                    <label className="lg:col-span-2">
+                    <label>
                       <span className="mb-2 block text-xs font-semibold text-slate-400">
                         Call notes
                       </span>
@@ -792,7 +802,10 @@ Atomix Governance Dashboard`;
                     </label>
 
                     <div className="flex items-end">
-                      <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950">
+                      <button
+                        type="submit"
+                        className="relative z-20 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300"
+                      >
                         Save Update
                       </button>
                     </div>

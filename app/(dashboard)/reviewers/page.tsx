@@ -164,7 +164,7 @@ export default async function ReviewersPage({
           skills: reviewer.skills.map((skill) => skill.skill),
           assignments: reviewer.assignments,
           poolType:
-            reviewer.weeklyCapacityHours >= 32
+            reviewer.user.reviewerPool === "Dedicated"
               ? "Dedicated"
               : "Augmentation",
         }))
@@ -176,7 +176,8 @@ export default async function ReviewersPage({
           capacity: 0,
           skills: [user.role],
           assignments: user.reviewAssignments,
-          poolType: "Augmentation",
+          poolType:
+            user.reviewerPool === "Dedicated" ? "Dedicated" : "Augmentation",
         }));
 
   const totalCapacity = reviewerRows.reduce(
