@@ -4,11 +4,8 @@ import { getCurrentUser } from "@/services/users/current-user.service";
 import ControlFindingForm from "@/components/findings/control-finding-form";
 import {
   Bot,
-  CheckCircle2,
   ClipboardList,
   FilePlus2,
-  RotateCcw,
-  ShieldAlert,
   User,
 } from "lucide-react";
 
@@ -16,19 +13,18 @@ function severityClass(severity: string) {
   if (severity === "Critical") return "text-red-300";
   if (severity === "High") return "text-orange-300";
   if (severity === "Medium") return "text-yellow-300";
+  if (severity === "Low") return "text-emerald-300";
+  if (severity === "Informational") return "text-cyan-300";
+  if (severity === "Not Rated") return "text-slate-300";
   return "text-emerald-300";
 }
 
-function isRetestFinding(finding: {
-  source: string;
-  status: string;
-  verified: boolean;
-}) {
-  return (
-    finding.source.toLowerCase().includes("retest") ||
-    finding.status === "Ready For Retest" ||
-    finding.verified
-  );
+function statusClass(status: string) {
+  if (status === "FAIL") return "bg-red-500/10 text-red-300";
+  if (status === "PASS") return "bg-emerald-500/10 text-emerald-300";
+  if (status === "Informational") return "bg-cyan-500/10 text-cyan-300";
+  if (status === "Not Rated") return "bg-slate-700/60 text-slate-300";
+  return "bg-blue-500/10 text-blue-300";
 }
 
 function formatDate(date?: Date | null) {
@@ -129,15 +125,14 @@ export default async function MyFindingsPage({
     packages.find((item) => item.project.id === params.projectId) ??
     packages[0];
   const selectedProject = selectedPackage?.project;
-  const initialFindings =
-    selectedProject?.findings.filter((finding) => !isRetestFinding(finding)) ??
-    [];
-  const retestFindings =
-    selectedProject?.findings.filter((finding) => isRetestFinding(finding)) ??
-    [];
+  const controlResults =
+    selectedProject?.findings ?? [];
   const openFindings =
     selectedProject?.findings.filter(
-      (finding) => finding.status !== "Closed",
+      (finding) =>
+        !["Closed", "PASS", "Informational", "Not Rated"].includes(
+          finding.status,
+        ),
     ) ?? [];
   const canCloseSpr =
     Boolean(selectedProject) && openFindings.length === 0;
@@ -155,8 +150,8 @@ export default async function MyFindingsPage({
               My Assigned Reviews
             </h1>
             <p className="mt-2 text-slate-400">
-              Select an assigned or completed SPR, review SR context, then add
-              initial or retest findings.
+              Select an assigned SPR, choose the SR, then record control-by-control
+              results with Status, Risk, and reviewer comments.
             </p>
           </div>
         </div>
@@ -184,7 +179,7 @@ export default async function MyFindingsPage({
               Assigned / Completed SPRs
             </h2>
             <p className="mt-1 text-sm text-slate-400">
-              Click a package to work findings.
+              Click a package to work SR control results.
             </p>
           </div>
 
@@ -247,14 +242,24 @@ export default async function MyFindingsPage({
                     {selectedProject.name}
                   </h2>
                   <p className="mt-2 text-sm text-slate-400">
-                    Add findings against the selected SPR/SR. If this is a
-                    retest, keep the original finding visible and add retest
-                    evidence/status as a retest finding.
+                    Add PASS, FAIL, Not Rated, or Informational control results
+                    against the selected SR. Each saved result stays mapped to
+                    the SR for review governance and reporting.
                   </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {selectedPackage?.reviews.map((review) => (
+                      <span
+                        key={review.id}
+                        className="rounded-full border border-cyan-400/20 bg-slate-950 px-3 py-1 text-xs font-semibold text-cyan-200"
+                      >
+                        {review.srId ?? review.title} · {review.status}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 <Link
                   href={`/copilot?prompt=${encodeURIComponent(
-                    `Act as the Add Findings Agent for ${selectedProject.sprId ?? selectedProject.name}. Help draft a finding with title, severity, description, evidence, affected asset, remediation, CWE/OWASP mapping, and whether it is an initial review finding or retest finding.`,
+                    `Act as the Add Findings Agent for ${selectedProject.sprId ?? selectedProject.name}. Help draft an SR-mapped control result with control ID, status PASS/FAIL/Not Rated/Informational, risk Critical/High/Medium/Low/Informational/Not Rated, reviewer comment, evidence, impact, and remediation.`,
                   )}`}
                   className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950"
                 >
@@ -264,29 +269,21 @@ export default async function MyFindingsPage({
               </div>
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-2">
-              <FindingList
-                title="Initial Review Findings"
-                icon="initial"
-                findings={initialFindings}
-              />
-              <FindingList
-                title="Retest Findings"
-                icon="retest"
-                findings={retestFindings}
-              />
-            </div>
+            <FindingList
+              title="SR Control Results"
+              findings={controlResults}
+            />
 
             <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
               <div className="mb-5 flex items-center gap-3">
                 <FilePlus2 className="text-cyan-300" size={22} />
                 <div>
                   <h2 className="text-xl font-bold text-white">
-                    Add Finding to Selected SPR
+                    Add Control Result to Selected SR
                   </h2>
                   <p className="text-sm text-slate-400">
-                    Pick the SR and mark whether this came from initial review
-                    or retest validation.
+                    Pick the SR, choose the control, set PASS/FAIL/Not Rated/
+                    Informational, select Risk, and add reviewer comments.
                   </p>
                 </div>
               </div>
@@ -308,15 +305,15 @@ export default async function MyFindingsPage({
                 SPR Closure Logic
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                SPR can be closed once there are no open findings. If the app
-                team cannot fix after retests, the reviewer can recommend a
-                remediation plan or exception based on consultant decisioning.
+                SPR can be closed once there are no FAIL/open findings. PASS,
+                Informational, and Not Rated control results remain visible for
+                evidence and governance history.
               </p>
               <p className="mt-3 text-sm font-semibold text-cyan-200">
                 Current state:{" "}
                 {canCloseSpr
-                  ? "No open findings — ready for closure review."
-                  : `${openFindings.length} open findings still need closure, retest, remediation plan, or exception.`}
+                  ? "No FAIL/open findings — ready for closure review."
+                  : `${openFindings.length} FAIL/open results still need closure, retest, remediation plan, or exception.`}
               </p>
             </div>
           </section>
@@ -347,11 +344,9 @@ function Metric({
 
 function FindingList({
   title,
-  icon,
   findings,
 }: {
   title: string;
-  icon: "initial" | "retest";
   findings: {
     id: string;
     title: string;
@@ -365,23 +360,21 @@ function FindingList({
     } | null;
   }[];
 }) {
-  const Icon = icon === "retest" ? RotateCcw : ClipboardList;
-
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-900">
       <div className="flex items-center gap-3 border-b border-slate-800 p-5">
-        <Icon className="text-cyan-300" size={22} />
+        <ClipboardList className="text-cyan-300" size={22} />
         <div>
           <h2 className="text-xl font-bold text-white">{title}</h2>
           <p className="text-sm text-slate-400">
-            {findings.length} findings
+            {findings.length} saved control results / findings
           </p>
         </div>
       </div>
       <div className="divide-y divide-slate-800">
         {findings.length === 0 && (
           <div className="p-6 text-sm text-slate-500">
-            No findings recorded yet.
+            No control results recorded yet.
           </div>
         )}
         {findings.map((finding) => (
@@ -403,10 +396,14 @@ function FindingList({
                       finding.severity,
                     )}`}
                   >
-                    {finding.severity}
+                    Risk: {finding.severity}
                   </span>
-                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs text-blue-300">
-                    {finding.status}
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs ${statusClass(
+                      finding.status,
+                    )}`}
+                  >
+                    Status: {finding.status}
                   </span>
                 </div>
               </div>

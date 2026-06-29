@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Bot, ImagePlus, Sparkles } from "lucide-react";
-import { securityControls } from "@/lib/security-controls";
+import { feadControls } from "@/lib/fead-controls";
 import { createFinding } from "@/app/actions/findings";
 
 type ReviewOption = {
@@ -21,26 +21,31 @@ const severities = [
   "High",
   "Medium",
   "Low",
+  "Informational",
   "Not Rated",
-  "INFO",
 ];
 
 const statuses = [
-  "FAIL",
   "PASS",
-  "INFO",
+  "FAIL",
   "Not Rated",
+  "Informational",
 ];
+
+const controlOptions = feadControls.map((control, index) => ({
+  key: `${control.id}-${index}`,
+  control,
+}));
 
 export default function ControlFindingForm({
   projectId,
   ownerId,
   reviews,
 }: Props) {
-  const [controlId, setControlId] =
-    useState(securityControls[0].id);
+  const [controlKey, setControlKey] =
+    useState(controlOptions[0].key);
   const [severity, setSeverity] =
-    useState(securityControls[0].defaultSeverity);
+    useState("High");
   const [status, setStatus] =
     useState("FAIL");
   const [reviewerComment, setReviewerComment] =
@@ -52,20 +57,15 @@ export default function ControlFindingForm({
 
   const selectedControl = useMemo(
     () =>
-      securityControls.find(
-        (control) => control.id === controlId
-      ) ?? securityControls[0],
-    [controlId]
+      controlOptions.find(
+        (option) => option.key === controlKey
+      )?.control ?? controlOptions[0].control,
+    [controlKey]
   );
 
-  function updateControl(id: string) {
-    const nextControl =
-      securityControls.find(
-        (control) => control.id === id
-      ) ?? securityControls[0];
-
-    setControlId(nextControl.id);
-    setSeverity(nextControl.defaultSeverity);
+  function updateControl(key: string) {
+    setControlKey(key);
+    setSeverity(status === "PASS" ? "Informational" : "High");
     setAiAnalysis("");
   }
 
@@ -77,7 +77,7 @@ export default function ControlFindingForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          question: `Act as Atomix Add Findings Agent. Analyze this reviewer comment for a FEAD/control finding. Return concise finding details, evidence interpretation, impact, and remediation.\n\nControl: ${selectedControl.id} - ${selectedControl.title}\nCategory: ${selectedControl.category}\nOWASP: ${selectedControl.owasp}\nCWE: ${selectedControl.cwe ?? "Not mapped"}\nStatus: ${status}\nSeverity: ${severity}\nReviewer comment: ${reviewerComment || "No reviewer comment provided."}`,
+          question: `Act as Atomix Add Findings Agent. Analyze this reviewer comment for an SR-mapped control result. Return concise finding details, evidence interpretation, impact, and remediation.\n\nControl: ${selectedControl.id} - ${selectedControl.title}\nSection: ${selectedControl.section}\nTesting required: ${selectedControl.testing}\nArtifacts required: ${selectedControl.artifacts}\nStatus: ${status}\nRisk: ${severity}\nReviewer comment: ${reviewerComment || "No reviewer comment provided."}`,
         }),
       });
 
@@ -96,20 +96,28 @@ export default function ControlFindingForm({
     <form action={createFinding} className="grid gap-5">
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="ownerId" value={ownerId} />
-      <input type="hidden" name="source" value="FEAD Control Review" />
+      <input type="hidden" name="source" value="SR Control Review" />
       <input type="hidden" name="controlId" value={selectedControl.id} />
-      <input type="hidden" name="title" value={selectedControl.title} />
-      <input type="hidden" name="cweId" value={selectedControl.cwe ?? ""} />
+      <input
+        type="hidden"
+        name="title"
+        value={`${selectedControl.id} - ${selectedControl.title}`}
+      />
+      <input type="hidden" name="cweId" value="" />
       <input
         type="hidden"
         name="owaspCategory"
-        value={selectedControl.owasp}
+        value={selectedControl.section}
       />
-      <input type="hidden" name="controlDetail" value={selectedControl.detail} />
+      <input
+        type="hidden"
+        name="controlDetail"
+        value={`${selectedControl.testing}\n\nArtifacts Required: ${selectedControl.artifacts}`}
+      />
       <input
         type="hidden"
         name="controlRemediation"
-        value={selectedControl.remediation}
+        value="Reviewer to document remediation, exception, or acceptance decision based on the control result."
       />
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -131,17 +139,17 @@ export default function ControlFindingForm({
 
         <label>
           <span className="mb-2 block text-sm text-slate-400">
-            FEAD / OWASP Control
+            Control
           </span>
           <select
-            value={controlId}
+            value={controlKey}
             onChange={(event) =>
               updateControl(event.target.value)
             }
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
           >
-            {securityControls.map((control) => (
-              <option key={control.id} value={control.id}>
+            {controlOptions.map(({ key, control }) => (
+              <option key={key} value={key}>
                 {control.id} · {control.title}
               </option>
             ))}
@@ -151,48 +159,26 @@ export default function ControlFindingForm({
 
       <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4">
         <p className="text-xs uppercase tracking-[0.18em] text-cyan-300">
-          Selected Control
+          Selected Control / Reviewer Checklist
         </p>
         <h3 className="mt-2 text-xl font-bold text-white">
           {selectedControl.id} · {selectedControl.title}
         </h3>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          {selectedControl.detail}
+          {selectedControl.testing}
+        </p>
+        <p className="mt-2 text-sm leading-6 text-slate-400">
+          <span className="font-semibold text-slate-300">Artifacts: </span>
+          {selectedControl.artifacts}
         </p>
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
           <span className="rounded-full bg-slate-950 px-3 py-1 text-cyan-300">
-            {selectedControl.category}
+            {selectedControl.section}
           </span>
-          <span className="rounded-full bg-slate-950 px-3 py-1 text-purple-300">
-            {selectedControl.owasp}
-          </span>
-          {selectedControl.cwe && (
-            <span className="rounded-full bg-slate-950 px-3 py-1 text-slate-300">
-              {selectedControl.cwe}
-            </span>
-          )}
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <label>
-          <span className="mb-2 block text-sm text-slate-400">
-            Severity
-          </span>
-          <select
-            name="severity"
-            value={severity}
-            onChange={(event) =>
-              setSeverity(event.target.value as typeof severity)
-            }
-            className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-          >
-            {severities.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-
         <label>
           <span className="mb-2 block text-sm text-slate-400">
             Status
@@ -204,6 +190,24 @@ export default function ControlFindingForm({
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
           >
             {statuses.map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          <span className="mb-2 block text-sm text-slate-400">
+            Risk
+          </span>
+          <select
+            name="severity"
+            value={severity}
+            onChange={(event) =>
+              setSeverity(event.target.value as typeof severity)
+            }
+            className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+          >
+            {severities.map((item) => (
               <option key={item}>{item}</option>
             ))}
           </select>
@@ -222,7 +226,7 @@ export default function ControlFindingForm({
           }
           rows={5}
           className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-          placeholder="Add endpoint, user role, observed behavior, test evidence, retest observation, or reason for PASS/INFO."
+          placeholder="Example: Application allows special input in the search field; server does not reject unexpected characters."
         />
       </label>
 
@@ -252,7 +256,7 @@ export default function ControlFindingForm({
               AI Analyze
             </h3>
             <p className="mt-1 text-sm text-slate-400">
-              Uses the selected control and reviewer comment to draft impact,
+              Uses the selected control result and reviewer comment to draft impact,
               evidence interpretation, and remediation details.
             </p>
           </div>
@@ -275,12 +279,12 @@ export default function ControlFindingForm({
           }
           rows={5}
           className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-          placeholder="AI-generated finding details will appear here. You can edit before saving."
+          placeholder="AI-generated control-result details will appear here. You can edit before saving."
         />
       </div>
 
       <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 md:w-fit">
-        Add Control Result
+        Save Control Result to SR
       </button>
     </form>
   );
