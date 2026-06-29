@@ -8,7 +8,27 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
+import {
+  AlignmentType as DocxAlignmentType,
+  BorderStyle as DocxBorderStyle,
+  Document as DocxDocument,
+  HeadingLevel as DocxHeadingLevel,
+  Packer as DocxPacker,
+  Paragraph as DocxParagraph,
+  Table as DocxTable,
+  TableCell as DocxTableCell,
+  TableRow as DocxTableRow,
+  TextRun as DocxTextRun,
+  VerticalAlign as DocxVerticalAlign,
+  WidthType as DocxWidthType,
+} from "docx";
 import { useState } from "react";
+import {
+  feadControls,
+  resolveFeadControl,
+  type FeadContext,
+  type FeadControl,
+} from "@/lib/fead-controls";
 
 type ScopeResult = {
   ok: boolean;
@@ -58,6 +78,8 @@ export default function ScopeCallAgent({
   const [businessOwner, setBusinessOwner] = useState("");
   const [spr, setSpr] = useState("");
   const [sr, setSr] = useState("");
+  const [scope, setScope] = useState("Web only");
+  const [authentication, setAuthentication] = useState("M - Multiple authentication");
   const [overallRisk, setOverallRisk] = useState("High");
   const [confidentiality, setConfidentiality] = useState("High");
   const [integrity, setIntegrity] = useState("High");
@@ -81,6 +103,15 @@ export default function ScopeCallAgent({
     apiAvailable,
     llmUsage,
   });
+  const feadContext: FeadContext = {
+    scope,
+    authentication,
+    tenantType,
+    publicInternal,
+    internetExposed,
+    apiAvailable,
+    llmUsage,
+  };
   const selectedProject = projects.find(
     (project) => project.id === selectedProjectId,
   );
@@ -158,14 +189,23 @@ export default function ScopeCallAgent({
     URL.revokeObjectURL(url);
   }
 
-  function downloadFeadDraft() {
-    const blob = new Blob([feadDraft], {
-      type: "text/markdown;charset=utf-8",
+  async function downloadFeadDraft() {
+    const blob = await buildFeadDocx({
+      projectName,
+      applicationName,
+      businessOwner,
+      spr,
+      sr,
+      overallRisk,
+      confidentiality,
+      integrity,
+      availability,
+      context: feadContext,
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "atomix-customized-fead-draft.md";
+    link.download = `${safeFilename(spr || applicationName || "atomix")}-customized-fead.docx`;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -296,6 +336,8 @@ export default function ScopeCallAgent({
               "LLM only",
               "Thick Client",
             ]}
+            value={scope}
+            onChange={setScope}
           />
           <SelectField
             name="typeOfReview"
@@ -315,6 +357,8 @@ export default function ScopeCallAgent({
               "S - Single authentication",
               "N - No authentication",
             ]}
+            value={authentication}
+            onChange={setAuthentication}
           />
           <SelectField
             name="overallRisk"
@@ -552,7 +596,7 @@ export default function ScopeCallAgent({
                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 px-3 py-2 text-xs font-bold text-cyan-200"
               >
                 <Download size={14} />
-                Download
+                Download FEAD .docx
               </button>
             </div>
           </div>
@@ -665,6 +709,376 @@ function TextField({
       />
     </label>
   );
+}
+
+function safeFilename(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "atomix";
+}
+
+function docParagraph(text: string, bold = false, color = "0F172A") {
+  return new DocxParagraph({
+    spacing: {
+      after: 80,
+    },
+    children: [
+      new DocxTextRun({
+        text,
+        bold,
+        size: 19,
+        font: "Arial",
+        color,
+      }),
+    ],
+  });
+}
+
+function docCell(
+  children: DocxParagraph[],
+  options: {
+    fill?: string;
+    width?: number;
+    columnSpan?: number;
+    valign?: "top" | "center" | "bottom";
+  } = {},
+) {
+  return new DocxTableCell({
+    columnSpan: options.columnSpan,
+    verticalAlign: options.valign ?? DocxVerticalAlign.TOP,
+    shading: options.fill
+      ? {
+          type: "clear",
+          color: "auto",
+          fill: options.fill,
+        }
+      : undefined,
+    width: options.width
+      ? {
+          size: options.width,
+          type: DocxWidthType.DXA,
+        }
+      : undefined,
+    margins: {
+      top: 120,
+      bottom: 120,
+      left: 120,
+      right: 120,
+    },
+    children,
+  });
+}
+
+function labelCell(label: string) {
+  return docCell([docParagraph(label, true, "FFFFFF")], {
+    fill: "1F2937",
+    width: 1200,
+  });
+}
+
+function controlTable(
+  control: FeadControl,
+  context: FeadContext,
+) {
+  const resolved = resolveFeadControl(control, context);
+  const statusFill = resolved.status === "NA" ? "E5E7EB" : "F8FAFC";
+  const borders = {
+    top: { style: DocxBorderStyle.SINGLE, size: 8, color: "CBD5E1" },
+    bottom: { style: DocxBorderStyle.SINGLE, size: 8, color: "CBD5E1" },
+    left: { style: DocxBorderStyle.SINGLE, size: 8, color: "CBD5E1" },
+    right: { style: DocxBorderStyle.SINGLE, size: 8, color: "CBD5E1" },
+    insideHorizontal: { style: DocxBorderStyle.SINGLE, size: 6, color: "E2E8F0" },
+    insideVertical: { style: DocxBorderStyle.SINGLE, size: 6, color: "E2E8F0" },
+  };
+
+  return new DocxTable({
+    width: {
+      size: 9360,
+      type: DocxWidthType.DXA,
+    },
+    borders,
+    rows: [
+      new DocxTableRow({
+        children: [
+          docCell(
+            [
+              docParagraph(control.id, true, "FFFFFF"),
+              docParagraph("Base", true, "FFFFFF"),
+            ],
+            {
+              fill: "111827",
+              width: 1200,
+            },
+          ),
+          docCell(
+            [
+              docParagraph(control.title, true, "FFFFFF"),
+              docParagraph(`Section: ${control.section}`, false, "CBD5E1"),
+            ],
+            {
+              fill: "111827",
+              width: 6360,
+            },
+          ),
+          docCell(
+            [
+              docParagraph("Status:", true),
+              docParagraph(resolved.status, true),
+            ],
+            {
+              fill: statusFill,
+              width: 1800,
+            },
+          ),
+        ],
+      }),
+      new DocxTableRow({
+        children: [
+          labelCell("What needs to be done"),
+          docCell([docParagraph(control.testing)], {
+            width: 6360,
+          }),
+          docCell([docParagraph("Reviewer updates status here.")], {
+            width: 1800,
+          }),
+        ],
+      }),
+      new DocxTableRow({
+        children: [
+          labelCell("Findings Area"),
+          docCell(
+            [
+              docParagraph("Finding ID / Severity / Observation / Evidence / Recommendation:"),
+              docParagraph(""),
+              docParagraph(""),
+            ],
+            {
+              columnSpan: 2,
+              width: 8160,
+            },
+          ),
+        ],
+      }),
+      new DocxTableRow({
+        children: [
+          labelCell("Security Reviewer Comments"),
+          docCell(
+            [
+              docParagraph(resolved.reviewerComment),
+              docParagraph(""),
+            ],
+            {
+              columnSpan: 2,
+              width: 8160,
+            },
+          ),
+        ],
+      }),
+      new DocxTableRow({
+        children: [
+          labelCell("Artifacts required"),
+          docCell([docParagraph(control.artifacts)], {
+            columnSpan: 2,
+            width: 8160,
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
+async function buildFeadDocx({
+  projectName,
+  applicationName,
+  businessOwner,
+  spr,
+  sr,
+  overallRisk,
+  confidentiality,
+  integrity,
+  availability,
+  context,
+}: {
+  projectName: string;
+  applicationName: string;
+  businessOwner: string;
+  spr: string;
+  sr: string;
+  overallRisk: string;
+  confidentiality: string;
+  integrity: string;
+  availability: string;
+  context: FeadContext;
+}) {
+  const generatedAt = new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date());
+  const naCount = feadControls.filter(
+    (control) => resolveFeadControl(control, context).status === "NA",
+  ).length;
+  const children: (DocxParagraph | DocxTable)[] = [
+    new DocxParagraph({
+      heading: DocxHeadingLevel.TITLE,
+      alignment: DocxAlignmentType.CENTER,
+      spacing: {
+        after: 180,
+      },
+      children: [
+        new DocxTextRun({
+          text: "Customized FEAD Review Workbook",
+          bold: true,
+          size: 36,
+          font: "Arial",
+          color: "0F172A",
+        }),
+      ],
+    }),
+    new DocxParagraph({
+      alignment: DocxAlignmentType.CENTER,
+      spacing: {
+        after: 300,
+      },
+      children: [
+        new DocxTextRun({
+          text: "Generated by Atomix Demo Call Agent",
+          size: 20,
+          font: "Arial",
+          color: "475569",
+        }),
+      ],
+    }),
+    new DocxTable({
+      width: {
+        size: 9360,
+        type: DocxWidthType.DXA,
+      },
+      rows: [
+        new DocxTableRow({
+          children: [
+            labelCell("SPR"),
+            docCell([docParagraph(spr || "TBD")]),
+            labelCell("SR"),
+            docCell([docParagraph(sr || "TBD")]),
+          ],
+        }),
+        new DocxTableRow({
+          children: [
+            labelCell("Project"),
+            docCell([docParagraph(projectName || "TBD")]),
+            labelCell("Application"),
+            docCell([docParagraph(applicationName || "TBD")]),
+          ],
+        }),
+        new DocxTableRow({
+          children: [
+            labelCell("Business Owner"),
+            docCell([docParagraph(businessOwner || "TBD")]),
+            labelCell("Generated"),
+            docCell([docParagraph(generatedAt)]),
+          ],
+        }),
+        new DocxTableRow({
+          children: [
+            labelCell("Risk"),
+            docCell([docParagraph(`Overall ${overallRisk}; C:${confidentiality} I:${integrity} A:${availability}`)]),
+            labelCell("Auto NA"),
+            docCell([docParagraph(`${naCount} of ${feadControls.length} controls marked NA from demo-call scope.`)]),
+          ],
+        }),
+      ],
+    }),
+    new DocxParagraph({ text: "", spacing: { after: 180 } }),
+    new DocxParagraph({
+      heading: DocxHeadingLevel.HEADING_1,
+      spacing: {
+        before: 240,
+        after: 140,
+      },
+      children: [
+        new DocxTextRun({
+          text: "Reviewer Instructions",
+          bold: true,
+          font: "Arial",
+          size: 26,
+        }),
+      ],
+    }),
+    docParagraph(
+      "Each control below includes what needs to be done, a status field, findings area, security reviewer comments, and required artifacts. Atomix pre-populates NA status and reviewer comments when the demo-call scope makes a control not applicable. Reviewers can edit every field in Word before final submission.",
+    ),
+  ];
+
+  let currentSection = "";
+
+  for (const control of feadControls) {
+    if (control.section !== currentSection) {
+      currentSection = control.section;
+      children.push(
+        new DocxParagraph({
+          heading: DocxHeadingLevel.HEADING_2,
+          spacing: {
+            before: 320,
+            after: 120,
+          },
+          children: [
+            new DocxTextRun({
+              text: currentSection,
+              bold: true,
+              font: "Arial",
+              size: 24,
+              color: "0891B2",
+            }),
+          ],
+        }),
+      );
+    }
+
+    children.push(controlTable(control, context));
+    children.push(new DocxParagraph({ text: "", spacing: { after: 160 } }));
+  }
+
+  const doc = new DocxDocument({
+    creator: "Atomix Demo Call Agent",
+    title: "Customized FEAD Review Workbook",
+    description: "Reviewer-editable FEAD workbook generated from demo-call scope.",
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: "Arial",
+            size: 20,
+          },
+          paragraph: {
+            spacing: {
+              line: 276,
+            },
+          },
+        },
+      },
+    },
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: {
+              top: 720,
+              right: 720,
+              bottom: 720,
+              left: 720,
+            },
+          },
+        },
+        children,
+      },
+    ],
+  });
+
+  return DocxPacker.toBlob(doc);
 }
 
 function validateRiskPermutation(
