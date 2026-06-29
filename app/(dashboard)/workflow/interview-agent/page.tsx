@@ -412,6 +412,12 @@ export default async function InterviewAgentPage({
                         <h3 className="text-xl font-bold text-white">{profile.name}</h3>
                         <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">{profile.candidateCode}</span>
                         <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusClass(profile.status)}`}>{profile.status}</span>
+                        <Link
+                          href={`/workflow/interview-agent/${profile.id}`}
+                          className="rounded-full border border-cyan-400/30 px-3 py-1 text-xs font-semibold text-cyan-200 hover:border-cyan-300"
+                        >
+                          Open dashboard
+                        </Link>
                       </div>
                       <p className="mt-2 text-sm text-slate-400">{profile.interviewKind} · {profile.experience ?? "Experience TBD"} · {profile.currentRole ?? "Role TBD"}</p>
                       <p className="mt-1 text-sm text-slate-500">Skills: {profile.skills || "Not captured"}</p>

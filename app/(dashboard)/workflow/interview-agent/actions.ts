@@ -68,8 +68,19 @@ async function audit(profileId: string, action: string, fieldChanged?: string, p
   });
 }
 
-function interviewRedirect(kind: "success" | "error", message: string): never {
-  redirect(`/workflow/interview-agent?${kind}=${encodeURIComponent(message)}`);
+function redirectTarget(formData: FormData) {
+  const returnTo = text(formData, "returnTo");
+
+  if (returnTo.startsWith("/workflow/interview-agent")) {
+    return returnTo;
+  }
+
+  return "/workflow/interview-agent";
+}
+
+function interviewRedirect(kind: "success" | "error", message: string, returnTo = "/workflow/interview-agent"): never {
+  const separator = returnTo.includes("?") ? "&" : "?";
+  redirect(`${returnTo}${separator}${kind}=${encodeURIComponent(message)}`);
 }
 
 export async function createInterviewProfile(formData: FormData) {
@@ -122,7 +133,7 @@ export async function createInterviewProfile(formData: FormData) {
   });
 
   revalidatePath("/workflow/interview-agent");
-  redirect(`/workflow/interview-agent?success=${encodeURIComponent(`${profile.name} was added to interview governance.`)}`);
+  interviewRedirect("success", `${profile.name} was added to interview governance.`, redirectTarget(formData));
 }
 
 export async function updateInterviewProfile(formData: FormData) {
@@ -157,7 +168,7 @@ export async function updateInterviewProfile(formData: FormData) {
   if ((current.tags ?? "") !== (nextTags ?? "")) await audit(profileId, "Profile updated", "tags", current.tags, nextTags);
 
   revalidatePath("/workflow/interview-agent");
-  interviewRedirect("success", `${current.name} was updated.`);
+  interviewRedirect("success", `${current.name} was updated.`, redirectTarget(formData));
 }
 
 export async function scheduleInterviewRound(formData: FormData) {
@@ -207,7 +218,7 @@ export async function scheduleInterviewRound(formData: FormData) {
 
   await audit(profileId, "Interview scheduled", "stage", profile.status, stage);
   revalidatePath("/workflow/interview-agent");
-  interviewRedirect("success", `${category} was scheduled for ${profile.name}.`);
+  interviewRedirect("success", `${category} was scheduled for ${profile.name}.`, redirectTarget(formData));
 }
 
 export async function saveInterviewFeedback(formData: FormData) {
@@ -292,7 +303,7 @@ export async function saveInterviewFeedback(formData: FormData) {
 
   await audit(round.profileId, "Feedback saved", "finalRecommendation", round.profile.status, recommendation);
   revalidatePath("/workflow/interview-agent");
-  interviewRedirect("success", `Feedback was saved for ${round.profile.name}.`);
+  interviewRedirect("success", `Feedback was saved for ${round.profile.name}.`, redirectTarget(formData));
 }
 
 export async function saveCapabilityRating(formData: FormData) {
@@ -318,7 +329,7 @@ export async function saveCapabilityRating(formData: FormData) {
 
   await audit(profileId, "Capability updated", technology, undefined, rating);
   revalidatePath("/workflow/interview-agent");
-  interviewRedirect("success", `${technology} capability was saved.`);
+  interviewRedirect("success", `${technology} capability was saved.`, redirectTarget(formData));
 }
 
 export async function updateInterviewAction(formData: FormData) {
@@ -333,5 +344,5 @@ export async function updateInterviewAction(formData: FormData) {
 
   await audit(action.profileId, "Action updated", action.actionType, undefined, status);
   revalidatePath("/workflow/interview-agent");
-  interviewRedirect("success", `${action.actionType} was updated for ${action.profile.name}.`);
+  interviewRedirect("success", `${action.actionType} was updated for ${action.profile.name}.`, redirectTarget(formData));
 }
