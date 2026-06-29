@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 
 import AuthProvider
 from "../components/providers/session-provider";
+import GlobalPendingLoader from "@/components/ui/global-pending-loader";
 
 export const metadata: Metadata = {
   title: "ATOMIX",
@@ -24,6 +26,9 @@ export default function RootLayout({
         "
       >
         <AuthProvider>
+          <Suspense fallback={null}>
+            <GlobalPendingLoader />
+          </Suspense>
           {children}
         </AuthProvider>
       </body>
