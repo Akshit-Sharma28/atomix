@@ -17,6 +17,7 @@ import {
   Paragraph as DocxParagraph,
   Table as DocxTable,
   TableCell as DocxTableCell,
+  TableLayoutType as DocxTableLayoutType,
   TableRow as DocxTableRow,
   TextRun as DocxTextRun,
   VerticalAlign as DocxVerticalAlign,
@@ -737,6 +738,29 @@ function docParagraph(text: string, bold = false, color = "0F172A") {
   });
 }
 
+function fieldParagraph(label: string, value: string) {
+  return new DocxParagraph({
+    spacing: {
+      after: 60,
+    },
+    children: [
+      new DocxTextRun({
+        text: `${label}: `,
+        bold: true,
+        size: 20,
+        font: "Arial",
+        color: "0F172A",
+      }),
+      new DocxTextRun({
+        text: value || "TBD",
+        size: 20,
+        font: "Arial",
+        color: "334155",
+      }),
+    ],
+  });
+}
+
 function docCell(
   children: DocxParagraph[],
   options: {
@@ -775,7 +799,7 @@ function docCell(
 function labelCell(label: string) {
   return docCell([docParagraph(label, true, "FFFFFF")], {
     fill: "1F2937",
-    width: 1200,
+    width: 2200,
   });
 }
 
@@ -799,6 +823,8 @@ function controlTable(
       size: 9360,
       type: DocxWidthType.DXA,
     },
+    columnWidths: [2200, 5360, 1800],
+    layout: DocxTableLayoutType.FIXED,
     borders,
     rows: [
       new DocxTableRow({
@@ -810,7 +836,7 @@ function controlTable(
             ],
             {
               fill: "111827",
-              width: 1200,
+              width: 2200,
             },
           ),
           docCell(
@@ -820,7 +846,7 @@ function controlTable(
             ],
             {
               fill: "111827",
-              width: 6360,
+              width: 5360,
             },
           ),
           docCell(
@@ -839,7 +865,7 @@ function controlTable(
         children: [
           labelCell("What needs to be done"),
           docCell([docParagraph(control.testing)], {
-            width: 6360,
+            width: 5360,
           }),
           docCell([docParagraph("Reviewer updates status here.")], {
             width: 1800,
@@ -857,7 +883,7 @@ function controlTable(
             ],
             {
               columnSpan: 2,
-              width: 8160,
+              width: 7160,
             },
           ),
         ],
@@ -872,7 +898,7 @@ function controlTable(
             ],
             {
               columnSpan: 2,
-              width: 8160,
+              width: 7160,
             },
           ),
         ],
@@ -882,7 +908,7 @@ function controlTable(
           labelCell("Artifacts required"),
           docCell([docParagraph(control.artifacts)], {
             columnSpan: 2,
-            width: 8160,
+            width: 7160,
           }),
         ],
       }),
@@ -957,37 +983,67 @@ async function buildFeadDocx({
         size: 9360,
         type: DocxWidthType.DXA,
       },
+      columnWidths: [4680, 4680],
+      layout: DocxTableLayoutType.FIXED,
       rows: [
         new DocxTableRow({
           children: [
-            labelCell("SPR"),
-            docCell([docParagraph(spr || "TBD")]),
-            labelCell("SR"),
-            docCell([docParagraph(sr || "TBD")]),
+            docCell([fieldParagraph("SPR", spr || "TBD")], {
+              fill: "F8FAFC",
+              width: 4680,
+            }),
+            docCell([fieldParagraph("SR", sr || "TBD")], {
+              fill: "F8FAFC",
+              width: 4680,
+            }),
           ],
         }),
         new DocxTableRow({
           children: [
-            labelCell("Project"),
-            docCell([docParagraph(projectName || "TBD")]),
-            labelCell("Application"),
-            docCell([docParagraph(applicationName || "TBD")]),
+            docCell([fieldParagraph("Project", projectName || "TBD")], {
+              width: 4680,
+            }),
+            docCell([fieldParagraph("Application", applicationName || "TBD")], {
+              width: 4680,
+            }),
           ],
         }),
         new DocxTableRow({
           children: [
-            labelCell("Business Owner"),
-            docCell([docParagraph(businessOwner || "TBD")]),
-            labelCell("Generated"),
-            docCell([docParagraph(generatedAt)]),
+            docCell([fieldParagraph("Business Owner", businessOwner || "TBD")], {
+              fill: "F8FAFC",
+              width: 4680,
+            }),
+            docCell([fieldParagraph("Generated", generatedAt)], {
+              fill: "F8FAFC",
+              width: 4680,
+            }),
           ],
         }),
         new DocxTableRow({
           children: [
-            labelCell("Risk"),
-            docCell([docParagraph(`Overall ${overallRisk}; C:${confidentiality} I:${integrity} A:${availability}`)]),
-            labelCell("Auto NA"),
-            docCell([docParagraph(`${naCount} of ${feadControls.length} controls marked NA from demo-call scope.`)]),
+            docCell(
+              [
+                fieldParagraph(
+                  "Risk",
+                  `Overall ${overallRisk}; C:${confidentiality} I:${integrity} A:${availability}`,
+                ),
+              ],
+              {
+                width: 4680,
+              },
+            ),
+            docCell(
+              [
+                fieldParagraph(
+                  "Auto NA",
+                  `${naCount} of ${feadControls.length} controls marked NA from demo-call scope.`,
+                ),
+              ],
+              {
+                width: 4680,
+              },
+            ),
           ],
         }),
       ],

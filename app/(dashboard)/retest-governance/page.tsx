@@ -6,13 +6,21 @@ import {
   CheckCircle2,
   Clock3,
   FileSearch,
+  Filter,
+  PlusCircle,
   RotateCcw,
+  Search,
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
 
+import { prisma } from "@/lib/prisma";
 import { canAccess } from "@/services/users/access.service";
 import { getRetestGovernanceDashboard } from "@/services/dashboard/retest-governance.service";
+import {
+  assignRetestReviewer,
+  createRetestRequest,
+} from "./actions";
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -42,11 +50,31 @@ function statusClass(status: string) {
   return "border-slate-700 bg-slate-900 text-slate-300";
 }
 
-export default async function RetestGovernancePage() {
+export default async function RetestGovernancePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    q?: string;
+    status?: string;
+    type?: string;
+  }>;
+}) {
+  const params = (await searchParams) ?? {};
+  const query = params.q?.trim().toLowerCase() ?? "";
+  const statusFilter = params.status ?? "All";
+  const typeFilter = params.type ?? "All";
   const allowed = await canAccess([
     "ADMIN",
     "GOVERNANCE_TEAM",
     "EXECUTIVE",
+    "PROJECT_MANAGER",
+    "RETESTER",
+  ]);
+  const canManageRetests = await canAccess(["ADMIN", "GOVERNANCE_TEAM"]);
+  const canRequestRetests = await canAccess([
+    "ADMIN",
+    "GOVERNANCE_TEAM",
+    "PROJECT_MANAGER",
   ]);
 
   if (!allowed) {
@@ -57,19 +85,96 @@ export default async function RetestGovernancePage() {
             Retest Governance access restricted
           </h1>
           <p className="mt-2 text-slate-400">
-            This view is available to Admin, Governance Team, and Executive
-            roles only.
+            This view is available to retest governance, project owner, and
+            leadership roles only.
           </p>
         </div>
       </div>
     );
   }
 
-  const data = await getRetestGovernanceDashboard();
+  const [data, projects, unassignedRetests, reviewers] = await Promise.all([
+    getRetestGovernanceDashboard(),
+    prisma.project.findMany({
+      orderBy: {
+        name: "asc",
+      },
+      select: {
+        id: true,
+        name: true,
+        sprId: true,
+      },
+    }),
+    prisma.securityReview.findMany({
+      where: {
+        type: "RETEST",
+        OR: [
+          {
+            status: "Requested",
+          },
+          {
+            assignments: {
+              none: {},
+            },
+          },
+        ],
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 25,
+      select: {
+        id: true,
+        srId: true,
+        title: true,
+        project: {
+          select: {
+            sprId: true,
+            name: true,
+          },
+        },
+      },
+    }),
+    prisma.reviewerProfile.findMany({
+      orderBy: {
+        updatedAt: "desc",
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            role: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  const filteredRequests = data.requests.filter((request) => {
+    const matchesQuery =
+      !query ||
+      [
+        request.project,
+        request.sprId,
+        request.srId,
+        request.assignedReviewer,
+        request.initialReviewer,
+        request.scope,
+        request.chargeCode,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    const matchesStatus =
+      statusFilter === "All" || request.status === statusFilter;
+    const matchesType = typeFilter === "All" || request.type === typeFilter;
+
+    return matchesQuery && matchesStatus && matchesType;
+  });
 
   return (
-    <div className="w-full px-8 py-6">
-      <div className="mb-6 border-b border-slate-800 pb-5">
+    <div className="w-full overflow-hidden px-6 py-6 lg:px-8">
+      <div className="mb-6 border-b border-slate-800 pb-5 pr-0">
         <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
           <RotateCcw size={16} />
           Retest Governance
@@ -143,7 +248,7 @@ export default async function RetestGovernancePage() {
             href={`/copilot?prompt=${encodeURIComponent(
               "Act as the Retest Governance Agent. Analyze retest requests, access readiness, fixes readiness, overdue items, extension needs, available reviewers, initial reviewers, and prior retest iterations. Recommend assignments, escalations, and executive insights.",
             )}`}
-            className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 sm:w-auto"
           >
             <Bot size={16} />
             Ask Retest Agent
@@ -161,6 +266,226 @@ export default async function RetestGovernancePage() {
           ))}
         </div>
       </section>
+
+      <section className="mb-6 grid gap-4 lg:grid-cols-4">
+        {[
+          [
+            "Demo Call",
+            "Capture scope, FEAD context, risk profile, and readiness signals.",
+            "/workflow/scope-call",
+          ],
+          [
+            "Peer Review",
+            "Validate evidence, reviewer decisions, and risk alignment.",
+            "/workflow/peer-review",
+          ],
+          [
+            "Governance Call",
+            "Track attendance, pool mapping, extensions, and red engagements.",
+            "/reviewers/governance-call",
+          ],
+          [
+            "Retest Governance",
+            "Assign fix validation to retesters and monitor overdue pressure.",
+            "/retest-governance",
+          ],
+        ].map(([title, body, href]) => (
+          <Link
+            key={title}
+            href={href}
+            className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 transition hover:border-cyan-400/40"
+          >
+            <p className="text-xs uppercase tracking-[0.18em] text-cyan-300">
+              Current Flow
+            </p>
+            <h3 className="mt-2 font-bold text-white">{title}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-400">{body}</p>
+          </Link>
+        ))}
+      </section>
+
+      {(canRequestRetests || canManageRetests) && (
+        <section className="mb-6 grid min-w-0 gap-5 2xl:grid-cols-2">
+          {canRequestRetests && (
+            <form
+              action={createRetestRequest}
+              className="min-w-0 rounded-3xl border border-slate-800 bg-slate-900/70 p-5"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <PlusCircle className="text-cyan-300" size={22} />
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    Create review request
+                  </h2>
+                  <p className="text-sm text-slate-400">
+                    Project managers can request retests or new infosec reviews;
+                    governance assigns the reviewer.
+                  </p>
+                </div>
+              </div>
+              <div className="grid min-w-0 gap-3 md:grid-cols-2">
+                <select
+                  name="projectId"
+                  required
+                  className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+                >
+                  <option value="">Select SPR / project</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.sprId} · {project.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  name="requestType"
+                  className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+                >
+                  <option value="RETEST">Retest request</option>
+                  <option value="INFOSEC_REVIEW">Infosec review request</option>
+                </select>
+                <input
+                  name="chargeCode"
+                  placeholder="Charge code"
+                  className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500"
+                />
+                <input
+                  name="controlsCount"
+                  type="number"
+                  min="0"
+                  placeholder="Controls in scope"
+                  className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500"
+                />
+              </div>
+              <textarea
+                name="scope"
+                rows={3}
+                placeholder="Fix readiness, access notes, controls, retest scope, requested timeline..."
+                className="mt-3 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500"
+              />
+              <button className="mt-4 w-full rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 sm:w-auto">
+                Create request
+              </button>
+            </form>
+          )}
+
+          {canManageRetests ? (
+            <form
+              action={assignRetestReviewer}
+              className="min-w-0 rounded-3xl border border-slate-800 bg-slate-900/70 p-5"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <UserCheck className="text-cyan-300" size={22} />
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    Assign retest reviewer
+                  </h2>
+                  <p className="text-sm text-slate-400">
+                    Assign ready retest work to an available retester or
+                    reviewer.
+                  </p>
+                </div>
+              </div>
+              <div className="grid min-w-0 gap-3 xl:grid-cols-[1.15fr_1fr_0.45fr]">
+                <select
+                  name="reviewId"
+                  required
+                  className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+                >
+                  <option value="">Select retest SR</option>
+                  {unassignedRetests.map((review) => (
+                    <option key={review.id} value={review.id}>
+                      {review.project.sprId} · {review.srId ?? review.title}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  name="reviewerProfileId"
+                  required
+                  className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+                >
+                  <option value="">Select reviewer</option>
+                  {reviewers.map((reviewer) => (
+                    <option key={reviewer.id} value={reviewer.id}>
+                      {reviewer.user.name} · {reviewer.user.role}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  name="allocatedHours"
+                  type="number"
+                  min="1"
+                  defaultValue="8"
+                  className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+                />
+              </div>
+              <button className="mt-4 w-full rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 sm:w-auto">
+                Assign retester
+              </button>
+            </form>
+          ) : (
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
+              <h2 className="text-xl font-bold text-white">
+                Governance assignment pending
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Once fixes and access are ready, the governance team assigns the
+                retest to an available reviewer from the retest pool.
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+
+      <form
+        action="/retest-governance"
+        className="mb-6 grid min-w-0 gap-3 rounded-3xl border border-slate-800 bg-slate-900/70 p-4 xl:grid-cols-[1.4fr_0.7fr_0.7fr_auto]"
+      >
+        <label className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3">
+          <Search className="text-slate-500" size={18} />
+          <input
+            name="q"
+            defaultValue={params.q ?? ""}
+            placeholder="Search SPR, SR, project, reviewer, charge code..."
+            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+          />
+        </label>
+        <select
+          name="status"
+          defaultValue={statusFilter}
+          className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+        >
+          {[
+            "All",
+            "Not Assigned",
+            "In Progress",
+            "Extension Needed",
+            "Overdue",
+            "Completed",
+            "Cancelled",
+          ].map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+        <select
+          name="type"
+          defaultValue={typeFilter}
+          className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+        >
+          {["All", "Web", "LLM", "Web + LLM", "API", "Thick Client"].map(
+            (type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ),
+          )}
+        </select>
+        <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950">
+          <Filter size={16} />
+          Filter
+        </button>
+      </form>
 
       <div className="mb-6 grid gap-6 xl:grid-cols-3">
         <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 xl:col-span-2">
@@ -191,7 +516,7 @@ export default async function RetestGovernancePage() {
                 </tr>
               </thead>
               <tbody>
-                {data.requests.map((request) => (
+                {filteredRequests.map((request) => (
                   <tr
                     key={request.id}
                     className="border-t border-slate-800 align-top"
@@ -298,6 +623,16 @@ export default async function RetestGovernancePage() {
                     </td>
                   </tr>
                 ))}
+                {filteredRequests.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="border-t border-slate-800 p-6 text-center text-sm text-slate-500"
+                    >
+                      No retest requests match the current filters.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

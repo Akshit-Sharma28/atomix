@@ -125,7 +125,7 @@ export default async function GovernanceCallPage({
     returnParams.toString() ? `?${returnParams.toString()}` : ""
   }`;
 
-  const [weeklyAssignments, canRunWeeklyCheckIn] = await Promise.all([
+  const [weeklyAssignments, poolUsers, canRunWeeklyCheckIn] = await Promise.all([
     prisma.reviewerAssignment.findMany({
       where: {
         status: {
@@ -170,17 +170,113 @@ export default async function GovernanceCallPage({
         updatedAt: "desc",
       },
     }),
+    prisma.user.findMany({
+      where: {
+        isActive: true,
+      },
+      include: {
+        reviewerProfile: {
+          include: {
+            assignments: {
+              where: {
+                status: {
+                  in: ["Assigned", "Accepted", "In Progress"],
+                },
+                review: {
+                  status: {
+                    notIn: ["Completed", "Cancelled"],
+                  },
+                },
+              },
+              include: {
+                review: {
+                  include: {
+                    project: true,
+                  },
+                },
+                workstream: true,
+              },
+            },
+          },
+        },
+        reviewAssignments: {
+          where: {
+            status: {
+              in: ["Assigned", "Accepted", "In Progress"],
+            },
+            review: {
+              status: {
+                notIn: ["Completed", "Cancelled"],
+              },
+            },
+          },
+          include: {
+            review: {
+              include: {
+                project: true,
+              },
+            },
+            workstream: true,
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+    }),
     canAccess(["ADMIN", "GOVERNANCE_TEAM"]),
   ]);
 
+  const poolReviewerRows = poolUsers.map((user) => {
+    const assignmentsById = new Map<
+      string,
+      (typeof user.reviewAssignments)[number]
+    >();
+
+    user.reviewAssignments.forEach((assignment) => {
+      assignmentsById.set(assignment.id, assignment);
+    });
+    user.reviewerProfile?.assignments.forEach((assignment) => {
+      assignmentsById.set(assignment.id, assignment);
+    });
+
+    const assignments = Array.from(assignmentsById.values());
+    const poolType =
+      user.reviewerPool === "Dedicated" ? "Dedicated" : "Augmentation";
+    const availability =
+      user.reviewerProfile?.availability ??
+      (user.isActive ? "Available" : "Unavailable");
+    const capacity = user.reviewerProfile?.weeklyCapacityHours ?? 0;
+    const assignedHours = assignments.reduce(
+      (sum, assignment) => sum + (assignment.allocatedHours ?? 0),
+      0,
+    );
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      poolType,
+      availability,
+      capacity,
+      assignedHours,
+      assignments,
+      attendanceStatus: defaultAttendanceStatus(availability),
+    };
+  });
+
   const reviewerOptions = Array.from(
     new Set(
-      weeklyAssignments.map(
-        (assignment) =>
-          assignment.user?.name ??
-          assignment.reviewerProfile?.user.name ??
-          "Unassigned reviewer"
-      )
+      [
+        ...weeklyAssignments.map(
+          (assignment) =>
+            assignment.user?.name ??
+            assignment.reviewerProfile?.user.name ??
+            "Unassigned reviewer",
+        ),
+        ...poolReviewerRows.map((reviewerRow) => reviewerRow.name),
+      ]
     )
   ).sort();
 
@@ -225,29 +321,62 @@ export default async function GovernanceCallPage({
 
     return queryMatch && statusMatch && reviewerMatch && projectMatch && poolMatch;
   });
+  const filteredPoolReviewerRows = poolReviewerRows.filter((reviewerRow) => {
+    const assignmentProjectLabels = reviewerRow.assignments.map(
+      (assignment) =>
+        assignment.review.project.sprId ?? assignment.review.project.name,
+    );
+    const assignmentSrLabels = reviewerRow.assignments.map(
+      (assignment) => assignment.review.srId ?? assignment.review.title,
+    );
+
+    const queryMatch =
+      !query ||
+      includes(reviewerRow.name, query) ||
+      includes(reviewerRow.email, query) ||
+      includes(reviewerRow.role, query) ||
+      includes(reviewerRow.poolType, query) ||
+      assignmentProjectLabels.some((label) => includes(label, query)) ||
+      assignmentSrLabels.some((label) => includes(label, query)) ||
+      reviewerRow.assignments.some((assignment) =>
+        includes(assignment.review.project.name, query),
+      ) ||
+      reviewerRow.assignments.some((assignment) =>
+        includes(assignment.workstream?.type, query),
+      );
+
+    const statusMatch =
+      !status ||
+      reviewerRow.assignments.some(
+        (assignment) => assignment.review.status === status,
+      );
+    const reviewerMatch = !reviewer || reviewerRow.name === reviewer;
+    const projectMatch =
+      !project || assignmentProjectLabels.some((label) => label === project);
+    const poolMatch = !pool || reviewerRow.poolType === pool;
+
+    return queryMatch && statusMatch && reviewerMatch && projectMatch && poolMatch;
+  });
   const today = new Date();
-  const dedicatedAssignments = filteredAssignments.filter(
-    (assignment) => poolTypeForAssignment(assignment) === "Dedicated",
+  const dedicatedReviewers = filteredPoolReviewerRows.filter(
+    (reviewerRow) => reviewerRow.poolType === "Dedicated",
   );
-  const augmentationAssignments = filteredAssignments.filter(
-    (assignment) => poolTypeForAssignment(assignment) === "Augmentation",
+  const augmentationReviewers = filteredPoolReviewerRows.filter(
+    (reviewerRow) => reviewerRow.poolType === "Augmentation",
   );
-  const attendanceRows = filteredAssignments.map((assignment) => {
-    const reviewerName =
-      assignment.user?.name ??
-      assignment.reviewerProfile?.user.name ??
-      "Unassigned reviewer";
-    const availability = assignment.reviewerProfile?.availability;
+  const attendanceRows = filteredPoolReviewerRows.map((reviewerRow) => {
+    const assignment = reviewerRow.assignments[0];
 
     return {
-      id: assignment.id,
-      reviewerName,
-      project:
-        assignment.review.project.sprId ?? assignment.review.project.name,
-      sr: assignment.review.srId ?? assignment.review.title,
-      poolType: poolTypeForAssignment(assignment),
-      status: defaultAttendanceStatus(availability),
-      availability,
+      id: reviewerRow.id,
+      reviewerName: reviewerRow.name,
+      project: assignment
+        ? assignment.review.project.sprId ?? assignment.review.project.name
+        : "No active assignment",
+      sr: assignment ? assignment.review.srId ?? assignment.review.title : "Roster",
+      poolType: reviewerRow.poolType,
+      status: reviewerRow.attendanceStatus,
+      availability: reviewerRow.availability,
     };
   });
   const attendanceSummary = [
@@ -395,8 +524,8 @@ Atomix Governance Dashboard`;
 
       <div className="mb-6 grid gap-4 md:grid-cols-5">
         <Metric label="Active Check-ins" value={filteredAssignments.length} />
-        <Metric label="Dedicated Pool" value={dedicatedAssignments.length} />
-        <Metric label="Augmentation Pool" value={augmentationAssignments.length} />
+        <Metric label="Dedicated Pool" value={dedicatedReviewers.length} />
+        <Metric label="Augmentation Pool" value={augmentationReviewers.length} />
         <Metric
           label="Extension Requests"
           value={
@@ -407,16 +536,7 @@ Atomix Governance Dashboard`;
         />
         <Metric
           label="Reviewers"
-          value={
-            new Set(
-              filteredAssignments.map(
-                (item) =>
-                  item.user?.name ??
-                  item.reviewerProfile?.user.name ??
-                  "Unassigned reviewer"
-              )
-            ).size
-          }
+          value={filteredPoolReviewerRows.length}
         />
       </div>
 
@@ -592,6 +712,123 @@ Atomix Governance Dashboard`;
         </label>
       </section>
 
+      <section className="mb-6 rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              Pool Reviewer Roster
+            </h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Dedicated and Augmentation pool users are synced from Users &
+              RBAC, even when they do not yet have an active assignment.
+            </p>
+          </div>
+          <div className="rounded-full border border-cyan-400/20 bg-slate-950 px-4 py-2 text-sm font-semibold text-cyan-200">
+            {filteredPoolReviewerRows.length} visible reviewers
+          </div>
+        </div>
+
+        {filteredPoolReviewerRows.length === 0 ? (
+          <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 text-center text-slate-400">
+            No pool reviewers match the current filters.
+          </div>
+        ) : (
+          <div className="grid gap-3 xl:grid-cols-2">
+            {filteredPoolReviewerRows.map((reviewerRow) => {
+              const topAssignments = reviewerRow.assignments.slice(0, 2);
+              const remainingAssignments =
+                reviewerRow.assignments.length - topAssignments.length;
+
+              return (
+                <div
+                  key={reviewerRow.id}
+                  className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-white">
+                        {reviewerRow.name}
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {reviewerRow.email}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          reviewerRow.poolType === "Dedicated"
+                            ? "bg-cyan-400/10 text-cyan-200"
+                            : "bg-emerald-400/10 text-emerald-200"
+                        }`}
+                      >
+                        {reviewerRow.poolType} Pool
+                      </span>
+                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">
+                        {reviewerRow.role.replaceAll("_", " ")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                      <p className="text-xs text-slate-500">Attendance</p>
+                      <p className="mt-1 font-semibold text-white">
+                        {reviewerRow.attendanceStatus}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                      <p className="text-xs text-slate-500">Availability</p>
+                      <p className="mt-1 font-semibold text-white">
+                        {reviewerRow.availability}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                      <p className="text-xs text-slate-500">Load</p>
+                      <p className="mt-1 font-semibold text-white">
+                        {reviewerRow.assignedHours}h /{" "}
+                        {reviewerRow.capacity || "TBD"}h
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                      Active assignments
+                    </p>
+                    {topAssignments.length === 0 ? (
+                      <p className="mt-2 text-sm text-slate-400">
+                        No active SPR/SR mapped yet.
+                      </p>
+                    ) : (
+                      <div className="mt-2 space-y-2">
+                        {topAssignments.map((assignment) => (
+                          <div
+                            key={assignment.id}
+                            className="text-sm text-slate-300"
+                          >
+                            <span className="font-semibold text-white">
+                              {assignment.review.project.sprId ??
+                                assignment.review.project.name}
+                            </span>{" "}
+                            · {assignment.review.srId ?? assignment.review.title}
+                          </div>
+                        ))}
+                        {remainingAssignments > 0 && (
+                          <p className="text-xs text-cyan-200">
+                            +{remainingAssignments} more active assignment
+                            {remainingAssignments === 1 ? "" : "s"}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       <section className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -612,7 +849,8 @@ Atomix Governance Dashboard`;
         <div className="grid gap-4">
           {filteredAssignments.length === 0 && (
             <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 text-center text-slate-400">
-              No active reviewer assignments match the filters.
+              No active reviewer assignments match the filters. Pool users are
+              still visible in the roster above.
             </div>
           )}
 
