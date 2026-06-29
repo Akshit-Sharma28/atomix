@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   Bot,
   CheckCircle2,
   FileSearch,
@@ -48,6 +49,10 @@ export default function PeerReviewAgent() {
   const [result, setResult] =
     useState<PeerReviewResult | null>(null);
   const [scanSlots, setScanSlots] = useState([0]);
+  const [grcRisk, setGrcRisk] = useState("High");
+  const [agentRisk, setAgentRisk] = useState("Medium");
+  const [riskConfirmed, setRiskConfirmed] = useState(false);
+  const riskMismatch = grcRisk !== agentRisk;
 
   async function submit(formData: FormData) {
     setLoading(true);
@@ -171,6 +176,84 @@ export default function PeerReviewAgent() {
               options={riskLevels}
             />
           ))}
+        </div>
+
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-4">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <span className="flex items-center gap-2 text-sm font-semibold text-amber-200">
+                <AlertTriangle size={16} />
+                Risk Profile Validation
+              </span>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Peer reviewer confirms the final risk profile when GRC and the
+                Demo Call Agent recommendation do not match.
+              </p>
+            </div>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                riskMismatch
+                  ? "bg-red-500/10 text-red-200"
+                  : "bg-emerald-500/10 text-emerald-200"
+              }`}
+            >
+              {riskMismatch ? "Mismatch" : "Aligned"}
+            </span>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <label>
+              <span className="mb-2 block text-sm text-slate-400">
+                GRC risk profile
+              </span>
+              <select
+                name="grcRiskProfile"
+                value={grcRisk}
+                onChange={(event) => setGrcRisk(event.target.value)}
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+              >
+                {riskLevels.map((risk) => (
+                  <option key={risk}>{risk}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="mb-2 block text-sm text-slate-400">
+                Agent-suggested risk profile
+              </span>
+              <select
+                name="agentSuggestedRiskProfile"
+                value={agentRisk}
+                onChange={(event) => setAgentRisk(event.target.value)}
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+              >
+                {riskLevels.map((risk) => (
+                  <option key={risk}>{risk}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-end gap-2 rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-300">
+              <input
+                name="riskProfileConfirmed"
+                type="checkbox"
+                checked={riskConfirmed}
+                onChange={(event) => setRiskConfirmed(event.target.checked)}
+                className="mb-1 accent-cyan-400"
+              />
+              Confirm final risk profile after peer review
+            </label>
+          </div>
+          {riskMismatch && !riskConfirmed && (
+            <p className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-100">
+              Mismatch requires peer reviewer confirmation and a comment before
+              governance validation.
+            </p>
+          )}
+          <textarea
+            name="riskValidationComment"
+            rows={3}
+            placeholder="Explain whether GRC or Demo Call Agent risk is accepted, and why."
+            className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+          />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">

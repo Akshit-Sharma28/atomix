@@ -28,7 +28,7 @@ function cleanRole(role: string) {
     return "REVIEWER";
   }
 
-  if (role === "VIEWER" || role === "CONSULTANT") {
+  if (role === "VIEWER") {
     return "REVIEWER";
   }
 
@@ -37,13 +37,13 @@ function cleanRole(role: string) {
 
 const agentWorkflows = [
   {
-    title: "Validator / Demo Call Agent",
+    title: "Demo Call Agent",
     href: "/workflow/scope-call",
-    mode: "Structured intake",
+    mode: "Application intake",
     description:
-      "Collect demo-call scope, URL/IP, risk, AV/Au, RBAC roles, artifacts, and scan evidence into a pre-review scope document.",
+      "Capture application intake, suggested risk profile, tenant context, integrations, and FEAD draft inputs from the demo call.",
     icon: ClipboardList,
-    roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "PROJECT_MANAGER"],
+    roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "PROJECT_MANAGER", "CONSULTANT"],
   },
   {
     title: "Peer Review Agent",
@@ -111,6 +111,7 @@ export default async function WorkflowPage() {
     "RETESTER",
     "PROJECT_MANAGER",
     "ENGAGEMENT_MANAGER",
+    "CONSULTANT",
   ]);
 
   if (!allowed) {
@@ -202,7 +203,9 @@ export default async function WorkflowPage() {
         </h1>
         <p className="mt-2 max-w-3xl text-slate-400">
           Role-specific workspace for the current user. Atomix only shows the
-          workflow agents and actions that match your RBAC context.
+              workflow agents and actions that match your RBAC context.
+              Consultants only see the Demo Call Agent and assigned intake
+              workspaces.
         </p>
       </div>
 
@@ -282,6 +285,99 @@ export default async function WorkflowPage() {
           })}
         </div>
       </section>
+
+      <section className="mb-8 rounded-2xl border border-cyan-500/20 bg-slate-900/70 p-5">
+        <div className="mb-4 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-cyan-300">
+          <GitBranch size={17} />
+          Governance Flow
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {[
+            "Project Created",
+            "Demo Call Agent",
+            "Risk Profile Generated",
+            "Peer Reviewer Validation",
+            "Reviewer Allocation",
+            "Dedicated or Augmentation Pool",
+            "Reviewer Performs Review",
+            "Peer Reviewer Review",
+            "Peer Reviewer SLA Monitoring",
+            "Governance/Admin Validation",
+            "FEAD Draft Generated",
+            "Governance KPI Dashboard",
+          ].map((step, index) => (
+            <div
+              key={step}
+              className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
+            >
+              <p className="text-xs font-semibold text-cyan-300">
+                {String(index + 1).padStart(2, "0")}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-white">{step}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="mb-8 grid gap-6 xl:grid-cols-2">
+        <section className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
+          <h2 className="text-xl font-bold text-white">
+            Business Value
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            If every person in EYG saves 1 hour per day using this
+            AI-powered governance dashboard: 5 hrs/week/person x 70 people =
+            350 hrs/week, and 350 hrs/week x 52 weeks = 18,200 hrs/year saved.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                Annual hours saved
+              </p>
+              <p className="mt-2 text-3xl font-black text-emerald-300">
+                18,200
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                Working days saved
+              </p>
+              <p className="mt-2 text-3xl font-black text-cyan-300">
+                2,275
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-5">
+          <h2 className="text-xl font-bold text-white">
+            Recruitment / Interview Agent
+          </h2>
+          <p className="mt-2 text-sm text-slate-400">
+            Future-ready replacement for Excel-based interview tracking.
+          </p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {[
+              "Candidate name",
+              "Interview type",
+              "Mock interview status",
+              "GIS interview status",
+              "Feedback comments",
+              "Technical rating",
+              "Communication rating",
+              "Final recommendation",
+              "Next action",
+            ].map((field) => (
+              <div
+                key={field}
+                className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-slate-300"
+              >
+                {field}
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
 
       <section className="mb-8 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-5">
         <h2 className="text-lg font-bold text-white">

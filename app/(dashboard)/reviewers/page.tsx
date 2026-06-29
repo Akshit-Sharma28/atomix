@@ -163,6 +163,10 @@ export default async function ReviewersPage({
           capacity: reviewer.weeklyCapacityHours,
           skills: reviewer.skills.map((skill) => skill.skill),
           assignments: reviewer.assignments,
+          poolType:
+            reviewer.weeklyCapacityHours >= 32
+              ? "Dedicated"
+              : "Augmentation",
         }))
       : users.map((user) => ({
           id: user.id,
@@ -172,6 +176,7 @@ export default async function ReviewersPage({
           capacity: 0,
           skills: [user.role],
           assignments: user.reviewAssignments,
+          poolType: "Augmentation",
         }));
 
   const totalCapacity = reviewerRows.reduce(
@@ -193,6 +198,10 @@ export default async function ReviewersPage({
   const availableReviewers = reviewerRows.filter(
     (reviewer) => reviewer.availability === "Available",
   ).length;
+  const dedicatedReviewers = reviewerRows.filter(
+    (reviewer) => reviewer.poolType === "Dedicated",
+  ).length;
+  const augmentationReviewers = reviewerRows.length - dedicatedReviewers;
 
   const filteredReviewerRows = reviewerRows.filter((reviewer) => {
     const queryMatches =
@@ -222,6 +231,62 @@ export default async function ReviewersPage({
 
     return queryMatches && availabilityMatches;
   });
+
+  const attendanceRows = filteredReviewerRows.slice(0, 8).map((reviewer) => {
+    const assignedHours = reviewer.assignments.reduce(
+      (sum, assignment) => sum + (assignment.allocatedHours ?? 0),
+      0,
+    );
+    const status =
+      reviewer.availability === "On Leave"
+        ? "Leave"
+        : reviewer.availability === "Unavailable"
+          ? "Holiday"
+          : reviewer.availability === "Limited" || assignedHours === 0
+            ? "Training"
+            : reviewer.availability === "Profile Needed"
+              ? "Not Marked"
+              : "Present";
+
+    return {
+      ...reviewer,
+      assignedHours,
+      status,
+    };
+  });
+  const attendanceSummary = ["Present", "Leave", "Training", "Holiday", "Not Marked"]
+    .map(
+      (statusLabel) =>
+        `${statusLabel}: ${
+          attendanceRows.filter((row) => row.status === statusLabel).length
+        }`,
+    )
+    .join(" | ");
+  const attendanceEmail = `Subject: Reviewer Attendance Summary - ${new Intl.DateTimeFormat(
+    "en",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+  ).format(new Date())}
+
+Hello Governance Team,
+
+Please find the reviewer attendance summary for the selected governance view.
+
+${attendanceSummary}
+
+Reviewer details:
+${attendanceRows
+  .map(
+    (row) =>
+      `- ${row.name}: ${row.status} (${row.poolType} pool, ${row.assignedHours}h allocated)`,
+  )
+  .join("\n")}
+
+Regards,
+Atomix Governance Dashboard`;
 
   return (
     <div className="w-full px-8 py-6">
@@ -275,7 +340,7 @@ export default async function ReviewersPage({
         ))}
       </div>
 
-      <div className="grid md:grid-cols-4 gap-4 mb-8">
+      <div className="grid gap-4 mb-8 md:grid-cols-3 xl:grid-cols-6">
         <div className="rounded-2xl border border-emerald-500/20 bg-slate-900 p-5">
           <div className="flex items-center justify-between text-slate-400">
             <span>Available</span>
@@ -315,6 +380,32 @@ export default async function ReviewersPage({
             {unassignedReviews}
           </div>
         </div>
+
+        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
+          <div className="flex items-center justify-between text-slate-400">
+            <span>Dedicated Pool</span>
+            <ShieldCheck size={20} className="text-cyan-400" />
+          </div>
+          <div className="mt-3 text-4xl font-bold text-cyan-300">
+            {dedicatedReviewers}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            Long-term staffed reviews
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-500/20 bg-slate-900 p-5">
+          <div className="flex items-center justify-between text-slate-400">
+            <span>Augmentation Pool</span>
+            <UserCheck size={20} className="text-emerald-400" />
+          </div>
+          <div className="mt-3 text-4xl font-bold text-emerald-300">
+            {augmentationReviewers}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            One to two week support
+          </p>
+        </div>
       </div>
 
       <div className="mb-8">
@@ -338,6 +429,57 @@ export default async function ReviewersPage({
       </div>
 
       <div className="mb-8 grid gap-6 xl:grid-cols-3">
+        <div className="rounded-2xl border border-emerald-500/10 bg-slate-900/60 p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <CalendarDays size={20} className="text-emerald-300" />
+            <h2 className="text-lg font-bold">
+              Attendance Management
+            </h2>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-slate-800">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-950/70 uppercase tracking-[0.14em] text-slate-500">
+                <tr>
+                  <th className="p-3">Reviewer</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3">Pool</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attendanceRows.map((row) => (
+                  <tr key={row.id} className="border-t border-slate-800">
+                    <td className="p-3 text-slate-300">{row.name}</td>
+                    <td className="p-3">
+                      <select
+                        defaultValue={row.status}
+                        className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-white"
+                      >
+                        <option>Present</option>
+                        <option>Leave</option>
+                        <option>Training</option>
+                        <option>Holiday</option>
+                        <option>Not Marked</option>
+                      </select>
+                    </td>
+                    <td className="p-3 text-cyan-200">{row.poolType}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <label className="mt-4 block">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Copyable attendance email draft
+            </span>
+            <textarea
+              readOnly
+              rows={8}
+              value={attendanceEmail}
+              className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs leading-5 text-slate-300"
+            />
+          </label>
+        </div>
+
         <div className="rounded-2xl border border-cyan-500/10 bg-slate-900/60 p-4">
           <div className="mb-3 flex items-center gap-3">
             <UserCheck size={20} className="text-cyan-400" />
@@ -604,6 +746,13 @@ export default async function ReviewersPage({
                       >
                         {reviewer.availability}
                       </span>
+                      <select
+                        defaultValue={reviewer.poolType}
+                        className="rounded-full border border-cyan-500/30 bg-slate-950 px-3 py-1 text-xs text-cyan-200"
+                      >
+                        <option>Dedicated</option>
+                        <option>Augmentation</option>
+                      </select>
                     </div>
 
                     <p className="mt-1 text-sm text-slate-500">

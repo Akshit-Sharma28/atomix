@@ -14,6 +14,8 @@ function fallbackScopeDocument(data: Record<string, string | string[]>) {
 
 ## 1. Review Identity
 - Project Name: ${data.projectName || "TBD"}
+- Application Name: ${data.applicationName || "TBD"}
+- Business Owner: ${data.businessOwner || "TBD"}
 - SPR: ${data.spr || "TBD"}
 - SR: ${data.sr || "TBD"}
 - Charge Code: ${data.chargeCode || "TBD"}
@@ -27,12 +29,21 @@ function fallbackScopeDocument(data: Record<string, string | string[]>) {
 - BEAD Required: ${data.beadRequired || "TBD"}
 - LLM FEAD Required: ${data.llmReviewRequired || "TBD"}
 - Previous Security Review Attached: ${data.previousReportAttached || "TBD"}
+- Tenant Type: ${data.tenantType || "TBD"}
+- Public/Internal: ${data.publicInternal || "TBD"}
+- Internet Exposed: ${data.internetExposed || "TBD"}
+- APIs Available: ${data.apisAvailable || "TBD"}
+- LLM/AI Usage: ${data.llmUsage || "TBD"}
+- External Integrations: ${data.externalIntegrations || "TBD"}
 
 ## 3. Risk Profile
 - Overall Risk: ${data.overallRisk || "TBD"}
+- GRC Risk Profile: ${data.grcRiskProfile || "TBD"}
+- Agent-Suggested Risk Profile: ${data.agentSuggestedRiskProfile || "TBD"}
 - CIA: C=${data.confidentiality || "TBD"}, I=${data.integrity || "TBD"}, A=${data.availability || "TBD"}
 - AV: ${data.network || "TBD"}
 - Au: ${data.authentication || "TBD"}
+- Data Classification: ${data.dataClassification || "TBD"}
 - Confidential / sensitive data processed: ${data.sensitiveData || "TBD"}
 
 ## 4. In-Scope Scan Reports
@@ -79,11 +90,20 @@ ${data.demoNotes || "No demo call notes provided."}
 
 export async function POST(req: Request) {
   try {
-    await requireAccess(["ADMIN", "GOVERNANCE_TEAM"]);
+    await requireAccess([
+      "ADMIN",
+      "GOVERNANCE_TEAM",
+      "VALIDATOR",
+      "PROJECT_MANAGER",
+      "CONSULTANT",
+    ]);
 
     const form = await req.formData();
     const data = {
       projectName: value(form, "projectName"),
+      applicationName: value(form, "applicationName"),
+      businessOwner: value(form, "businessOwner"),
+      numberOfRoles: value(form, "numberOfRoles"),
       spr: value(form, "spr"),
       sr: value(form, "sr"),
       chargeCode: value(form, "chargeCode"),
@@ -95,6 +115,15 @@ export async function POST(req: Request) {
       beadRequired: value(form, "beadRequired"),
       llmReviewRequired: value(form, "llmReviewRequired"),
       previousReportAttached: value(form, "previousReportAttached"),
+      tenantType: value(form, "tenantType"),
+      dataClassification: value(form, "dataClassification"),
+      publicInternal: value(form, "publicInternal"),
+      internetExposed: value(form, "internetExposed"),
+      apisAvailable: value(form, "apisAvailable"),
+      llmUsage: value(form, "llmUsage"),
+      externalIntegrations: value(form, "externalIntegrations"),
+      grcRiskProfile: value(form, "grcRiskProfile"),
+      agentSuggestedRiskProfile: value(form, "agentSuggestedRiskProfile"),
       overallRisk: value(form, "overallRisk"),
       confidentiality: value(form, "confidentiality"),
       integrity: value(form, "integrity"),
@@ -134,13 +163,15 @@ The document must include:
 1. Review identity and target details.
 2. Scope and review type.
 3. Risk profile with Overall Risk, CIA, AV, and Au.
-4. Required artifacts and scan reports.
-5. Application features to verify during review.
-6. Technical stack.
-7. Roles, access, credentials, and RBAC notes.
-8. Environment readiness and information architecture notes.
-9. Review prerequisites, assumptions, open questions, and out-of-scope items.
-10. Final reviewer checklist.
+4. GRC risk profile vs Demo Call Agent suggested risk profile.
+5. Required artifacts and scan reports.
+6. Application features to verify during review.
+7. Technical stack.
+8. Roles, access, credentials, and RBAC notes.
+9. Tenant, API, LLM/AI, internet exposure, and integration impacts.
+10. FEAD controls that should be NA with reusable comments.
+11. Review prerequisites, assumptions, open questions, and out-of-scope items.
+12. Final reviewer checklist.
 
 Facts:
 ${JSON.stringify(data, null, 2)}

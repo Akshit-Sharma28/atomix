@@ -32,7 +32,7 @@ function normalizeRole(role: string) {
     return "GOVERNANCE_TEAM";
   }
 
-  if (role === "DEVELOPER" || role === "VIEWER" || role === "CONSULTANT") {
+  if (role === "DEVELOPER" || role === "VIEWER") {
     return "REVIEWER";
   }
 
@@ -81,6 +81,7 @@ export default function Sidebar({
         "RETESTER",
         "PROJECT_MANAGER",
         "ENGAGEMENT_MANAGER",
+        "CONSULTANT",
       ],
     },
     {
@@ -165,7 +166,7 @@ export default function Sidebar({
       href: "/workflow/scope-call",
       label: "Demo Call Agent",
       icon: ClipboardList,
-      roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "PROJECT_MANAGER"],
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "PROJECT_MANAGER", "CONSULTANT"],
     },
     {
       href: "/workflow/peer-review",

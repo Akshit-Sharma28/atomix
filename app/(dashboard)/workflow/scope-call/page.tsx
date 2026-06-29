@@ -5,7 +5,13 @@ import ScopeCallAgent from "@/components/agents/scope-call-agent";
 import { canAccess } from "@/services/users/access.service";
 
 export default async function ScopeCallWorkflowPage() {
-  const allowed = await canAccess(["ADMIN", "GOVERNANCE_TEAM"]);
+  const allowed = await canAccess([
+    "ADMIN",
+    "GOVERNANCE_TEAM",
+    "VALIDATOR",
+    "PROJECT_MANAGER",
+    "CONSULTANT",
+  ]);
 
   if (!allowed) {
     return (
@@ -15,7 +21,8 @@ export default async function ScopeCallWorkflowPage() {
             Scope agent access restricted
           </h1>
           <p className="mt-2 text-slate-400">
-            Scope Call Agent is available to Admin and Governance Team roles.
+            Demo Call Agent is available to Governance, Validator, Project
+            Manager, and Consultant roles.
           </p>
         </div>
       </div>
@@ -34,13 +41,13 @@ export default async function ScopeCallWorkflowPage() {
         </Link>
         <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
           <ClipboardList size={16} />
-          Structured Intake Agent
+          Demo Call Agent
         </div>
-        <h1 className="text-3xl font-bold text-white">Scope Call Agent</h1>
+        <h1 className="text-3xl font-bold text-white">Demo Call Agent</h1>
         <p className="mt-2 max-w-3xl text-slate-400">
-          Capture demo-call inputs and generate a pre-review scope document
-          before testing starts. This flow uses a dedicated API and falls back
-          to deterministic output if local AI is unavailable.
+          Capture application intake, generate a risk profile, validate CIA
+          permutations, and produce a customized FEAD draft before testing
+          starts.
         </p>
       </div>
 

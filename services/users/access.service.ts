@@ -7,7 +7,7 @@ export function normalizeRole(role?: string | null) {
     return "GOVERNANCE_TEAM";
   }
 
-  if (role === "DEVELOPER" || role === "VIEWER" || role === "CONSULTANT") {
+  if (role === "DEVELOPER" || role === "VIEWER") {
     return "REVIEWER";
   }
 

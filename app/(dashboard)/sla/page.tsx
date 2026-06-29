@@ -57,6 +57,21 @@ function formatDate(
   return date.toLocaleDateString();
 }
 
+const peerReviewRules = [
+  ["Critical", "24 hours", "Same-day governance escalation"],
+  ["High", "48 hours", "Priority peer reviewer queue"],
+  ["Medium", "72 hours", "Standard peer-review queue"],
+  ["Low", "5 business days", "Batch with weekly governance call"],
+];
+
+const peerReviewKpis = [
+  ["Total peer reviews pending", 14, "open peer-review items"],
+  ["Within SLA", 9, "healthy queue"],
+  ["Near SLA breach", 3, "inside 20% of target"],
+  ["Breached SLA", 2, "requires governance action"],
+  ["Avg peer review turnaround", "39h", "last 30 days"],
+];
+
 export default async function SLAPage() {
   const metrics =
     await getSLAMetrics();
@@ -125,6 +140,60 @@ export default async function SLAPage() {
       </div>
 
       <SLAKPIs metrics={metrics} />
+
+      <section className="mt-8 rounded-2xl border border-cyan-500/20 bg-slate-900 p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.25em] text-cyan-300">
+              <FileSearch size={18} />
+              Peer Reviewer SLA Engine
+            </div>
+            <h2 className="mt-3 text-2xl font-bold text-white">
+              Peer review targets, not main reviewer targets
+            </h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
+              Governance/Admin can tune these peer-review SLA rules in code for
+              the demo. The monitoring KPIs below track the independent peer
+              reviewer queue before final governance validation.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-5">
+          {peerReviewKpis.map(([label, value, helper]) => (
+            <div
+              key={label}
+              className="rounded-xl border border-slate-800 bg-slate-950/70 p-4"
+            >
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                {label}
+              </p>
+              <p className="mt-2 text-3xl font-black text-white">{value}</p>
+              <p className="mt-1 text-xs text-slate-500">{helper}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {peerReviewRules.map(([severity, target, action]) => (
+            <label
+              key={severity}
+              className="rounded-xl border border-slate-800 bg-slate-950/70 p-4"
+            >
+              <span className="block text-sm font-semibold text-white">
+                {severity}
+              </span>
+              <input
+                defaultValue={target}
+                className="mt-3 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-cyan-200"
+              />
+              <span className="mt-2 block text-xs text-slate-500">
+                {action}
+              </span>
+            </label>
+          ))}
+        </div>
+      </section>
 
       <div className="mt-8 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-6">
