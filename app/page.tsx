@@ -116,7 +116,7 @@ export default function Home() {
         </Link>
       </header>
 
-      <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 gap-8 px-6 pb-10 pt-5 lg:grid-cols-[1.04fr_0.96fr] lg:items-center">
+      <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 gap-8 px-6 pb-10 pt-5 lg:grid-cols-[1fr_0.82fr] lg:items-center">
         <div>
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
             <Sparkles size={16} />
@@ -170,47 +170,30 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-cyan-300/20 bg-slate-950/80 p-5 shadow-2xl backdrop-blur">
-          <div className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr]">
-            <div className="overflow-hidden rounded-2xl border border-cyan-300/20 bg-black p-4">
-              <div className="mb-3 flex justify-end">
-                <span className="rounded bg-cyan-300 px-2 py-1 font-mono text-[10px] font-black text-slate-950">
-                  ROUND 01
-                </span>
-              </div>
-              <div className="atomix-arcade-stage">
-                <div className="atomix-pixel atomix-hero-sprite">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="atomix-pixel atomix-attacker-sprite">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="atomix-laser" />
-                <div className="atomix-shield-burst" />
-                <div className="atomix-packet atomix-packet-a">0101</div>
-                <div className="atomix-packet atomix-packet-b">XSS</div>
-                <div className="atomix-fight-caption">
-                  ATOMIX BLOCKED INTRUSION
-                </div>
-              </div>
+        <div className="rounded-[1.75rem] border border-cyan-300/20 bg-slate-950/80 p-4 shadow-2xl backdrop-blur lg:translate-x-6 xl:translate-x-10">
+          <div className="grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-cyan-300">
+                Live Governance View
+              </p>
+              <h2 className="mt-2 text-xl font-bold">One operating layer</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-400">
+                Track readiness, review ownership, evidence status, peer review
+                signals, retest queues, and SLA pressure without changing the
+                source review workflow.
+              </p>
             </div>
 
-            <div>
-              <div className="mb-4 flex items-center justify-between gap-4">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-                    Live Governance View
-                  </p>
-                  <h2 className="mt-1 text-2xl font-bold">
                     Role-aware cockpit
-                  </h2>
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold">Governance signals</h2>
                 </div>
-                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-cyan-300 text-slate-950">
-                  <Bot size={22} />
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-300 text-slate-950">
+                  <Bot size={20} />
                 </div>
               </div>
 
@@ -223,35 +206,44 @@ export default function Home() {
                 ].map(([label, value, color]) => (
                   <div
                     key={label}
-                    className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4"
+                    className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3"
                   >
                     <p className="text-xs text-slate-500">{label}</p>
-                    <p className={`mt-2 text-3xl font-black ${color}`}>
+                    <p className={`mt-2 text-2xl font-black ${color}`}>
                       {value}
                     </p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-                <p className="mb-3 text-sm font-semibold text-slate-200">
-                  Agent-assisted workflows
-                </p>
-                {[
-                  "Create scope document",
-                  "Check peer review gaps",
-                  "Summarize retest pressure",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="mb-2 rounded-xl bg-slate-800/80 px-4 py-2.5 text-sm text-slate-200"
-                  >
-                    {item}
-                  </div>
-                ))}
+            </div>
+          </div>
+
+          <div className="mt-3 overflow-hidden rounded-2xl border border-cyan-300/20 bg-black p-3">
+            <div className="mb-3 flex justify-end">
+              <span className="rounded bg-cyan-300 px-2 py-1 font-mono text-[10px] font-black text-slate-950">
+                ROUND 01
+              </span>
+            </div>
+            <div className="atomix-arcade-stage atomix-arcade-wide">
+              <div className="atomix-pixel atomix-hero-sprite">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="atomix-pixel atomix-attacker-sprite">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="atomix-laser" />
+              <div className="atomix-shield-burst" />
+              <div className="atomix-packet atomix-packet-a">0101</div>
+              <div className="atomix-packet atomix-packet-b">XSS</div>
+              <div className="atomix-fight-caption">
+                ATOMIX BLOCKED INTRUSION
               </div>
             </div>
-
           </div>
         </div>
       </section>
