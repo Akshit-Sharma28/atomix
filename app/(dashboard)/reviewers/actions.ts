@@ -42,7 +42,16 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
   const reviewId = String(formData.get("reviewId") ?? "");
   const assignmentId = String(formData.get("assignmentId") ?? "");
   const callStatus = String(formData.get("callStatus") ?? "In Progress");
+  const attendanceStatus = String(
+    formData.get("attendanceStatus") ?? "Not Marked",
+  );
   const notes = String(formData.get("notes") ?? "").trim();
+  const callNotes = [
+    attendanceStatus ? `Attendance: ${attendanceStatus}` : null,
+    notes || null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
   const newDueDate = optionalDate(formData.get("newDueDate"));
   const returnTo =
     String(formData.get("returnTo") ?? "").trim() ||
@@ -100,7 +109,7 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
           action: "Weekly call: completed",
           oldValue: review.status,
           newValue: "Completed",
-          notes,
+          notes: callNotes,
         },
       }),
     ];
@@ -122,12 +131,12 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
           reviewId,
         },
         update: {
-          reason: notes || "Cancelled during weekly governance call.",
+          reason: callNotes || "Cancelled during weekly governance call.",
           status: "Requested",
         },
         create: {
           reviewId,
-          reason: notes || "Cancelled during weekly governance call.",
+          reason: callNotes || "Cancelled during weekly governance call.",
           status: "Requested",
         },
       }),
@@ -137,7 +146,7 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
           action: "Weekly call: cancelled",
           oldValue: review.status,
           newValue: "Cancelled",
-          notes,
+          notes: callNotes,
         },
       }),
     ];
@@ -160,7 +169,8 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
         data: {
           reviewId,
           requestedUntil,
-          reason: notes || "Extension requested during weekly governance call.",
+          reason:
+            callNotes || "Extension requested during weekly governance call.",
           status: "Requested",
         },
       }),
@@ -170,7 +180,7 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
           action: "Weekly call: extension requested",
           oldValue: review.dueDate?.toISOString() ?? "No due date",
           newValue: requestedUntil.toISOString(),
-          notes,
+          notes: callNotes,
         },
       }),
     ];
@@ -195,7 +205,7 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
           action: "Weekly call: rescheduled",
           oldValue: review.dueDate?.toISOString() ?? "No due date",
           newValue: dueDate.toISOString(),
-          notes,
+          notes: callNotes,
         },
       }),
     ];
@@ -218,7 +228,7 @@ export async function updateWeeklyGovernanceCall(formData: FormData) {
           action: "Weekly call: status confirmed",
           oldValue: review.status,
           newValue: "In Progress",
-          notes,
+          notes: callNotes,
         },
       }),
     ];

@@ -32,6 +32,34 @@ function defaultAttendanceStatus(availability?: string | null) {
   return "Present";
 }
 
+function daysBetween(start?: Date | null, end?: Date | null) {
+  if (!start || !end) return null;
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  return Math.ceil((end.getTime() - start.getTime()) / msPerDay);
+}
+
+function poolTypeForAssignment(assignment: {
+  allocatedHours?: number | null;
+  startDate?: Date | null;
+  review: {
+    requestedStartDate?: Date | null;
+    dueDate?: Date | null;
+  };
+}) {
+  const startDate = assignment.review.requestedStartDate ?? assignment.startDate;
+  const plannedDays = daysBetween(startDate, assignment.review.dueDate);
+
+  if (
+    (plannedDays !== null && plannedDays > 7) ||
+    (assignment.allocatedHours ?? 0) >= 32
+  ) {
+    return "Dedicated";
+  }
+
+  return "Augmentation";
+}
+
 export default async function GovernanceCallPage({
   searchParams,
 }: {
@@ -40,6 +68,7 @@ export default async function GovernanceCallPage({
     status?: string;
     reviewer?: string;
     project?: string;
+    pool?: string;
   }>;
 }) {
   const allowed = await canAccess([
@@ -69,11 +98,13 @@ export default async function GovernanceCallPage({
   const status = params.status ?? "";
   const reviewer = params.reviewer ?? "";
   const project = params.project ?? "";
+  const pool = params.pool ?? "";
   const returnParams = new URLSearchParams();
   if (query) returnParams.set("q", query);
   if (status) returnParams.set("status", status);
   if (reviewer) returnParams.set("reviewer", reviewer);
   if (project) returnParams.set("project", project);
+  if (pool) returnParams.set("pool", pool);
   const returnTo = `/reviewers/governance-call${
     returnParams.toString() ? `?${returnParams.toString()}` : ""
   }`;
@@ -173,10 +204,18 @@ export default async function GovernanceCallPage({
       !reviewer || reviewerName === reviewer;
     const projectMatch =
       !project || projectLabel === project;
+    const poolMatch =
+      !pool || poolTypeForAssignment(assignment) === pool;
 
-    return queryMatch && statusMatch && reviewerMatch && projectMatch;
+    return queryMatch && statusMatch && reviewerMatch && projectMatch && poolMatch;
   });
   const today = new Date();
+  const dedicatedAssignments = filteredAssignments.filter(
+    (assignment) => poolTypeForAssignment(assignment) === "Dedicated",
+  );
+  const augmentationAssignments = filteredAssignments.filter(
+    (assignment) => poolTypeForAssignment(assignment) === "Augmentation",
+  );
   const attendanceRows = filteredAssignments.map((assignment) => {
     const reviewerName =
       assignment.user?.name ??
@@ -190,6 +229,7 @@ export default async function GovernanceCallPage({
       project:
         assignment.review.project.sprId ?? assignment.review.project.name,
       sr: assignment.review.srId ?? assignment.review.title,
+      poolType: poolTypeForAssignment(assignment),
       status: defaultAttendanceStatus(availability),
       availability,
     };
@@ -220,6 +260,7 @@ export default async function GovernanceCallPage({
         "Unassigned reviewer",
       requestedUntil: assignment.review.extensions[0]?.requestedUntil,
       reason: assignment.review.extensions[0]?.reason,
+      poolType: poolTypeForAssignment(assignment),
     }));
   const redEngagementRows = filteredAssignments
     .filter((assignment) => {
@@ -250,6 +291,7 @@ export default async function GovernanceCallPage({
         sr: assignment.review.srId ?? assignment.review.title,
         name: assignment.review.project.name,
         dueDate,
+        poolType: poolTypeForAssignment(assignment),
         reasons,
       };
     });
@@ -271,7 +313,7 @@ ${attendanceSummary}
 ${attendanceRows
   .map(
     (row) =>
-      `- ${row.reviewerName}: ${row.status} (${row.project} / ${row.sr})`,
+      `- ${row.reviewerName}: ${row.status} (${row.poolType} pool, ${row.project} / ${row.sr})`,
   )
   .join("\n")}
 
@@ -281,7 +323,7 @@ ${
     ? extensionRows
         .map(
           (row) =>
-            `- ${row.project} / ${row.sr}: ${row.reviewer} requested until ${formatDate(
+            `- ${row.project} / ${row.sr}: ${row.reviewer} (${row.poolType} pool) requested until ${formatDate(
               row.requestedUntil,
             )}. Reason: ${row.reason ?? "Not provided"}`,
         )
@@ -295,7 +337,7 @@ ${
     ? redEngagementRows
         .map(
           (row) =>
-            `- ${row.project} / ${row.sr} (${row.name}): ${row.reasons.join(
+            `- ${row.project} / ${row.sr} (${row.name}, ${row.poolType} pool): ${row.reasons.join(
               ", ",
             )}; due ${formatDate(row.dueDate)}`,
         )
@@ -337,8 +379,10 @@ Atomix Governance Dashboard`;
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
+      <div className="mb-6 grid gap-4 md:grid-cols-5">
         <Metric label="Active Check-ins" value={filteredAssignments.length} />
+        <Metric label="Dedicated Pool" value={dedicatedAssignments.length} />
+        <Metric label="Augmentation Pool" value={augmentationAssignments.length} />
         <Metric
           label="Extension Requests"
           value={
@@ -362,11 +406,46 @@ Atomix Governance Dashboard`;
         />
       </div>
 
+      <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-cyan-500/10 bg-slate-900/70 p-2">
+        {[
+          ["", "All Pool Reviewers"],
+          ["Dedicated", "Dedicated Pool"],
+          ["Augmentation", "Augmentation Pool"],
+        ].map(([value, label]) => {
+          const nextParams = new URLSearchParams(returnParams);
+
+          if (value) {
+            nextParams.set("pool", value);
+          } else {
+            nextParams.delete("pool");
+          }
+
+          const href = `/reviewers/governance-call${
+            nextParams.toString() ? `?${nextParams.toString()}` : ""
+          }`;
+          const active = pool === value || (!pool && value === "");
+
+          return (
+            <Link
+              key={label}
+              href={href}
+              className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+                active
+                  ? "bg-cyan-400 text-slate-950"
+                  : "border border-slate-800 bg-slate-950 text-slate-300 hover:border-cyan-400/40"
+              }`}
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </div>
+
       <form
         action="/reviewers/governance-call"
         className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-4"
       >
-        <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
+        <div className="grid gap-3 lg:grid-cols-[1.3fr_0.9fr_0.9fr_0.9fr_0.9fr_auto]">
           <label className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3">
             <Search size={18} className="text-slate-500" />
             <input
@@ -409,6 +488,16 @@ Atomix Governance Dashboard`;
             {projectOptions.map((item) => (
               <option key={item}>{item}</option>
             ))}
+          </select>
+
+          <select
+            name="pool"
+            defaultValue={pool}
+            className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
+          >
+            <option value="">All pools</option>
+            <option>Dedicated</option>
+            <option>Augmentation</option>
           </select>
 
           <div className="flex gap-2">
@@ -527,6 +616,11 @@ Atomix Governance Dashboard`;
             const attendanceStatus = defaultAttendanceStatus(
               assignment.reviewerProfile?.availability,
             );
+            const poolType = poolTypeForAssignment(assignment);
+            const plannedDays = daysBetween(
+              assignment.review.requestedStartDate ?? assignment.startDate,
+              assignment.review.dueDate,
+            );
 
             return (
               <div
@@ -545,6 +639,22 @@ Atomix Governance Dashboard`;
                       {assignment.role} · {assignment.allocatedHours ?? 0}h
                       allocated
                     </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          poolType === "Dedicated"
+                            ? "bg-cyan-400/10 text-cyan-200"
+                            : "bg-emerald-400/10 text-emerald-200"
+                        }`}
+                      >
+                        {poolType} Pool
+                      </span>
+                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">
+                        {plannedDays === null
+                          ? "duration TBD"
+                          : `${plannedDays}d planned`}
+                      </span>
+                    </div>
                   </div>
 
                   <div>
