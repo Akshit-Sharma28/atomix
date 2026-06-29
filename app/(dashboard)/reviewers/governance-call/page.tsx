@@ -3,8 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { canAccess } from "@/services/users/access.service";
 import { updateWeeklyGovernanceCall } from "../actions";
 import {
+  AlertTriangle,
+  CalendarCheck,
   ClipboardCheck,
   Filter,
+  Mail,
   Search,
   UserCheck,
 } from "lucide-react";
@@ -20,6 +23,13 @@ function formatDate(date?: Date | null) {
 
 function includes(value: string | null | undefined, query: string) {
   return (value ?? "").toLowerCase().includes(query.toLowerCase());
+}
+
+function defaultAttendanceStatus(availability?: string | null) {
+  if (availability === "On Leave") return "Leave";
+  if (availability === "Unavailable") return "Holiday";
+  if (availability === "Limited") return "Training";
+  return "Present";
 }
 
 export default async function GovernanceCallPage({
@@ -166,6 +176,135 @@ export default async function GovernanceCallPage({
 
     return queryMatch && statusMatch && reviewerMatch && projectMatch;
   });
+  const today = new Date();
+  const attendanceRows = filteredAssignments.map((assignment) => {
+    const reviewerName =
+      assignment.user?.name ??
+      assignment.reviewerProfile?.user.name ??
+      "Unassigned reviewer";
+    const availability = assignment.reviewerProfile?.availability;
+
+    return {
+      id: assignment.id,
+      reviewerName,
+      project:
+        assignment.review.project.sprId ?? assignment.review.project.name,
+      sr: assignment.review.srId ?? assignment.review.title,
+      status: defaultAttendanceStatus(availability),
+      availability,
+    };
+  });
+  const attendanceSummary = [
+    "Present",
+    "Leave",
+    "Training",
+    "Holiday",
+    "Not Marked",
+  ]
+    .map(
+      (attendanceStatus) =>
+        `${attendanceStatus}: ${
+          attendanceRows.filter((row) => row.status === attendanceStatus).length
+        }`,
+    )
+    .join(" | ");
+  const extensionRows = filteredAssignments
+    .filter((assignment) => assignment.review.extensions.length > 0)
+    .map((assignment) => ({
+      project:
+        assignment.review.project.sprId ?? assignment.review.project.name,
+      sr: assignment.review.srId ?? assignment.review.title,
+      reviewer:
+        assignment.user?.name ??
+        assignment.reviewerProfile?.user.name ??
+        "Unassigned reviewer",
+      requestedUntil: assignment.review.extensions[0]?.requestedUntil,
+      reason: assignment.review.extensions[0]?.reason,
+    }));
+  const redEngagementRows = filteredAssignments
+    .filter((assignment) => {
+      const dueDate = assignment.review.dueDate;
+      const isOverdue = dueDate ? dueDate < today : false;
+
+      return (
+        isOverdue ||
+        assignment.review.extensions.length > 0 ||
+        Boolean(assignment.review.cancellation) ||
+        ["Critical", "High"].includes(assignment.review.priority)
+      );
+    })
+    .map((assignment) => {
+      const dueDate = assignment.review.dueDate;
+      const reasons = [
+        dueDate && dueDate < today ? "overdue" : null,
+        assignment.review.extensions.length > 0 ? "extension pending" : null,
+        assignment.review.cancellation ? "cancellation requested" : null,
+        ["Critical", "High"].includes(assignment.review.priority)
+          ? `${assignment.review.priority} priority`
+          : null,
+      ].filter(Boolean);
+
+      return {
+        project:
+          assignment.review.project.sprId ?? assignment.review.project.name,
+        sr: assignment.review.srId ?? assignment.review.title,
+        name: assignment.review.project.name,
+        dueDate,
+        reasons,
+      };
+    });
+  const attendanceEmail = `Subject: Weekly Governance Call Summary - ${new Intl.DateTimeFormat(
+    "en",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+  ).format(today)}
+
+Hello Governance Team,
+
+Please find the attendance, extension, and red engagement summary for the weekly governance call.
+
+Attendance:
+${attendanceSummary}
+${attendanceRows
+  .map(
+    (row) =>
+      `- ${row.reviewerName}: ${row.status} (${row.project} / ${row.sr})`,
+  )
+  .join("\n")}
+
+Extensions:
+${
+  extensionRows.length > 0
+    ? extensionRows
+        .map(
+          (row) =>
+            `- ${row.project} / ${row.sr}: ${row.reviewer} requested until ${formatDate(
+              row.requestedUntil,
+            )}. Reason: ${row.reason ?? "Not provided"}`,
+        )
+        .join("\n")
+    : "- No extension requests in the current view."
+}
+
+Red engagements:
+${
+  redEngagementRows.length > 0
+    ? redEngagementRows
+        .map(
+          (row) =>
+            `- ${row.project} / ${row.sr} (${row.name}): ${row.reasons.join(
+              ", ",
+            )}; due ${formatDate(row.dueDate)}`,
+        )
+        .join("\n")
+    : "- No red engagements in the current view."
+}
+
+Regards,
+Atomix Governance Dashboard`;
 
   return (
     <div className="w-full px-8 py-6">
@@ -287,6 +426,71 @@ export default async function GovernanceCallPage({
         </div>
       </form>
 
+      <section className="mb-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
+          <div className="mb-4 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-cyan-300">
+            <CalendarCheck size={18} />
+            Attendance Snapshot
+          </div>
+          <div className="grid gap-3 sm:grid-cols-5">
+            {[
+              "Present",
+              "Leave",
+              "Training",
+              "Holiday",
+              "Not Marked",
+            ].map((attendanceStatus) => (
+              <div
+                key={attendanceStatus}
+                className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
+              >
+                <p className="text-xs text-slate-500">{attendanceStatus}</p>
+                <p className="mt-2 text-2xl font-black text-white">
+                  {
+                    attendanceRows.filter(
+                      (row) => row.status === attendanceStatus,
+                    ).length
+                  }
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-amber-200">
+                <AlertTriangle size={16} />
+                Extensions
+              </div>
+              <p className="mt-2 text-3xl font-black text-amber-200">
+                {extensionRows.length}
+              </p>
+            </div>
+            <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] p-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-red-200">
+                <AlertTriangle size={16} />
+                Red engagements
+              </div>
+              <p className="mt-2 text-3xl font-black text-red-200">
+                {redEngagementRows.length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <label className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
+          <span className="mb-4 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-cyan-300">
+            <Mail size={18} />
+            Email Template
+          </span>
+          <textarea
+            readOnly
+            rows={14}
+            value={attendanceEmail}
+            className="w-full rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm leading-6 text-slate-300"
+          />
+        </label>
+      </section>
+
       <section className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -320,6 +524,9 @@ export default async function GovernanceCallPage({
               assignment.review.extensions[0];
             const latestActivity =
               assignment.review.activities[0];
+            const attendanceStatus = defaultAttendanceStatus(
+              assignment.reviewerProfile?.availability,
+            );
 
             return (
               <div
@@ -386,7 +593,7 @@ export default async function GovernanceCallPage({
                 {canRunWeeklyCheckIn ? (
                   <form
                     action={updateWeeklyGovernanceCall}
-                    className="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-4 lg:grid-cols-6"
+                    className="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-4 lg:grid-cols-7"
                   >
                     <input
                       type="hidden"
@@ -399,6 +606,23 @@ export default async function GovernanceCallPage({
                       value={assignment.id}
                     />
                     <input type="hidden" name="returnTo" value={returnTo} />
+
+                    <label>
+                      <span className="mb-2 block text-xs font-semibold text-slate-400">
+                        Attendance
+                      </span>
+                      <select
+                        name="attendanceStatus"
+                        defaultValue={attendanceStatus}
+                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+                      >
+                        <option>Present</option>
+                        <option>Leave</option>
+                        <option>Training</option>
+                        <option>Holiday</option>
+                        <option>Not Marked</option>
+                      </select>
+                    </label>
 
                     <label>
                       <span className="mb-2 block text-xs font-semibold text-slate-400">
