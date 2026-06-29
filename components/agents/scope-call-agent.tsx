@@ -25,10 +25,11 @@ import {
 } from "docx";
 import { useState } from "react";
 import {
-  feadControls,
+  llmFeadControls,
   resolveFeadControl,
   type FeadContext,
   type FeadControl,
+  webFeadControls,
 } from "@/lib/fead-controls";
 
 type ScopeResult = {
@@ -90,6 +91,7 @@ export default function ScopeCallAgent({
   const [internetExposed, setInternetExposed] = useState("No");
   const [apiAvailable, setApiAvailable] = useState("Yes");
   const [llmUsage, setLlmUsage] = useState("No");
+  const [llmReviewRequired, setLlmReviewRequired] = useState("No");
   const permutation = validateRiskPermutation(
     overallRisk,
     confidentiality,
@@ -113,6 +115,12 @@ export default function ScopeCallAgent({
     apiAvailable,
     llmUsage,
   };
+  const llmFeadRequired =
+    llmUsage === "Yes" ||
+    llmReviewRequired === "Yes" ||
+    scope === "Web + LLM" ||
+    scope === "LLM only";
+  const webFeadRequired = scope !== "LLM only";
   const selectedProject = projects.find(
     (project) => project.id === selectedProjectId,
   );
@@ -191,22 +199,71 @@ export default function ScopeCallAgent({
   }
 
   async function downloadFeadDraft() {
-    const blob = await buildFeadDocx({
-      projectName,
-      applicationName,
-      businessOwner,
-      spr,
-      sr,
-      overallRisk,
-      confidentiality,
-      integrity,
-      availability,
-      context: feadContext,
+    const baseName = safeFilename(spr || applicationName || "atomix");
+    const downloads: Promise<{ blob: Blob; filename: string }>[] = [];
+
+    if (webFeadRequired) {
+      downloads.push(buildFeadDocumentDownload({
+        projectName,
+        applicationName,
+        businessOwner,
+        spr,
+        sr,
+        overallRisk,
+        confidentiality,
+        integrity,
+        availability,
+        context: feadContext,
+        controls: webFeadControls,
+        documentTitle: "Customized Web FEAD Review Workbook",
+        documentKind: "Web FEAD",
+        filename: `${baseName}-web-fead.docx`,
+      }));
+    }
+
+    if (llmFeadRequired) {
+      downloads.push(buildFeadDocumentDownload({
+        projectName,
+        applicationName,
+        businessOwner,
+        spr,
+        sr,
+        overallRisk,
+        confidentiality,
+        integrity,
+        availability,
+        context: {
+          ...feadContext,
+          llmUsage: "Yes",
+        },
+        controls: llmFeadControls,
+        documentTitle: "Customized LLM FEAD Review Workbook",
+        documentKind: "LLM FEAD",
+        filename: `${baseName}-llm-fead.docx`,
+      }));
+    }
+
+    const builtDownloads = await Promise.all(downloads);
+
+    builtDownloads.forEach((download, index) => {
+      window.setTimeout(() => {
+        triggerBlobDownload(download.blob, download.filename);
+      }, index * 250);
     });
+  }
+
+  async function buildFeadDocumentDownload(options: Parameters<typeof buildFeadDocx>[0] & { filename: string }) {
+    const { filename, ...docOptions } = options;
+    const blob = await buildFeadDocx(docOptions);
+
+    return { blob, filename };
+  }
+
+  function triggerBlobDownload(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${safeFilename(spr || applicationName || "atomix")}-customized-fead.docx`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -461,6 +518,8 @@ export default function ScopeCallAgent({
             name="llmReviewRequired"
             label="LLM FEAD Required"
             options={["Yes", "No", "To be confirmed"]}
+            value={llmReviewRequired}
+            onChange={setLlmReviewRequired}
           />
           <SelectField
             name="previousReportAttached"
@@ -597,8 +656,20 @@ export default function ScopeCallAgent({
                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 px-3 py-2 text-xs font-bold text-cyan-200"
               >
                 <Download size={14} />
-                Download FEAD .docx
+                {llmFeadRequired && webFeadRequired
+                  ? "Download Web + LLM FEAD .docx"
+                  : llmFeadRequired
+                    ? "Download LLM FEAD .docx"
+                    : "Download Web FEAD .docx"}
               </button>
+            </div>
+          </div>
+          <div className="mb-4 grid gap-3 text-xs text-slate-300 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+              Web FEAD: {webFeadRequired ? "Will be generated" : "Skipped because scope is LLM only"}
+            </div>
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+              LLM FEAD: {llmFeadRequired ? "Will be generated" : "Skipped because LLM scope is not selected"}
             </div>
           </div>
           <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-800 bg-black/50 p-4 text-xs leading-5 text-slate-300">
@@ -927,6 +998,9 @@ async function buildFeadDocx({
   integrity,
   availability,
   context,
+  controls,
+  documentTitle,
+  documentKind,
 }: {
   projectName: string;
   applicationName: string;
@@ -938,13 +1012,16 @@ async function buildFeadDocx({
   integrity: string;
   availability: string;
   context: FeadContext;
+  controls: FeadControl[];
+  documentTitle: string;
+  documentKind: string;
 }) {
   const generatedAt = new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   }).format(new Date());
-  const naCount = feadControls.filter(
+  const naCount = controls.filter(
     (control) => resolveFeadControl(control, context).status === "NA",
   ).length;
   const children: (DocxParagraph | DocxTable)[] = [
@@ -956,7 +1033,7 @@ async function buildFeadDocx({
       },
       children: [
         new DocxTextRun({
-          text: "Customized FEAD Review Workbook",
+          text: documentTitle,
           bold: true,
           size: 36,
           font: "Arial",
@@ -971,7 +1048,7 @@ async function buildFeadDocx({
       },
       children: [
         new DocxTextRun({
-          text: "Generated by Atomix Demo Call Agent",
+          text: `Generated by Atomix Demo Call Agent · ${documentKind}`,
           size: 20,
           font: "Arial",
           color: "475569",
@@ -1037,7 +1114,7 @@ async function buildFeadDocx({
               [
                 fieldParagraph(
                   "Auto NA",
-                  `${naCount} of ${feadControls.length} controls marked NA from demo-call scope.`,
+                  `${naCount} of ${controls.length} controls marked NA from demo-call scope.`,
                 ),
               ],
               {
@@ -1071,7 +1148,7 @@ async function buildFeadDocx({
 
   let currentSection = "";
 
-  for (const control of feadControls) {
+  for (const control of controls) {
     if (control.section !== currentSection) {
       currentSection = control.section;
       children.push(
@@ -1100,8 +1177,8 @@ async function buildFeadDocx({
 
   const doc = new DocxDocument({
     creator: "Atomix Demo Call Agent",
-    title: "Customized FEAD Review Workbook",
-    description: "Reviewer-editable FEAD workbook generated from demo-call scope.",
+    title: documentTitle,
+    description: `Reviewer-editable ${documentKind} workbook generated from demo-call scope.`,
     styles: {
       default: {
         document: {
