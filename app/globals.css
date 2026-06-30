@@ -178,6 +178,41 @@ a {
   text-decoration: none;
 }
 
+/* Interaction feedback */
+
+button,
+a[class*="bg-cyan-400"],
+a[class*="border-cyan"],
+a[class*="rounded-xl"],
+a[class*="rounded-2xl"],
+summary {
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+button:not(:disabled):hover,
+a[class*="bg-cyan-400"]:hover,
+a[class*="border-cyan"]:hover {
+  box-shadow: 0 14px 32px rgba(8, 145, 178, 0.18);
+  transform: translateY(-1px);
+}
+
+button:not(:disabled):active,
+a[class*="bg-cyan-400"]:active,
+a[class*="border-cyan"]:active,
+summary:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+button:disabled,
+button[aria-busy="true"] {
+  cursor: wait;
+}
+
 /* Native form controls */
 
 select {
@@ -188,7 +223,10 @@ select {
   background-position: right 1rem center;
   background-repeat: no-repeat;
   background-size: 1rem;
+  max-width: 100%;
+  min-width: 0;
   padding-right: 2.75rem !important;
+  text-overflow: ellipsis;
 }
 
 select:focus {
@@ -204,6 +242,10 @@ select[multiple],
 select[size]:not([size="1"]) {
   background-image: none;
   padding-right: 1rem !important;
+}
+
+textarea {
+  max-width: 100%;
 }
 
 /* Cards */

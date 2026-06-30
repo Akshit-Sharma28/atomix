@@ -198,14 +198,15 @@ export default function GlobalPendingLoader() {
   if (!pending.active) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-[9999] flex justify-center px-4 pt-4">
-      <div className="pointer-events-auto flex max-w-xl items-center gap-3 rounded-2xl border border-cyan-400/30 bg-slate-950/95 px-4 py-3 text-sm text-slate-200 shadow-2xl shadow-cyan-950/40 backdrop-blur">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200">
-          <Loader2 className="animate-spin" size={18} />
+    <div className="pointer-events-none fixed inset-0 z-[9999] grid place-items-center px-4">
+      <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]" />
+      <div className="pointer-events-auto relative flex w-full max-w-xl items-center gap-4 rounded-3xl border border-cyan-400/30 bg-slate-950/95 px-5 py-4 text-sm text-slate-200 shadow-2xl shadow-cyan-950/50">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cyan-400/10 text-cyan-200">
+          <Loader2 className="animate-spin" size={22} />
         </div>
         <div>
-          <p className="font-bold text-white">{pending.label}</p>
-          <p className="mt-0.5 text-xs text-slate-400">{pending.detail}</p>
+          <p className="text-base font-bold text-white">{pending.label}</p>
+          <p className="mt-1 text-sm leading-5 text-slate-400">{pending.detail}</p>
         </div>
       </div>
     </div>

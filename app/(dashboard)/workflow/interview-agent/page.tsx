@@ -384,8 +384,8 @@ export default async function InterviewAgentPage({
         <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-black text-slate-950"><Filter size={16} />Filter</button>
       </form>
 
-      <div className="mb-6 grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
+      <div className="mb-6 grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+        <section className="min-w-0 rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
           <div className="mb-4 flex items-center gap-3">
             <ClipboardList className="text-cyan-300" size={22} />
             <div>
@@ -399,7 +399,7 @@ export default async function InterviewAgentPage({
               const latestRound = profile.rounds[0];
               const latestFeedback = profile.rounds.find((round) => round.feedback)?.feedback;
               return (
-                <article key={profile.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                <article key={profile.id} className="min-w-0 rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -472,12 +472,12 @@ export default async function InterviewAgentPage({
                       ) : <p className="text-sm text-slate-500">No rounds scheduled yet.</p>}
                     </div>
 
-                    <form action={saveCapabilityRating} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+                    <form action={saveCapabilityRating} className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
                       <input type="hidden" name="profileId" value={profile.id} />
                       <p className="mb-3 text-sm font-bold text-white">Capability matrix</p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <select name="technology" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">{technologies.map((item) => <option key={item}>{item}</option>)}</select>
-                        <select name="rating" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">{ratings.map((rating) => <option key={rating}>{rating}</option>)}</select>
+                      <div className="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <select name="technology" className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">{technologies.map((item) => <option key={item}>{item}</option>)}</select>
+                        <select name="rating" className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">{ratings.map((rating) => <option key={rating}>{rating}</option>)}</select>
                       </div>
                       <button className="mt-3 rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-bold text-cyan-200">Save capability</button>
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -539,7 +539,7 @@ export default async function InterviewAgentPage({
           </div>
         </section>
 
-        <aside className="space-y-5">
+        <aside className="min-w-0 space-y-5">
           <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="mb-4 flex items-center gap-2 text-white"><CalendarDays className="text-cyan-300" size={20} /><h2 className="font-bold">Calendar & conflicts</h2></div>
             <div className="space-y-3">
@@ -578,7 +578,7 @@ export default async function InterviewAgentPage({
 
           <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="mb-4 flex items-center gap-2 text-white"><FileText className="text-cyan-300" size={20} /><h2 className="font-bold">Reports & exports</h2></div>
-            <textarea readOnly rows={12} value={reportText} className="w-full rounded-2xl border border-slate-800 bg-slate-950 p-3 text-sm leading-6 text-slate-300" />
+            <textarea readOnly rows={10} value={reportText} className="max-h-64 w-full resize-none rounded-2xl border border-slate-800 bg-slate-950 p-3 text-sm leading-6 text-slate-300" />
             <a download="atomix-interview-governance.csv" href={`data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950"><Download size={16} />Export CSV</a>
           </section>
 
