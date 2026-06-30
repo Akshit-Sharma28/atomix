@@ -43,7 +43,7 @@ export async function getExecutiveDashboard({
   filter?: ExecutiveFilter;
   search?: string;
 }) {
-  const [projects, retestGovernance] = await Promise.all([
+  const [projects, retestGovernance, interviewProfiles, interviewRounds] = await Promise.all([
     prisma.project.findMany({
       include: {
         findings: {
@@ -67,6 +67,8 @@ export async function getExecutiveDashboard({
       },
     }),
     getRetestGovernanceDashboard(),
+    prisma.interviewProfile.count(),
+    prisma.interviewRound.count(),
   ]);
 
   const rows = projects.map((project) => {
@@ -179,6 +181,67 @@ export async function getExecutiveDashboard({
     (total, row) => total + row.expectedHours,
     0,
   );
+  const activeReviewCount = rows.reduce(
+    (total, row) => total + row.activeReviews,
+    0,
+  );
+  const overdueReviewCount = rows.reduce(
+    (total, row) => total + row.overdueReviews,
+    0,
+  );
+  const redProjectCount = rows.filter((row) => row.red).length;
+  const weeklyProductivityByWorkflow = [
+    {
+      workflow: "Demo Call / Scope Intake",
+      role: "Validator",
+      volume: rows.length,
+      hoursPerUnit: 0.5,
+      weeklyHoursSaved: Math.round(rows.length * 0.5),
+    },
+    {
+      workflow: "SR Control Review",
+      role: "Reviewer / Consultant",
+      volume: activeReviewCount,
+      hoursPerUnit: 1.5,
+      weeklyHoursSaved: Math.round(activeReviewCount * 1.5),
+    },
+    {
+      workflow: "Peer Review Quality Gate",
+      role: "Peer Reviewer / QA Reviewer",
+      volume: activeReviewCount,
+      hoursPerUnit: 0.75,
+      weeklyHoursSaved: Math.round(activeReviewCount * 0.75),
+    },
+    {
+      workflow: "Governance Call / SLA Monitoring",
+      role: "Governance Team / Admin",
+      volume: rows.length + redProjectCount + overdueReviewCount,
+      hoursPerUnit: 0.6,
+      weeklyHoursSaved: Math.round((rows.length + redProjectCount + overdueReviewCount) * 0.6),
+    },
+    {
+      workflow: "Retest Assignment",
+      role: "Retester",
+      volume: retestGovernance.summary.total,
+      hoursPerUnit: 0.75,
+      weeklyHoursSaved: Math.round(retestGovernance.summary.total * 0.75),
+    },
+    {
+      workflow: "Recruitment / Interview Governance",
+      role: "Recruiter / Interviewer",
+      volume: interviewProfiles + interviewRounds,
+      hoursPerUnit: 0.35,
+      weeklyHoursSaved: Math.round((interviewProfiles + interviewRounds) * 0.35),
+    },
+  ];
+  const measuredWeeklyHoursSaved = weeklyProductivityByWorkflow.reduce(
+    (total, item) => total + item.weeklyHoursSaved,
+    0,
+  );
+  const baselinePeople = 70;
+  const baselineDailyHoursPerPerson = 1;
+  const baselineWeeklyHoursSaved = baselinePeople * baselineDailyHoursPerPerson * 5;
+  const baselineAnnualHoursSaved = baselineWeeklyHoursSaved * 52;
 
   return {
     summary: {
@@ -248,6 +311,17 @@ export async function getExecutiveDashboard({
     ],
     retestSummary: retestGovernance.summary,
     retestInsights: retestGovernance.insights,
+    productivity: {
+      baselinePeople,
+      baselineDailyHoursPerPerson,
+      baselineWeeklyHoursSaved,
+      baselineAnnualHoursSaved,
+      baselineWorkingDaysSaved: Math.round(baselineAnnualHoursSaved / 8),
+      measuredWeeklyHoursSaved,
+      measuredAnnualHoursSaved: measuredWeeklyHoursSaved * 52,
+      measuredWorkingDaysSaved: Math.round((measuredWeeklyHoursSaved * 52) / 8),
+      workflows: weeklyProductivityByWorkflow,
+    },
     rows: filteredRows,
   };
 }

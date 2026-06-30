@@ -15,8 +15,8 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { canAccess } from "@/services/users/access.service";
+import InterviewProfileCreateForm from "@/components/interviews/interview-profile-create-form";
 import {
-  createInterviewProfile,
   saveCapabilityRating,
   saveInterviewFeedback,
   scheduleInterviewRound,
@@ -164,7 +164,7 @@ export default async function InterviewAgentPage({
   const today = new Date();
   const todayKey = today.toISOString().slice(0, 10);
 
-  const [profiles, users] = await Promise.all([
+  const [rawProfiles, users] = await Promise.all([
     prisma.interviewProfile.findMany({
       include: {
         assignedRecruiter: true,
@@ -214,6 +214,35 @@ export default async function InterviewAgentPage({
       },
     }),
   ]);
+
+  const seenProfiles = new Set<string>();
+  const profiles = rawProfiles.filter((profile) => {
+    const key = [
+      profile.interviewKind,
+      profile.name.trim().toLowerCase(),
+      profile.currentRole?.trim().toLowerCase() ?? "",
+      profile.experience?.trim().toLowerCase() ?? "",
+    ].join("|");
+
+    if (seenProfiles.has(key)) {
+      return false;
+    }
+
+    seenProfiles.add(key);
+    return true;
+  });
+  const interviewerUsers = users.filter((user) =>
+    [
+      "ADMIN",
+      "GOVERNANCE_TEAM",
+      "VALIDATOR",
+      "QA_REVIEWER",
+      "REVIEWER",
+      "RETESTER",
+      "CONSULTANT",
+      "SECURITY_LEAD",
+    ].includes(user.role),
+  );
 
   const filteredProfiles = profiles.filter((profile) => {
     const latestFeedback = profile.rounds.find((round) => round.feedback)?.feedback;
@@ -332,49 +361,14 @@ export default async function InterviewAgentPage({
         ))}
       </div>
 
-      <section className="mb-6 rounded-3xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Interview Type Toggle</p>
-            <h2 className="mt-2 text-xl font-bold text-white">Create candidate / employee profile</h2>
-            <p className="mt-1 text-sm text-slate-400">Sensitive HR/payroll fields are intentionally excluded from this module.</p>
-          </div>
-          <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-200">AI interview scoring: disabled by default</div>
-        </div>
-        <form action={createInterviewProfile} className="grid gap-3 xl:grid-cols-4">
-          <select name="interviewKind" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white">
-            <option>External</option>
-            <option>Internal</option>
-          </select>
-          <input name="name" required placeholder="Candidate / employee name" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <input name="employeeId" placeholder="Employee ID (internal optional)" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <input name="currentTeam" placeholder="Current team (internal)" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <input name="currentRole" placeholder="Current role" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <input name="experience" placeholder="Experience" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <input name="skills" placeholder="Skills" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <input name="certifications" placeholder="Certifications" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <input name="currentProject" placeholder="Current project (internal)" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <input name="resumeFileName" placeholder="Resume file name (external)" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <input name="linkedIn" placeholder="LinkedIn URL (optional)" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <select name="source" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white">
-            <option value="">Source</option>
-            {sources.map((source) => <option key={source}>{source}</option>)}
-          </select>
-          <select name="assignedRecruiterId" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white">
-            <option value="">Assigned recruiter / coordinator</option>
-            {users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
-          </select>
-          <select name="hiringManagerId" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white">
-            <option value="">Hiring manager</option>
-            {users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
-          </select>
-          <select name="priority" defaultValue="Medium" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white">
-            {priorities.map((priority) => <option key={priority}>{priority}</option>)}
-          </select>
-          <input name="tags" placeholder="Tags" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500" />
-          <button className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 xl:col-span-4">Create governed interview profile</button>
-        </form>
-      </section>
+      <InterviewProfileCreateForm
+        users={users.map((user) => ({
+          id: user.id,
+          name: user.name,
+        }))}
+        sources={sources}
+        priorities={priorities}
+      />
 
       <form action="/workflow/interview-agent" className="mb-6 grid gap-3 rounded-3xl border border-slate-800 bg-slate-900/70 p-4 xl:grid-cols-[1.3fr_repeat(6,0.72fr)_auto]">
         <label className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3">
@@ -452,9 +446,9 @@ export default async function InterviewAgentPage({
                       <div className="grid gap-3 md:grid-cols-2">
                         <select name="category" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">{interviewCategories.map((item) => <option key={item}>{item}</option>)}</select>
                         <select name="stage" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">{workflowStages.map((stage) => <option key={stage}>{stage}</option>)}</select>
-                        <select name="primaryInterviewerId" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"><option value="">Primary interviewer</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</select>
-                        <select name="secondaryInterviewerId" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"><option value="">Secondary interviewer</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</select>
-                        <select name="observerId" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"><option value="">Observer</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</select>
+                        <select name="primaryInterviewerId" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"><option value="">Primary interviewer</option>{interviewerUsers.map((user) => <option key={user.id} value={user.id}>{user.name} · Interviewer</option>)}</select>
+                        <select name="secondaryInterviewerId" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"><option value="">Secondary interviewer</option>{interviewerUsers.map((user) => <option key={user.id} value={user.id}>{user.name} · Interviewer</option>)}</select>
+                        <select name="observerId" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"><option value="">Observer</option>{interviewerUsers.map((user) => <option key={user.id} value={user.id}>{user.name} · Observer</option>)}</select>
                         <input name="scheduledAt" type="datetime-local" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" />
                         <input name="durationMinutes" type="number" min="15" defaultValue="60" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" />
                         <input name="meetingLink" placeholder="Meeting link" className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" />

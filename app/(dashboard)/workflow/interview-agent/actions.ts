@@ -93,6 +93,31 @@ export async function createInterviewProfile(formData: FormData) {
     interviewRedirect("error", "Name is required.");
   }
 
+  const currentRole = text(formData, "currentRole") || null;
+  const experience = text(formData, "experience") || null;
+  const existingProfile = await prisma.interviewProfile.findFirst({
+    where: {
+      interviewKind,
+      name: {
+        equals: name,
+        mode: "insensitive",
+      },
+      currentRole: currentRole ?? undefined,
+      experience: experience ?? undefined,
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+
+  if (existingProfile) {
+    interviewRedirect(
+      "success",
+      `${existingProfile.name} already exists. Opened the existing interview profile instead of creating a duplicate.`,
+      redirectTarget(formData),
+    );
+  }
+
   const profile = await prisma.interviewProfile.create({
     data: {
       candidateCode: nextCandidateCode(interviewKind),
@@ -100,8 +125,8 @@ export async function createInterviewProfile(formData: FormData) {
       name,
       employeeId: interviewKind === "Internal" ? text(formData, "employeeId") || null : null,
       currentTeam: interviewKind === "Internal" ? text(formData, "currentTeam") || null : null,
-      currentRole: text(formData, "currentRole") || null,
-      experience: text(formData, "experience") || null,
+      currentRole,
+      experience,
       skills: text(formData, "skills") || null,
       certifications: text(formData, "certifications") || null,
       currentProject: interviewKind === "Internal" ? text(formData, "currentProject") || null : null,

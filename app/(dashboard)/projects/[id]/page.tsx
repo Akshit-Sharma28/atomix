@@ -592,7 +592,7 @@ export default async function ProjectPage({ params }: Props) {
               <Link
                 key={review.id}
                 href={`/reviews/${review.id}`}
-                className="rounded-xl border border-slate-800 bg-slate-950 p-4"
+                className="block w-full rounded-xl border border-slate-800 bg-slate-950 p-4 transition hover:border-cyan-400/40 hover:bg-slate-900"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>

@@ -122,6 +122,90 @@ export default async function ExecutiveDashboardPage({
         ))}
       </div>
 
+      <section className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-emerald-300">
+              <TrendingUp size={16} />
+              Business Value / Productivity
+            </div>
+            <h2 className="text-xl font-bold text-white">
+              AI governance time saved
+            </h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-300">
+              Pitch baseline: if every person in EYG saves{" "}
+              {data.productivity.baselineDailyHoursPerPerson} hour/day, then 5
+              hrs/week/person × {data.productivity.baselinePeople} people ={" "}
+              {data.productivity.baselineWeeklyHoursSaved.toLocaleString()} hrs/week,
+              or {data.productivity.baselineAnnualHoursSaved.toLocaleString()} hrs/year.
+            </p>
+          </div>
+          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200">
+            8 hrs/day conversion
+          </span>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            [
+              "Annual hours saved",
+              data.productivity.baselineAnnualHoursSaved.toLocaleString(),
+              "70-person pitch baseline",
+            ],
+            [
+              "Working days saved",
+              data.productivity.baselineWorkingDaysSaved.toLocaleString(),
+              "annual / 8 hrs",
+            ],
+            [
+              "Measured annual run-rate",
+              data.productivity.measuredAnnualHoursSaved.toLocaleString(),
+              "from current app records",
+            ],
+            [
+              "Measured days saved",
+              data.productivity.measuredWorkingDaysSaved.toLocaleString(),
+              "current workflow run-rate",
+            ],
+          ].map(([label, value, helper]) => (
+            <div
+              key={label}
+              className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
+            >
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                {label}
+              </p>
+              <p className="mt-2 text-3xl font-black text-emerald-300">
+                {value}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">{helper}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          {data.productivity.workflows.map((item) => (
+            <div
+              key={`${item.role}-${item.workflow}`}
+              className="rounded-xl border border-slate-800 bg-slate-950/70 p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-white">{item.role}</p>
+                  <p className="mt-1 text-sm text-slate-400">{item.workflow}</p>
+                </div>
+                <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-200">
+                  {item.weeklyHoursSaved}h/wk
+                </span>
+              </div>
+              <p className="mt-3 text-xs text-slate-500">
+                Volume {item.volume} × {item.hoursPerUnit} hrs/unit saved
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="mb-6">
         <AgenticCapabilityPanel
           context="executive"
