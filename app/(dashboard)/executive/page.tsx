@@ -139,10 +139,10 @@ export default async function ExecutiveDashboardPage({
               {data.productivity.baselinePeople} people ={" "}
               {data.productivity.baselineWeeklyHoursSaved.toLocaleString()} hrs/week,
               or {data.productivity.baselineAnnualHoursSaved.toLocaleString()} hrs/year.
-              Working-day conversion uses a real delivery calendar:{" "}
+              Person-day conversion uses a real delivery calendar:{" "}
               {data.productivity.workdaysPerWeek} weekdays/week ×{" "}
               {data.productivity.workingWeeksPerYear} weeks ={" "}
-              {data.productivity.annualWorkingDays} workdays/year,{" "}
+              {data.productivity.annualWorkingDays} workdays/person/year,{" "}
               {data.productivity.workdayHours} hrs/day.
             </p>
           </div>
@@ -159,9 +159,9 @@ export default async function ExecutiveDashboardPage({
               `${data.productivity.baselinePeople}-person assumption`,
             ],
             [
-              "Pitch 9h workdays",
+              "Pitch 9h person-days",
               data.productivity.baselineWorkingDaysSaved.toLocaleString(),
-              `annual / ${data.productivity.workdayHours} hrs`,
+              `${data.productivity.baselineFteYearsSavedLabel} FTE-years equivalent`,
             ],
             [
               "Measured annual run-rate",
@@ -169,9 +169,9 @@ export default async function ExecutiveDashboardPage({
               `${data.productivity.measuredWeeklyHoursSaved} hrs/wk from app volumes`,
             ],
             [
-              "Measured 9h workdays",
+              "Measured 9h person-days",
               data.productivity.measuredWorkingDaysSaved.toLocaleString(),
-              `${data.productivity.measuredFteYearsSaved} FTE-year equivalent`,
+              `${data.productivity.measuredFteYearsSavedLabel} FTE-year equivalent`,
             ],
           ].map(([label, value, helper]) => (
             <div
@@ -196,8 +196,10 @@ export default async function ExecutiveDashboardPage({
           saved across tracked workflows, which annualizes to{" "}
           {data.productivity.measuredAnnualHoursSaved.toLocaleString()} hrs/year ={" "}
           {data.productivity.measuredWorkingDaysSaved.toLocaleString()} nine-hour
-          workdays, or {data.productivity.measuredFteYearsSaved} FTE-year at{" "}
+          person-days, or {data.productivity.measuredFteYearsSavedLabel} FTE-year at{" "}
           {data.productivity.annualShiftHoursPerPerson.toLocaleString()} hrs/person/year.
+          Calendar days remain {data.productivity.annualWorkingDays}/person/year;
+          these values are cross-person effort capacity.
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">

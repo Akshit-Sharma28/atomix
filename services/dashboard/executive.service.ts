@@ -333,11 +333,15 @@ export async function getExecutiveDashboard({
       baselineWorkingDaysSaved: Math.round(baselineAnnualHoursSaved / workdayHours),
       baselineFteYearsSaved:
         Math.round((baselineAnnualHoursSaved / annualShiftHoursPerPerson) * 10) / 10,
+      baselineFteYearsSavedLabel:
+        (baselineAnnualHoursSaved / annualShiftHoursPerPerson).toFixed(1),
       measuredWeeklyHoursSaved,
       measuredAnnualHoursSaved,
       measuredWorkingDaysSaved: Math.round(measuredAnnualHoursSaved / workdayHours),
       measuredFteYearsSaved:
         Math.round((measuredAnnualHoursSaved / annualShiftHoursPerPerson) * 10) / 10,
+      measuredFteYearsSavedLabel:
+        (measuredAnnualHoursSaved / annualShiftHoursPerPerson).toFixed(1),
       workflows: weeklyProductivityByWorkflow,
     },
     rows: filteredRows,
