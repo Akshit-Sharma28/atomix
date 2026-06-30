@@ -2,6 +2,7 @@
 
 import {
   Bot,
+  Loader2,
   Maximize2,
   Minimize2,
   Send,
@@ -9,12 +10,13 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import LocalAiStatus from "@/components/ui/local-ai-status";
 
 const quickPrompts = [
-  "What governance actions need attention today?",
-  "Summarize executive risks in this portfolio.",
-  "Recommend reviewer assignments for open SRs.",
-  "Which projects need escalation?",
+  "Summarize today's governance actions and owners.",
+  "Draft a weekly call email with attendance, extensions, and red engagements.",
+  "Recommend Dedicated vs Augmentation reviewer assignments.",
+  "Find SLA pressure, overdue SRs, and escalation candidates.",
 ];
 
 export default function FloatingAgentChat() {
@@ -29,7 +31,7 @@ export default function FloatingAgentChat() {
   >([
     {
       role: "agent",
-      text: "Hi, I’m Atomix Agent. Ask me about governance workflow, executive variance, reviewer allocation, or pentest delivery.",
+      text: "Hi, I’m Atomix Agent. I can help with governance workflow, reviewer pools, SLA pressure, FEAD evidence, interview flow, and executive updates.",
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -101,14 +103,13 @@ export default function FloatingAgentChat() {
             <div className="flex items-center gap-3">
               <div className="relative grid h-10 w-10 place-items-center rounded-2xl bg-cyan-400 text-slate-950">
                 <Bot size={22} />
-                <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/50" />
               </div>
               <div>
                 <p className="font-bold text-white">
                   Atomix Agent
                 </p>
                 <p className="text-xs text-cyan-200">
-                  Agentic governance copilot
+                  Workflow-aware governance copilot
                 </p>
               </div>
             </div>
@@ -137,6 +138,9 @@ export default function FloatingAgentChat() {
 
           <div className="flex h-[calc(100%-73px)] flex-col">
             <div className="border-b border-slate-800 p-3">
+              <div className="mb-3">
+                <LocalAiStatus compact />
+              </div>
               <div className="grid gap-2">
                 {quickPrompts.map((prompt) => (
                   <button
@@ -165,7 +169,10 @@ export default function FloatingAgentChat() {
               ))}
               {loading && (
                 <div className="mr-8 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 px-4 py-3 text-sm text-cyan-200">
-                  Atomix Agent is thinking…
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="animate-spin" size={15} />
+                    Atomix Agent is thinking…
+                  </span>
                 </div>
               )}
             </div>
@@ -191,7 +198,7 @@ export default function FloatingAgentChat() {
                   className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-400 text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Send message"
                 >
-                  <Send size={17} />
+                  {loading ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
                 </button>
               </div>
             </div>

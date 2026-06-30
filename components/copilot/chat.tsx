@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Bot,
   Clipboard,
+  FileText,
   Loader2,
   Send,
   Sparkles,
@@ -12,23 +13,23 @@ import {
 
 const promptGroups = [
   {
-    title: "Leadership",
+    title: "Executive Governance",
     prompts: [
       "Draft a one-page executive governance brief from current red work, variance, extensions, and overdue reviews.",
-      "Summarize which governance signals need attention this week.",
+      "Summarize weekly governance call attendance, extension requests, and red engagements as an email.",
     ],
   },
   {
-    title: "Reviewer Ops",
+    title: "Reviewer Operations",
     prompts: [
       "Recommend reviewer assignments based on availability, role fit, and active SR load.",
-      "Show overdue reviews and suggest the next governance action for each.",
+      "Compare Dedicated Pool and Augmentation Pool load and highlight staffing risks.",
     ],
   },
   {
-    title: "Quality",
+    title: "Review Quality",
     prompts: [
-      "Find peer review gaps across active reviews and list what evidence is missing.",
+      "Find peer review gaps across active SRs and list missing evidence.",
       "Create a QA checklist for FEAD, BEAD, LLM FEAD, and scan evidence review.",
     ],
   },
@@ -78,24 +79,24 @@ export default function CopilotChat({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-cyan-500/20 bg-slate-900/80 p-6">
+      <section className="rounded-[2rem] border border-cyan-500/20 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/10">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.25em] text-cyan-300">
               <Sparkles size={16} />
-              Ask Atomix
+              Ask Atomix Copilot
             </div>
             <h2 className="text-2xl font-bold text-white">
               Governance command assistant
             </h2>
             <p className="mt-2 max-w-3xl text-slate-400">
-              Ask for summaries, reviewer coordination, evidence gaps, report
-              language, and next actions. Copilot reads current Atomix context
-              and the Knowledge Base.
+              Draft leadership narratives, reviewer actions, FEAD evidence
+              checks, interview governance summaries, and weekly call updates.
+              Copilot is advisory: no automatic record writes.
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-400">
-            Human-approved · no automatic record writes
+          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+            Human-approved workflow · safe draft mode
           </div>
         </div>
 
@@ -103,7 +104,7 @@ export default function CopilotChat({
           {promptGroups.map((group) => (
             <div
               key={group.title}
-              className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
+              className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/30"
             >
               <p className="mb-3 flex items-center gap-2 font-bold text-white">
                 <Wand2 size={16} className="text-cyan-300" />
@@ -114,7 +115,7 @@ export default function CopilotChat({
                   <button
                     key={prompt}
                     onClick={() => setQuestion(prompt)}
-                    className="w-full rounded-xl bg-slate-800/80 px-3 py-2 text-left text-sm leading-5 text-slate-300 transition hover:bg-slate-700 hover:text-white"
+                    className="w-full rounded-xl bg-slate-800/80 px-3 py-2 text-left text-sm leading-5 text-slate-300 transition hover:bg-cyan-400/10 hover:text-cyan-100"
                   >
                     {prompt}
                   </button>
@@ -125,6 +126,24 @@ export default function CopilotChat({
         </div>
 
         <div className="mt-5 rounded-3xl border border-slate-800 bg-slate-950/80 p-4">
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            {[
+              "Reviewer allocation",
+              "SLA / extensions",
+              "FEAD evidence",
+              "Interview governance",
+              "Executive summary",
+            ].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => setQuestion(`${chip}: summarize current risks and next actions.`)}
+                className="rounded-full border border-slate-800 px-3 py-1 text-slate-400 hover:border-cyan-400/30 hover:text-cyan-200"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
           <textarea
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
@@ -135,8 +154,8 @@ export default function CopilotChat({
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-4">
             <p className="text-sm text-slate-500">
-              Tip: mention role, portfolio, SR, evidence type, or time period
-              for sharper answers.
+              Tip: mention role, SPR/SR, evidence type, pool, risk level, or
+              time period for sharper answers.
             </p>
             <button
               onClick={ask}
@@ -171,6 +190,15 @@ export default function CopilotChat({
               <Clipboard size={16} />
               {copied ? "Copied" : "Copy"}
             </button>
+          </div>
+          <div className="mb-4 flex flex-wrap gap-2 text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-950 px-3 py-1 text-slate-400">
+              <FileText size={13} />
+              Draft output
+            </span>
+            <span className="rounded-full bg-slate-950 px-3 py-1 text-slate-400">
+              No automatic writes
+            </span>
           </div>
           <div className="max-h-[520px] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-slate-800 bg-slate-950/80 p-5 text-sm leading-7 text-slate-200">
             {response}
