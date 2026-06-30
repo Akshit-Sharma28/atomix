@@ -134,38 +134,44 @@ export default async function ExecutiveDashboardPage({
             </h2>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-300">
               Pitch baseline: if every person in EYG saves{" "}
-              {data.productivity.baselineDailyHoursPerPerson} hour/day, then 5
-              hrs/week/person × {data.productivity.baselinePeople} people ={" "}
+              {data.productivity.baselineDailyHoursPerPerson} hour/day, then{" "}
+              {data.productivity.workdaysPerWeek} hrs/week/person ×{" "}
+              {data.productivity.baselinePeople} people ={" "}
               {data.productivity.baselineWeeklyHoursSaved.toLocaleString()} hrs/week,
               or {data.productivity.baselineAnnualHoursSaved.toLocaleString()} hrs/year.
+              Working-day conversion uses a real delivery calendar:{" "}
+              {data.productivity.workdaysPerWeek} weekdays/week ×{" "}
+              {data.productivity.workingWeeksPerYear} weeks ={" "}
+              {data.productivity.annualWorkingDays} workdays/year,{" "}
+              {data.productivity.workdayHours} hrs/day.
             </p>
           </div>
           <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200">
-            8 hrs/day conversion
+            {data.productivity.workdayHours} hrs/day · weekends off
           </span>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
             [
-              "Annual hours saved",
+              "Pitch annual hours",
               data.productivity.baselineAnnualHoursSaved.toLocaleString(),
-              "70-person pitch baseline",
+              `${data.productivity.baselinePeople}-person assumption`,
             ],
             [
-              "Working days saved",
+              "Pitch 9h workdays",
               data.productivity.baselineWorkingDaysSaved.toLocaleString(),
-              "annual / 8 hrs",
+              `annual / ${data.productivity.workdayHours} hrs`,
             ],
             [
               "Measured annual run-rate",
               data.productivity.measuredAnnualHoursSaved.toLocaleString(),
-              "from current app records",
+              `${data.productivity.measuredWeeklyHoursSaved} hrs/wk from app volumes`,
             ],
             [
-              "Measured days saved",
+              "Measured 9h workdays",
               data.productivity.measuredWorkingDaysSaved.toLocaleString(),
-              "current workflow run-rate",
+              `${data.productivity.measuredFteYearsSaved} FTE-year equivalent`,
             ],
           ].map(([label, value, helper]) => (
             <div
@@ -181,6 +187,17 @@ export default async function ExecutiveDashboardPage({
               <p className="mt-1 text-xs text-slate-400">{helper}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300">
+          <span className="font-semibold text-emerald-200">Reality check:</span>{" "}
+          The measured value is not “people saved”; it is equivalent capacity.
+          Current records show {data.productivity.measuredWeeklyHoursSaved} hrs/week
+          saved across tracked workflows, which annualizes to{" "}
+          {data.productivity.measuredAnnualHoursSaved.toLocaleString()} hrs/year ={" "}
+          {data.productivity.measuredWorkingDaysSaved.toLocaleString()} nine-hour
+          workdays, or {data.productivity.measuredFteYearsSaved} FTE-year at{" "}
+          {data.productivity.annualShiftHoursPerPerson.toLocaleString()} hrs/person/year.
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">

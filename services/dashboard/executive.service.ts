@@ -240,8 +240,17 @@ export async function getExecutiveDashboard({
   );
   const baselinePeople = 70;
   const baselineDailyHoursPerPerson = 1;
-  const baselineWeeklyHoursSaved = baselinePeople * baselineDailyHoursPerPerson * 5;
-  const baselineAnnualHoursSaved = baselineWeeklyHoursSaved * 52;
+  const workdayHours = 9;
+  const workdaysPerWeek = 5;
+  const workingWeeksPerYear = 52;
+  const annualWorkingDays = workdaysPerWeek * workingWeeksPerYear;
+  const annualShiftHoursPerPerson = annualWorkingDays * workdayHours;
+  const baselineWeeklyHoursSaved =
+    baselinePeople * baselineDailyHoursPerPerson * workdaysPerWeek;
+  const baselineAnnualHoursSaved =
+    baselineWeeklyHoursSaved * workingWeeksPerYear;
+  const measuredAnnualHoursSaved =
+    measuredWeeklyHoursSaved * workingWeeksPerYear;
 
   return {
     summary: {
@@ -314,12 +323,21 @@ export async function getExecutiveDashboard({
     productivity: {
       baselinePeople,
       baselineDailyHoursPerPerson,
+      workdayHours,
+      workdaysPerWeek,
+      workingWeeksPerYear,
+      annualWorkingDays,
+      annualShiftHoursPerPerson,
       baselineWeeklyHoursSaved,
       baselineAnnualHoursSaved,
-      baselineWorkingDaysSaved: Math.round(baselineAnnualHoursSaved / 8),
+      baselineWorkingDaysSaved: Math.round(baselineAnnualHoursSaved / workdayHours),
+      baselineFteYearsSaved:
+        Math.round((baselineAnnualHoursSaved / annualShiftHoursPerPerson) * 10) / 10,
       measuredWeeklyHoursSaved,
-      measuredAnnualHoursSaved: measuredWeeklyHoursSaved * 52,
-      measuredWorkingDaysSaved: Math.round((measuredWeeklyHoursSaved * 52) / 8),
+      measuredAnnualHoursSaved,
+      measuredWorkingDaysSaved: Math.round(measuredAnnualHoursSaved / workdayHours),
+      measuredFteYearsSaved:
+        Math.round((measuredAnnualHoursSaved / annualShiftHoursPerPerson) * 10) / 10,
       workflows: weeklyProductivityByWorkflow,
     },
     rows: filteredRows,
