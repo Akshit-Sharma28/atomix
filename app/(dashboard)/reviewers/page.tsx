@@ -12,6 +12,7 @@ import {
 import { canAccess } from "@/services/users/access.service";
 import { getGovernanceDashboard } from "@/services/dashboard/governance.service";
 import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
+import TransitionSection from "@/components/ui/transition-section";
 
 function formatDate(date?: Date | null) {
   if (!date) {
@@ -263,7 +264,7 @@ export default async function ReviewersPage({
         {governance.kpis.map((kpi) => (
           <div
             key={kpi.label}
-            className="rounded-2xl border border-cyan-500/10 bg-slate-900/70 p-4"
+            className="rounded-2xl border border-cyan-500/10 bg-slate-900/70 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/30 hover:shadow-xl hover:shadow-cyan-950/20"
           >
             <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
               {kpi.label}
@@ -286,7 +287,7 @@ export default async function ReviewersPage({
       </div>
 
       <div className="grid gap-4 mb-8 md:grid-cols-3 xl:grid-cols-6">
-        <div className="rounded-2xl border border-emerald-500/20 bg-slate-900 p-5">
+        <div className="rounded-2xl border border-emerald-500/20 bg-slate-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/40">
           <div className="flex items-center justify-between text-slate-400">
             <span>Available</span>
             <UserCheck size={20} className="text-emerald-400" />
@@ -296,7 +297,7 @@ export default async function ReviewersPage({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
+        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/40">
           <div className="flex items-center justify-between text-slate-400">
             <span>Capacity hrs/wk</span>
             <CalendarDays size={20} className="text-cyan-400" />
@@ -306,7 +307,7 @@ export default async function ReviewersPage({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-purple-500/20 bg-slate-900 p-5">
+        <div className="rounded-2xl border border-purple-500/20 bg-slate-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-purple-400/40">
           <div className="flex items-center justify-between text-slate-400">
             <span>Allocated hrs</span>
             <Activity size={20} className="text-purple-400" />
@@ -316,7 +317,7 @@ export default async function ReviewersPage({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-yellow-500/20 bg-slate-900 p-5">
+        <div className="rounded-2xl border border-yellow-500/20 bg-slate-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-yellow-400/40">
           <div className="flex items-center justify-between text-slate-400">
             <span>Unassigned SRs</span>
             <AlertTriangle size={20} className="text-yellow-400" />
@@ -326,7 +327,7 @@ export default async function ReviewersPage({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
+        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/40">
           <div className="flex items-center justify-between text-slate-400">
             <span>Dedicated Pool</span>
             <ShieldCheck size={20} className="text-cyan-400" />
@@ -339,7 +340,7 @@ export default async function ReviewersPage({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-emerald-500/20 bg-slate-900 p-5">
+        <div className="rounded-2xl border border-emerald-500/20 bg-slate-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/40">
           <div className="flex items-center justify-between text-slate-400">
             <span>Augmentation Pool</span>
             <UserCheck size={20} className="text-emerald-400" />
@@ -353,27 +354,32 @@ export default async function ReviewersPage({
         </div>
       </div>
 
-      <div className="mb-8">
-        <AgenticCapabilityPanel
-          context="governance"
-          metrics={[
-            {
-              label: "Available reviewers",
-              value: availableReviewers,
-            },
-            {
-              label: "Unassigned SRs",
-              value: unassignedReviews,
-            },
-            {
-              label: "Allocated hours",
-              value: allocatedHours,
-            },
-          ]}
-        />
-      </div>
-
-      <div className="mb-8 grid gap-6 xl:grid-cols-2">
+      <div className="mb-8 space-y-5">
+        <TransitionSection
+          title="Governance Signals"
+          eyebrow="Capacity, red projects, extensions"
+          helper="Secondary governance intelligence is tucked into one transition card so the page stays compact."
+        >
+          <div className="mb-5">
+            <AgenticCapabilityPanel
+              context="governance"
+              metrics={[
+                {
+                  label: "Available reviewers",
+                  value: availableReviewers,
+                },
+                {
+                  label: "Unassigned SRs",
+                  value: unassignedReviews,
+                },
+                {
+                  label: "Allocated hours",
+                  value: allocatedHours,
+                },
+              ]}
+            />
+          </div>
+          <div className="grid gap-6 xl:grid-cols-3">
         <div className="rounded-2xl border border-cyan-500/10 bg-slate-900/60 p-4">
           <div className="mb-3 flex items-center gap-3">
             <UserCheck size={20} className="text-cyan-400" />
@@ -483,9 +489,15 @@ export default async function ReviewersPage({
             )}
           </div>
         </div>
-      </div>
+          </div>
+        </TransitionSection>
 
-      <div className="mb-8 grid gap-6 xl:grid-cols-2">
+        <TransitionSection
+          title="SR Delivery Board & Terminology"
+          eyebrow="Reference layer"
+          helper="Open this when you need active SR delivery rows or Information System → SPR → SR definitions."
+        >
+          <div className="grid gap-6 xl:grid-cols-2">
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
           <div className="mb-4 flex items-center gap-3">
             <CalendarClock className="text-cyan-400" size={22} />
@@ -557,6 +569,8 @@ export default async function ReviewersPage({
             ))}
           </div>
         </div>
+          </div>
+        </TransitionSection>
       </div>
 
       <form

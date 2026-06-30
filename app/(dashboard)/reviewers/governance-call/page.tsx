@@ -1,4 +1,5 @@
 import Link from "next/link";
+import TransitionSection from "@/components/ui/transition-section";
 import { prisma } from "@/lib/prisma";
 import { canAccess } from "@/services/users/access.service";
 import { updateWeeklyGovernanceCall } from "../actions";
@@ -649,185 +650,194 @@ Atomix Governance Dashboard`;
         </div>
       </form>
 
-      <section className="mb-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
-          <div className="mb-4 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-cyan-300">
-            <CalendarCheck size={18} />
-            Attendance Snapshot
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              "Present",
-              "Absent",
-              "Out of office",
-            ].map((attendanceStatus) => (
-              <div
-                key={attendanceStatus}
-                className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
-              >
-                <p className="text-xs text-slate-500">{attendanceStatus}</p>
-                <p className="mt-2 text-2xl font-black text-white">
-                  {
-                    attendanceRows.filter(
-                      (row) => row.status === attendanceStatus,
-                    ).length
-                  }
-                </p>
+      <div className="mb-6">
+        <TransitionSection
+          title="Attendance & Email Summary"
+          eyebrow="Call summary"
+          helper="Open when you need attendance counts, extension highlights, red engagements, or the copyable weekly email draft."
+          action={
+            <span className="rounded-full border border-cyan-400/20 bg-slate-950 px-4 py-2 text-sm font-semibold text-cyan-200">
+              {attendanceRows.length} reviewers
+            </span>
+          }
+        >
+          <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+            <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5 transition-all duration-300 hover:border-cyan-400/40 hover:shadow-xl hover:shadow-cyan-950/20">
+              <div className="mb-4 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-cyan-300">
+                <CalendarCheck size={18} />
+                Attendance Snapshot
               </div>
-            ))}
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-amber-200">
-                <AlertTriangle size={16} />
-                Extensions
-              </div>
-              <p className="mt-2 text-3xl font-black text-amber-200">
-                {extensionRows.length}
-              </p>
-            </div>
-            <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] p-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-red-200">
-                <AlertTriangle size={16} />
-                Red engagements
-              </div>
-              <p className="mt-2 text-3xl font-black text-red-200">
-                {redEngagementRows.length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <label className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
-          <span className="mb-4 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-cyan-300">
-            <Mail size={18} />
-            Email Template
-          </span>
-          <textarea
-            readOnly
-            rows={14}
-            value={attendanceEmail}
-            className="w-full rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm leading-6 text-slate-300"
-          />
-        </label>
-      </section>
-
-      <section className="mb-6 rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
-        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              Pool Reviewer Roster
-            </h2>
-            <p className="mt-2 text-sm text-slate-400">
-              Dedicated and Augmentation pool users are synced from Users &
-              RBAC, even when they do not yet have an active assignment.
-            </p>
-          </div>
-          <div className="rounded-full border border-cyan-400/20 bg-slate-950 px-4 py-2 text-sm font-semibold text-cyan-200">
-            {filteredPoolReviewerRows.length} visible reviewers
-          </div>
-        </div>
-
-        {filteredPoolReviewerRows.length === 0 ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 text-center text-slate-400">
-            No pool reviewers match the current filters.
-          </div>
-        ) : (
-          <div className="grid gap-3 xl:grid-cols-2">
-            {filteredPoolReviewerRows.map((reviewerRow) => {
-              const topAssignments = reviewerRow.assignments.slice(0, 2);
-              const remainingAssignments =
-                reviewerRow.assignments.length - topAssignments.length;
-
-              return (
-                <div
-                  key={reviewerRow.id}
-                  className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-white">
-                        {reviewerRow.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {reviewerRow.email}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          reviewerRow.poolType === "Dedicated"
-                            ? "bg-cyan-400/10 text-cyan-200"
-                            : "bg-emerald-400/10 text-emerald-200"
-                        }`}
-                      >
-                        {reviewerRow.poolType} Pool
-                      </span>
-                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">
-                        {reviewerRow.role.replaceAll("_", " ")}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
-                      <p className="text-xs text-slate-500">Attendance</p>
-                      <p className="mt-1 font-semibold text-white">
-                        {reviewerRow.attendanceStatus}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
-                      <p className="text-xs text-slate-500">Availability</p>
-                      <p className="mt-1 font-semibold text-white">
-                        {reviewerRow.availability}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
-                      <p className="text-xs text-slate-500">Load</p>
-                      <p className="mt-1 font-semibold text-white">
-                        {reviewerRow.assignedHours}h /{" "}
-                        {reviewerRow.capacity || "TBD"}h
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/70 p-3">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                      Active assignments
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  "Present",
+                  "Absent",
+                  "Out of office",
+                ].map((attendanceStatus) => (
+                  <div
+                    key={attendanceStatus}
+                    className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
+                  >
+                    <p className="text-xs text-slate-500">{attendanceStatus}</p>
+                    <p className="mt-2 text-2xl font-black text-white">
+                      {
+                        attendanceRows.filter(
+                          (row) => row.status === attendanceStatus,
+                        ).length
+                      }
                     </p>
-                    {topAssignments.length === 0 ? (
-                      <p className="mt-2 text-sm text-slate-400">
-                        No active SPR/SR mapped yet.
-                      </p>
-                    ) : (
-                      <div className="mt-2 space-y-2">
-                        {topAssignments.map((assignment) => (
-                          <div
-                            key={assignment.id}
-                            className="text-sm text-slate-300"
-                          >
-                            <span className="font-semibold text-white">
-                              {assignment.review.project.sprId ??
-                                assignment.review.project.name}
-                            </span>{" "}
-                            · {assignment.review.srId ?? assignment.review.title}
-                          </div>
-                        ))}
-                        {remainingAssignments > 0 && (
-                          <p className="text-xs text-cyan-200">
-                            +{remainingAssignments} more active assignment
-                            {remainingAssignments === 1 ? "" : "s"}
-                          </p>
-                        )}
-                      </div>
-                    )}
                   </div>
+                ))}
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-amber-200">
+                    <AlertTriangle size={16} />
+                    Extensions
+                  </div>
+                  <p className="mt-2 text-3xl font-black text-amber-200">
+                    {extensionRows.length}
+                  </p>
                 </div>
-              );
-            })}
+                <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] p-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-red-200">
+                    <AlertTriangle size={16} />
+                    Red engagements
+                  </div>
+                  <p className="mt-2 text-3xl font-black text-red-200">
+                    {redEngagementRows.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <label className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5 transition-all duration-300 hover:border-cyan-400/40 hover:shadow-xl hover:shadow-cyan-950/20">
+              <span className="mb-4 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-cyan-300">
+                <Mail size={18} />
+                Email Template
+              </span>
+              <textarea
+                readOnly
+                rows={14}
+                value={attendanceEmail}
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm leading-6 text-slate-300"
+              />
+            </label>
           </div>
-        )}
-      </section>
+        </TransitionSection>
+      </div>
+
+      <div className="mb-6">
+        <TransitionSection
+          title="Pool Reviewer Roster"
+          eyebrow="Dedicated / Augmentation map"
+          helper="Dedicated and Augmentation pool users are synced from Users & RBAC, even when they do not yet have an active assignment."
+          action={
+            <span className="rounded-full border border-cyan-400/20 bg-slate-950 px-4 py-2 text-sm font-semibold text-cyan-200">
+              {filteredPoolReviewerRows.length} visible reviewers
+            </span>
+          }
+        >
+          {filteredPoolReviewerRows.length === 0 ? (
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 text-center text-slate-400">
+              No pool reviewers match the current filters.
+            </div>
+          ) : (
+            <div className="grid gap-3 xl:grid-cols-2">
+              {filteredPoolReviewerRows.map((reviewerRow) => {
+                const topAssignments = reviewerRow.assignments.slice(0, 2);
+                const remainingAssignments =
+                  reviewerRow.assignments.length - topAssignments.length;
+
+                return (
+                  <div
+                    key={reviewerRow.id}
+                    className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 transition-all duration-300 hover:border-cyan-400/30 hover:bg-slate-950"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-white">
+                          {reviewerRow.name}
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {reviewerRow.email}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            reviewerRow.poolType === "Dedicated"
+                              ? "bg-cyan-400/10 text-cyan-200"
+                              : "bg-emerald-400/10 text-emerald-200"
+                          }`}
+                        >
+                          {reviewerRow.poolType} Pool
+                        </span>
+                        <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">
+                          {reviewerRow.role.replaceAll("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                        <p className="text-xs text-slate-500">Attendance</p>
+                        <p className="mt-1 font-semibold text-white">
+                          {reviewerRow.attendanceStatus}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                        <p className="text-xs text-slate-500">Availability</p>
+                        <p className="mt-1 font-semibold text-white">
+                          {reviewerRow.availability}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                        <p className="text-xs text-slate-500">Load</p>
+                        <p className="mt-1 font-semibold text-white">
+                          {reviewerRow.assignedHours}h /{" "}
+                          {reviewerRow.capacity || "TBD"}h
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                        Active assignments
+                      </p>
+                      {topAssignments.length === 0 ? (
+                        <p className="mt-2 text-sm text-slate-400">
+                          No active SPR/SR mapped yet.
+                        </p>
+                      ) : (
+                        <div className="mt-2 space-y-2">
+                          {topAssignments.map((assignment) => (
+                            <div
+                              key={assignment.id}
+                              className="text-sm text-slate-300"
+                            >
+                              <span className="font-semibold text-white">
+                                {assignment.review.project.sprId ??
+                                  assignment.review.project.name}
+                              </span>{" "}
+                              · {assignment.review.srId ?? assignment.review.title}
+                            </div>
+                          ))}
+                          {remainingAssignments > 0 && (
+                            <p className="text-xs text-cyan-200">
+                              +{remainingAssignments} more active assignment
+                              {remainingAssignments === 1 ? "" : "s"}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </TransitionSection>
+      </div>
 
       <section className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
@@ -875,7 +885,7 @@ Atomix Governance Dashboard`;
             return (
               <div
                 key={assignment.id}
-                className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
+                className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 transition-all duration-300 hover:border-cyan-400/30 hover:bg-slate-950"
               >
                 <div className="mb-4 grid gap-4 lg:grid-cols-[1.2fr_1fr_1fr]">
                   <div>
@@ -1071,7 +1081,7 @@ function Metric({
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
+    <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/40 hover:shadow-xl hover:shadow-cyan-950/20">
       <div className="flex items-center justify-between text-slate-400">
         <span>{label}</span>
         <UserCheck size={20} className="text-cyan-300" />
