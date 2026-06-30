@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/services/users/current-user.service";
 import ControlFindingForm from "@/components/findings/control-finding-form";
+import TransitionSection from "@/components/ui/transition-section";
 import {
   Bot,
   ClipboardList,
@@ -172,8 +173,8 @@ export default async function MyFindingsPage({
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
-        <section className="rounded-2xl border border-slate-800 bg-slate-900">
+      <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+        <section className="rounded-2xl border border-slate-800 bg-slate-900 xl:sticky xl:top-6 xl:self-start">
           <div className="border-b border-slate-800 p-5">
             <h2 className="text-xl font-bold text-white">
               Assigned / Completed SPRs
@@ -257,24 +258,31 @@ export default async function MyFindingsPage({
                     ))}
                   </div>
                 </div>
-                <Link
-                  href={`/copilot?prompt=${encodeURIComponent(
-                    `Act as the Add Findings Agent for ${selectedProject.sprId ?? selectedProject.name}. Help draft an SR-mapped control result with control ID, status PASS/FAIL/Not Rated/Informational, risk Critical/High/Medium/Low/Informational/Not Rated, reviewer comment, evidence, impact, and remediation.`,
-                  )}`}
-                  className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950"
-                >
-                  <Bot size={16} />
-                  Add Findings Agent
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href="#add-control-result"
+                    className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950"
+                  >
+                    <FilePlus2 size={16} />
+                    Add Control Result
+                  </a>
+                  <Link
+                    href={`/copilot?prompt=${encodeURIComponent(
+                      `Act as the Add Findings Agent for ${selectedProject.sprId ?? selectedProject.name}. Help draft an SR-mapped control result with control ID, status PASS/FAIL/Not Rated/Informational, risk Critical/High/Medium/Low/Informational/Not Rated, reviewer comment, evidence, impact, and remediation.`,
+                    )}`}
+                    className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 px-4 py-3 text-sm font-bold text-cyan-200 hover:bg-cyan-400/10"
+                  >
+                    <Bot size={16} />
+                    Add Findings Agent
+                  </Link>
+                </div>
               </div>
             </div>
 
-            <FindingList
-              title="SR Control Results"
-              findings={controlResults}
-            />
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <div
+              id="add-control-result"
+              className="scroll-mt-8 rounded-2xl border border-cyan-500/20 bg-slate-900 p-5 shadow-2xl shadow-cyan-950/10"
+            >
               <div className="mb-5 flex items-center gap-3">
                 <FilePlus2 className="text-cyan-300" size={22} />
                 <div>
@@ -299,6 +307,17 @@ export default async function MyFindingsPage({
                 }
               />
             </div>
+
+            <TransitionSection
+              title="Saved SR Control Results"
+              eyebrow={`${controlResults.length} saved results`}
+              helper="Open this when you need to review or edit already recorded PASS/FAIL/Not Rated/Informational entries."
+            >
+              <FindingList
+                title="SR Control Results"
+                findings={controlResults}
+              />
+            </TransitionSection>
 
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
               <h2 className="text-lg font-bold text-white">

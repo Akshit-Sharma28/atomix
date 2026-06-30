@@ -120,7 +120,7 @@ export default function ControlFindingForm({
         value="Reviewer to document remediation, exception, or acceptance decision based on the control result."
       />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-4">
         <label>
           <span className="mb-2 block text-sm text-slate-400">
             SR
@@ -137,7 +137,7 @@ export default function ControlFindingForm({
           </select>
         </label>
 
-        <label>
+        <label className="lg:col-span-3">
           <span className="mb-2 block text-sm text-slate-400">
             Control
           </span>
@@ -157,28 +157,7 @@ export default function ControlFindingForm({
         </label>
       </div>
 
-      <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4">
-        <p className="text-xs uppercase tracking-[0.18em] text-cyan-300">
-          Selected Control / Reviewer Checklist
-        </p>
-        <h3 className="mt-2 text-xl font-bold text-white">
-          {selectedControl.id} · {selectedControl.title}
-        </h3>
-        <p className="mt-2 text-sm leading-6 text-slate-300">
-          {selectedControl.testing}
-        </p>
-        <p className="mt-2 text-sm leading-6 text-slate-400">
-          <span className="font-semibold text-slate-300">Artifacts: </span>
-          {selectedControl.artifacts}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full bg-slate-950 px-3 py-1 text-cyan-300">
-            {selectedControl.section}
-          </span>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
         <label>
           <span className="mb-2 block text-sm text-slate-400">
             Status
@@ -212,7 +191,41 @@ export default function ControlFindingForm({
             ))}
           </select>
         </label>
+
+        <div className="flex items-end">
+          <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 transition hover:bg-cyan-300 md:w-fit">
+            Save Control Result
+          </button>
+        </div>
       </div>
+
+      <details
+        open
+        className="group rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] transition-all duration-300"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 marker:hidden">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-cyan-300">
+              Selected Control / Reviewer Checklist
+            </p>
+            <h3 className="mt-1 text-lg font-bold text-white">
+              {selectedControl.id} · {selectedControl.title}
+            </h3>
+          </div>
+          <span className="rounded-full bg-slate-950 px-3 py-1 text-xs text-cyan-300">
+            {selectedControl.section}
+          </span>
+        </summary>
+        <div className="border-t border-cyan-500/10 p-4 pt-3">
+          <p className="text-sm leading-6 text-slate-300">
+            {selectedControl.testing}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            <span className="font-semibold text-slate-300">Artifacts: </span>
+            {selectedControl.artifacts}
+          </p>
+        </div>
+      </details>
 
       <label>
         <span className="mb-2 block text-sm text-slate-400">
@@ -230,60 +243,65 @@ export default function ControlFindingForm({
         />
       </label>
 
-      <label>
-        <span className="mb-2 flex items-center gap-2 text-sm text-slate-400">
-          <ImagePlus size={16} />
+      <details className="rounded-2xl border border-slate-800 bg-slate-950/50">
+        <summary className="flex cursor-pointer list-none items-center gap-2 p-4 text-sm font-semibold text-slate-300 marker:hidden">
+          <ImagePlus size={16} className="text-cyan-300" />
           Evidence Images
-        </span>
-        <input
-          type="file"
-          name="evidenceImages"
-          accept="image/*"
-          multiple
-          className="w-full rounded-xl border border-dashed border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-300"
-        />
-        <span className="mt-2 block text-xs text-slate-500">
-          Images are recorded as evidence filenames in this version; full
-          attachment storage can be wired to object storage later.
-        </span>
-      </label>
+        </summary>
+        <div className="border-t border-slate-800 p-4 pt-3">
+          <input
+            type="file"
+            name="evidenceImages"
+            accept="image/*"
+            multiple
+            className="w-full rounded-xl border border-dashed border-slate-700 bg-slate-950 px-3 py-3 text-sm text-slate-300"
+          />
+          <span className="mt-2 block text-xs text-slate-500">
+            Images are recorded as evidence filenames in this version; full
+            attachment storage can be wired to object storage later.
+          </span>
+        </div>
+      </details>
 
-      <div className="rounded-2xl border border-purple-500/20 bg-purple-500/[0.04] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <details className="rounded-2xl border border-purple-500/20 bg-purple-500/[0.04]">
+        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 p-4 marker:hidden">
           <div>
             <h3 className="flex items-center gap-2 font-bold text-white">
               <Sparkles size={18} className="text-purple-300" />
               AI Analyze
             </h3>
             <p className="mt-1 text-sm text-slate-400">
-              Uses the selected control result and reviewer comment to draft impact,
-              evidence interpretation, and remediation details.
+              Draft impact, evidence interpretation, and remediation details.
             </p>
           </div>
+          <span className="rounded-full border border-purple-400/20 bg-slate-950 px-3 py-1 text-xs font-semibold text-purple-200">
+            Optional
+          </span>
+        </summary>
+        <div className="border-t border-purple-500/10 p-4 pt-3">
           <button
             type="button"
             onClick={analyzeWithAi}
             disabled={isPending}
-            className="inline-flex items-center gap-2 rounded-xl bg-purple-400 px-4 py-2.5 text-sm font-bold text-slate-950 disabled:opacity-60"
+            className="mb-4 inline-flex items-center gap-2 rounded-xl bg-purple-400 px-4 py-2.5 text-sm font-bold text-slate-950 disabled:opacity-60"
           >
             <Bot size={16} />
             {isPending ? "Analyzing..." : "AI Analyze"}
           </button>
+          <textarea
+            name="aiAnalysis"
+            value={aiAnalysis}
+            onChange={(event) =>
+              setAiAnalysis(event.target.value)
+            }
+            rows={5}
+            className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+            placeholder="AI-generated control-result details will appear here. You can edit before saving."
+          />
         </div>
+      </details>
 
-        <textarea
-          name="aiAnalysis"
-          value={aiAnalysis}
-          onChange={(event) =>
-            setAiAnalysis(event.target.value)
-          }
-          rows={5}
-          className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
-          placeholder="AI-generated control-result details will appear here. You can edit before saving."
-        />
-      </div>
-
-      <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 md:w-fit">
+      <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 transition hover:bg-cyan-300 md:w-fit">
         Save Control Result to SR
       </button>
     </form>
