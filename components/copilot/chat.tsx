@@ -5,6 +5,7 @@ import {
   Bot,
   ChevronDown,
   Clipboard,
+  CheckCircle2,
   GitBranch,
   FileText,
   Loader2,
@@ -46,6 +47,146 @@ type AgentTraceStep = {
 };
 
 type SectionKey = "prompts" | "compose" | "trace" | "response";
+
+const highlightedSections = new Map([
+  ["Executive Signal", "border-cyan-400/20 bg-cyan-400/[0.06]"],
+  ["Critical Risks", "border-red-400/20 bg-red-400/[0.05]"],
+  ["Overdue Governance Actions", "border-amber-400/20 bg-amber-400/[0.06]"],
+  ["Recommended Next Actions", "border-emerald-400/20 bg-emerald-400/[0.06]"],
+  ["Synthesis Status", "border-violet-400/20 bg-violet-400/[0.05]"],
+]);
+
+function sectionTone(title: string) {
+  return highlightedSections.get(title) ?? "border-slate-800 bg-slate-950/70";
+}
+
+function parseCopilotSections(markdown: string) {
+  const lines = markdown.trim().split("\n");
+  const title = lines.find((line) => line.startsWith("## "))?.replace(/^##\s+/, "");
+  const introLines: string[] = [];
+  const sections: { title: string; lines: string[] }[] = [];
+  let current: { title: string; lines: string[] } | null = null;
+
+  for (const line of lines) {
+    if (line.startsWith("## ")) {
+      continue;
+    }
+
+    if (line.startsWith("### ")) {
+      if (current) {
+        sections.push(current);
+      }
+      current = {
+        title: line.replace(/^###\s+/, ""),
+        lines: [],
+      };
+      continue;
+    }
+
+    if (current) {
+      current.lines.push(line);
+    } else if (line.trim()) {
+      introLines.push(line);
+    }
+  }
+
+  if (current) {
+    sections.push(current);
+  }
+
+  return {
+    title: title ?? "Atomix Agent Result",
+    intro: introLines.join("\n").trim(),
+    sections,
+  };
+}
+
+function CopilotSectionContent({ lines }: { lines: string[] }) {
+  const cleanLines = lines.filter((line) => line.trim());
+  const bullets = cleanLines.filter((line) => line.trim().startsWith("- "));
+  const paragraphs = cleanLines.filter((line) => !line.trim().startsWith("- "));
+
+  return (
+    <div className="space-y-3">
+      {paragraphs.map((line, index) => (
+        <p key={`${line}-${index}`} className="text-sm leading-6 text-slate-300">
+          {line}
+        </p>
+      ))}
+      {bullets.length > 0 && (
+        <ul className="space-y-2">
+          {bullets.map((line, index) => (
+            <li
+              key={`${line}-${index}`}
+              className="flex gap-2 rounded-xl border border-slate-800/80 bg-slate-950/55 px-3 py-2 text-sm leading-6 text-slate-200"
+            >
+              <CheckCircle2 className="mt-1 shrink-0 text-cyan-300" size={15} />
+              <span>{line.replace(/^-\s+/, "")}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function FormattedCopilotResponse({ response }: { response: string }) {
+  const parsed = parseCopilotSections(response);
+  const primarySections = parsed.sections.filter(
+    (section) => !["Agent Trace", "Synthesis Status", "Tool Coverage", "Live MCP Observations"].includes(section.title),
+  );
+  const evidenceSections = parsed.sections.filter((section) =>
+    ["Tool Coverage", "Live MCP Observations", "Synthesis Status"].includes(section.title),
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">
+          {parsed.title}
+        </p>
+        {parsed.intro && (
+          <p className="mt-2 text-sm leading-6 text-slate-200">{parsed.intro}</p>
+        )}
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {primarySections.map((section) => (
+          <article
+            key={section.title}
+            className={`rounded-2xl border p-4 ${sectionTone(section.title)}`}
+          >
+            <h3 className="mb-3 text-base font-black text-white">
+              {section.title}
+            </h3>
+            <CopilotSectionContent lines={section.lines} />
+          </article>
+        ))}
+      </div>
+
+      {evidenceSections.length > 0 && (
+        <details className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+          <summary className="cursor-pointer list-none text-sm font-bold text-slate-300">
+            Evidence and synthesis details
+          </summary>
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {evidenceSections.map((section) => (
+              <div
+                key={section.title}
+                className={`rounded-2xl border p-4 ${sectionTone(section.title)}`}
+              >
+                <h4 className="mb-3 text-sm font-black text-white">
+                  {section.title}
+                </h4>
+                <CopilotSectionContent lines={section.lines} />
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
 
 function CollapseButton({
   open,
@@ -364,8 +505,8 @@ export default function CopilotChat({
               onClick={() => toggleSection("response")}
             />
             {openSections.response && (
-              <div className="max-h-[440px] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-slate-800 bg-slate-950/80 p-5 text-sm leading-7 text-slate-200">
-                {response}
+              <div className="max-h-[560px] overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950/80 p-5">
+                <FormattedCopilotResponse response={response} />
               </div>
             )}
           </div>

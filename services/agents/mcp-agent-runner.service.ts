@@ -69,7 +69,10 @@ function planMcpToolCalls(question: string): PlannedToolCall[] {
     normalized.includes("sla") ||
     normalized.includes("overdue") ||
     normalized.includes("extension") ||
-    normalized.includes("red")
+    normalized.includes("red") ||
+    normalized.includes("allocation") ||
+    normalized.includes("assignment") ||
+    normalized.includes("reviewer")
   ) {
     calls.push({
       toolName: "atomix.dashboard_summary",
@@ -242,7 +245,7 @@ ${traceMarkdown(trace) || "- No tool calls were attempted."}
 
 ### Synthesis Status
 - MCP tools completed and returned live data.
-- Narrative was generated from deterministic MCP observations because the LLM synthesis step returned: ${errorMessage}
+- Deterministic answer used because local LLM synthesis timed out or was unavailable: ${errorMessage}
 - Completed MCP calls: ${completed.length}
 - Failed MCP calls: ${failed.length}`;
 }
@@ -348,7 +351,7 @@ function buildGroundedSynthesis(
 
   return `## Atomix Agent Result
 
-I used the MCP tool loop successfully and grounded this answer in live Atomix data.
+MCP responded successfully. This answer is grounded in live Atomix tool data.
 
 ### Request
 ${question}
