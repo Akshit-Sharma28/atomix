@@ -82,6 +82,7 @@ const tools: ToolDefinition[] = [
       status: stringSchema("Optional review status."),
       type: stringSchema("Optional review type."),
       query: stringSchema("Optional search text."),
+      overdue: booleanSchema("When true, return only overdue active reviews."),
       limit: numberSchema("Maximum reviews to return. Default 10, max 25."),
     }),
   },
@@ -523,6 +524,7 @@ async function listReviews(args: Record<string, unknown>) {
   const projectId = stringArg(args, "projectId");
   const status = stringArg(args, "status");
   const type = stringArg(args, "type");
+  const overdue = booleanArg(args, "overdue");
   const limit = limitArg(args);
 
   return prisma.securityReview.findMany({
@@ -530,6 +532,16 @@ async function listReviews(args: Record<string, unknown>) {
       ...(projectId ? { projectId } : {}),
       ...(status ? { status } : {}),
       ...(type ? { type } : {}),
+      ...(overdue
+        ? {
+            dueDate: {
+              lt: new Date(),
+            },
+            status: {
+              notIn: ["Completed", "Closed", "Cancelled"],
+            },
+          }
+        : {}),
       ...(query
         ? {
             OR: [
@@ -541,7 +553,14 @@ async function listReviews(args: Record<string, unknown>) {
           }
         : {}),
     },
-    include: {
+    select: {
+      id: true,
+      srId: true,
+      title: true,
+      type: true,
+      status: true,
+      dueDate: true,
+      updatedAt: true,
       project: {
         select: {
           id: true,
@@ -550,8 +569,26 @@ async function listReviews(args: Record<string, unknown>) {
           client: true,
         },
       },
-      assignments: true,
-      workstreams: true,
+      assignments: {
+        select: {
+          id: true,
+          status: true,
+          allocatedHours: true,
+          user: {
+            select: {
+              name: true,
+              role: true,
+            },
+          },
+        },
+      },
+      workstreams: {
+        select: {
+          id: true,
+          type: true,
+          status: true,
+        },
+      },
       _count: {
         select: {
           findings: true,
@@ -559,9 +596,13 @@ async function listReviews(args: Record<string, unknown>) {
         },
       },
     },
-    orderBy: {
-      updatedAt: "desc",
-    },
+    orderBy: overdue
+      ? {
+          dueDate: "asc",
+        }
+      : {
+          updatedAt: "desc",
+        },
     take: limit,
   });
 }
@@ -952,6 +993,13 @@ function numberSchema(description: string) {
   };
 }
 
+function booleanSchema(description: string) {
+  return {
+    type: "boolean",
+    description,
+  };
+}
+
 function paramsObject(params: unknown) {
   return recordFromUnknown(params);
 }
@@ -984,6 +1032,20 @@ function requiredStringArg(args: Record<string, unknown>, key: string) {
   }
 
   return value;
+}
+
+function booleanArg(args: Record<string, unknown>, key: string) {
+  const value = args[key];
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return value.toLowerCase() === "true";
+  }
+
+  return false;
 }
 
 function limitArg(args: Record<string, unknown>) {

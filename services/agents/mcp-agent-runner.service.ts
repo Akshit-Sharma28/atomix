@@ -109,7 +109,12 @@ function planMcpToolCalls(question: string): PlannedToolCall[] {
         : "atomix.list_reviews",
       arguments: idOrRecord?.startsWith("SR-")
         ? { idOrSr: idOrRecord }
-        : { limit },
+        : {
+            limit: Math.min(limit, 8),
+            ...(normalized.includes("overdue") || normalized.includes("sla")
+              ? { overdue: true }
+              : {}),
+          },
       reason: "Inspect active security review context and ownership signals.",
     });
   }
