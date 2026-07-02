@@ -5,6 +5,7 @@ export const maxDuration = 20;
 const allowedMethods = new Set([
   "initialize",
   "tools/list",
+  "tools/call",
   "resources/list",
   "prompts/list",
   "ping",
@@ -53,6 +54,20 @@ function parseHeaders(headersJson: unknown) {
   );
 }
 
+function parseToolArguments(toolArgumentsJson: unknown) {
+  if (!toolArgumentsJson || typeof toolArgumentsJson !== "string") {
+    return {};
+  }
+
+  const parsed = JSON.parse(toolArgumentsJson) as unknown;
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Tool arguments must be a JSON object.");
+  }
+
+  return parsed as Record<string, unknown>;
+}
+
 export async function POST(req: Request) {
   try {
     await requireAccess([
@@ -68,6 +83,7 @@ export async function POST(req: Request) {
     const method = String(body.method ?? "tools/list").trim();
     const authHeaderName = String(body.authHeaderName ?? "").trim();
     const authHeaderValue = String(body.authHeaderValue ?? "").trim();
+    const toolName = String(body.toolName ?? "").trim();
     const requestId = Number.isFinite(Number(body.requestId))
       ? Number(body.requestId)
       : Date.now();
@@ -98,6 +114,12 @@ export async function POST(req: Request) {
     }
 
     const extraHeaders = parseHeaders(body.extraHeadersJson);
+    const toolArguments = parseToolArguments(body.toolArgumentsJson);
+
+    if (method === "tools/call" && !toolName) {
+      return Response.json({ ok: false, error: "Tool name is required for tools/call." }, { status: 400 });
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
     const startedAt = Date.now();
@@ -116,6 +138,16 @@ export async function POST(req: Request) {
               },
             },
           }
+        : method === "tools/call"
+          ? {
+              jsonrpc: "2.0",
+              id: requestId,
+              method,
+              params: {
+                name: toolName,
+                arguments: toolArguments,
+              },
+            }
         : {
             jsonrpc: "2.0",
             id: requestId,

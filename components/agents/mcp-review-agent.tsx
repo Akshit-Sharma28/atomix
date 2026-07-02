@@ -48,9 +48,33 @@ const tabs = ["Overview", "Inspector", "Exports", "Draft"] as const;
 const inspectorMethods = [
   "initialize",
   "tools/list",
+  "tools/call",
   "resources/list",
   "prompts/list",
   "ping",
+];
+
+const atomixToolPresets = [
+  {
+    name: "atomix.dashboard_summary",
+    argumentsJson: "{}",
+  },
+  {
+    name: "atomix.search_projects",
+    argumentsJson: '{\n  "query": "",\n  "limit": 10\n}',
+  },
+  {
+    name: "atomix.list_reviews",
+    argumentsJson: '{\n  "limit": 10\n}',
+  },
+  {
+    name: "atomix.list_findings",
+    argumentsJson: '{\n  "severity": "Critical",\n  "limit": 10\n}',
+  },
+  {
+    name: "atomix.get_mcp_controls",
+    argumentsJson: '{\n  "transport": "Streamable HTTP"\n}',
+  },
 ];
 
 const defaultContext: McpReviewContext = {
@@ -78,6 +102,8 @@ export default function McpReviewAgent() {
   const [authHeaderName, setAuthHeaderName] = useState("Authorization");
   const [authHeaderValue, setAuthHeaderValue] = useState("");
   const [extraHeadersJson, setExtraHeadersJson] = useState("");
+  const [toolName, setToolName] = useState("atomix.dashboard_summary");
+  const [toolArgumentsJson, setToolArgumentsJson] = useState("{}");
   const [inspectorLoading, setInspectorLoading] = useState(false);
   const [inspectorResult, setInspectorResult] =
     useState<Record<string, unknown> | null>(null);
@@ -137,6 +163,8 @@ export default function McpReviewAgent() {
           authHeaderName,
           authHeaderValue,
           extraHeadersJson,
+          toolName,
+          toolArgumentsJson,
         }),
       });
       const data = (await response.json()) as Record<string, unknown>;
@@ -299,6 +327,10 @@ export default function McpReviewAgent() {
           setAuthHeaderValue={setAuthHeaderValue}
           extraHeadersJson={extraHeadersJson}
           setExtraHeadersJson={setExtraHeadersJson}
+          toolName={toolName}
+          setToolName={setToolName}
+          toolArgumentsJson={toolArgumentsJson}
+          setToolArgumentsJson={setToolArgumentsJson}
           loading={inspectorLoading}
           result={inspectorResult}
           onRun={runInspector}
@@ -480,6 +512,10 @@ function InspectorPanel({
   setAuthHeaderValue,
   extraHeadersJson,
   setExtraHeadersJson,
+  toolName,
+  setToolName,
+  toolArgumentsJson,
+  setToolArgumentsJson,
   loading,
   result,
   onRun,
@@ -494,6 +530,10 @@ function InspectorPanel({
   setAuthHeaderValue: (value: string) => void;
   extraHeadersJson: string;
   setExtraHeadersJson: (value: string) => void;
+  toolName: string;
+  setToolName: (value: string) => void;
+  toolArgumentsJson: string;
+  setToolArgumentsJson: (value: string) => void;
   loading: boolean;
   result: Record<string, unknown> | null;
   onRun: () => void;
@@ -506,6 +546,16 @@ function InspectorPanel({
 
   function useCurrentDeployment() {
     setTargetUrl(`${window.location.origin}/api/mcp`);
+  }
+
+  function useToolPreset(presetName: string) {
+    const preset = atomixToolPresets.find((item) => item.name === presetName);
+
+    setToolName(presetName);
+
+    if (preset) {
+      setToolArgumentsJson(preset.argumentsJson);
+    }
   }
 
   return (
@@ -578,6 +628,34 @@ function InspectorPanel({
             value={method}
             onChange={setMethod}
           />
+          {method === "tools/call" && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+              <div className="mb-4 grid gap-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <SelectField
+                  label="Atomix Tool"
+                  options={atomixToolPresets.map((preset) => preset.name)}
+                  value={toolName}
+                  onChange={useToolPreset}
+                />
+                <TextField
+                  label="Custom Tool Name"
+                  value={toolName}
+                  onChange={setToolName}
+                />
+              </div>
+              <label className="block">
+                <span className="mb-2 block text-sm text-slate-400">
+                  Tool Arguments JSON
+                </span>
+                <textarea
+                  value={toolArgumentsJson}
+                  onChange={(event) => setToolArgumentsJson(event.target.value)}
+                  rows={5}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 font-mono text-sm text-white"
+                />
+              </label>
+            </div>
+          )}
           <div className="grid gap-3 md:grid-cols-2">
             <TextField
               label="Auth Header Name"
@@ -653,7 +731,7 @@ function InspectorPanel({
         <pre className="max-h-[31rem] overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-800 bg-black/60 p-4 text-xs leading-5 text-slate-200">
           {result
             ? JSON.stringify(result, null, 2)
-            : "Run initialize, tools/list, resources/list, prompts/list, or ping to collect MCP evidence."}
+            : "Run initialize, tools/list, tools/call, resources/list, prompts/list, or ping to collect MCP evidence."}
         </pre>
       </div>
     </div>
