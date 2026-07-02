@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
+import PendingSubmitButton from "@/components/ui/pending-submit-button";
 import { canAccess } from "@/services/users/access.service";
 import { getRetestGovernanceDashboard } from "@/services/dashboard/retest-governance.service";
 import {
@@ -362,9 +363,12 @@ export default async function RetestGovernancePage({
                 placeholder="Fix readiness, access notes, controls, retest scope, requested timeline..."
                 className="mt-3 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500"
               />
-              <button className="mt-4 w-full rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 sm:w-auto">
+              <PendingSubmitButton
+                pendingLabel="Creating request..."
+                className="mt-4 w-full rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 sm:w-auto"
+              >
                 Create request
-              </button>
+              </PendingSubmitButton>
             </form>
           )}
 
@@ -418,9 +422,12 @@ export default async function RetestGovernancePage({
                   className="min-w-0 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
                 />
               </div>
-              <button className="mt-4 w-full rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 sm:w-auto">
+              <PendingSubmitButton
+                pendingLabel="Assigning retester..."
+                className="mt-4 w-full rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 sm:w-auto"
+              >
                 Assign retester
-              </button>
+              </PendingSubmitButton>
             </form>
           ) : (
             <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">

@@ -1,26 +1,39 @@
 import { prisma } from "@/lib/prisma";
 
-const retestStatuses = [
-  "Not Assigned",
-  "In Progress",
-  "Cancelled",
-  "Completed",
-  "Overdue",
-  "Extension Needed",
-];
-
 function daysFromNow(days: number) {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return date;
 }
 
-function statusForIndex(index: number, dueDate: Date) {
-  if (dueDate.getTime() < Date.now()) {
+function displayStatus(review: {
+  status: string;
+  dueDate: Date | null;
+  completedAt: Date | null;
+  cancelledAt: Date | null;
+  assignments: unknown[];
+}) {
+  if (review.completedAt || review.status === "Completed") {
+    return "Completed";
+  }
+
+  if (review.cancelledAt || review.status === "Cancelled") {
+    return "Cancelled";
+  }
+
+  if (review.status === "Extension Needed") {
+    return "Extension Needed";
+  }
+
+  if (review.dueDate && review.dueDate.getTime() < Date.now()) {
     return "Overdue";
   }
 
-  return retestStatuses[index % retestStatuses.length];
+  if (review.assignments.length === 0 || review.status === "Requested") {
+    return "Not Assigned";
+  }
+
+  return "In Progress";
 }
 
 function formatReviewer(profile?: {
@@ -31,32 +44,103 @@ function formatReviewer(profile?: {
   return profile?.user.name ?? "Unassigned";
 }
 
+function activityValue(notes: string | null | undefined, label: string) {
+  if (!notes) {
+    return "";
+  }
+
+  const match = notes.match(new RegExp(`${label}: ([^|]+)`, "i"));
+  return match?.[1]?.trim() ?? "";
+}
+
+function reviewTypeLabel(review: {
+  title: string;
+  type: string;
+  workstreams: {
+    type: string;
+  }[];
+  findings: {
+    source: string;
+  }[];
+  activities: {
+    notes: string | null;
+  }[];
+}) {
+  const text = [
+    review.title,
+    review.type,
+    ...review.workstreams.map((workstream) => workstream.type),
+    ...review.findings.map((finding) => finding.source),
+    ...review.activities.map((activity) => activity.notes ?? ""),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (text.includes("llm") && text.includes("web")) {
+    return "Web + LLM";
+  }
+
+  if (text.includes("llm")) {
+    return "LLM";
+  }
+
+  if (text.includes("api")) {
+    return "API";
+  }
+
+  if (text.includes("thick") || text.includes("client")) {
+    return "Thick Client";
+  }
+
+  return "Web";
+}
+
 export async function getRetestGovernanceDashboard() {
-  const [projects, reviewerProfiles] = await Promise.all([
-    prisma.project.findMany({
-      include: {
-        findings: {
-          where: {
-            status: {
-              not: "Closed",
+  const [reviews, reviewerProfiles] = await Promise.all([
+    prisma.securityReview.findMany({
+      where: {
+        OR: [
+          {
+            type: "RETEST",
+          },
+          {
+            activities: {
+              some: {
+                action: {
+                  in: ["Retest requested", "Infosec review requested"],
+                },
+              },
             },
+          },
+        ],
+      },
+      include: {
+        project: true,
+        assignments: {
+          include: {
+            reviewerProfile: {
+              include: {
+                user: true,
+              },
+            },
+            user: true,
           },
           orderBy: {
             updatedAt: "desc",
           },
         },
-        reviews: {
-          include: {
-            assignments: {
-              include: {
-                reviewerProfile: {
-                  include: {
-                    user: true,
-                  },
-                },
-              },
-            },
+        findings: {
+          orderBy: {
+            updatedAt: "desc",
           },
+        },
+        workstreams: true,
+        activities: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+        extensions: {
           orderBy: {
             updatedAt: "desc",
           },
@@ -65,7 +149,7 @@ export async function getRetestGovernanceDashboard() {
       orderBy: {
         updatedAt: "desc",
       },
-      take: 10,
+      take: 50,
     }),
     prisma.reviewerProfile.findMany({
       include: {
@@ -89,58 +173,60 @@ export async function getRetestGovernanceDashboard() {
     profile.availability.toLowerCase().includes("available"),
   );
 
-  const requests = projects.map((project, index) => {
-    const review = project.reviews[0];
-    const initialAssignment = review?.assignments[0];
+  const requests = reviews.map((review, index) => {
+    const latestRequestActivity = review.activities.find((activity) =>
+      ["Retest requested", "Infosec review requested"].includes(activity.action),
+    );
+    const latestAssignment = review.assignments[0];
+    const initialAssignment = review.assignments.at(-1);
     const assignedReviewer =
+      latestAssignment?.reviewerProfile ??
       availableReviewers[index % Math.max(availableReviewers.length, 1)] ??
       reviewerProfiles[index % Math.max(reviewerProfiles.length, 1)];
-    const dueDate = daysFromNow(index % 4 === 0 ? -2 : 3 + index);
-    const status = statusForIndex(index, dueDate);
+    const dueDate = review.dueDate ?? daysFromNow(5 + index);
+    const status = displayStatus(review);
+    const notes = latestRequestActivity?.notes;
+    const parsedControlsCount = Number(
+      activityValue(notes, "Controls in scope"),
+    );
     const controlsCount = Math.max(
       1,
-      Math.min(12, project.findings.length + 2 + (index % 5)),
+      Number.isFinite(parsedControlsCount) && parsedControlsCount > 0
+        ? parsedControlsCount
+        : Math.min(12, review.findings.length + review.workstreams.length + 1),
     );
-    const type =
-      index % 5 === 0
-        ? "Web + LLM"
-        : index % 4 === 0
-          ? "Thick Client"
-          : index % 3 === 0
-            ? "LLM"
-            : index % 2 === 0
-              ? "API"
-              : "Web";
-    const priorIterations = index % 3;
+    const type = reviewTypeLabel(review);
+    const priorIterations = Math.max(0, review.assignments.length - 1);
 
     return {
-      id: project.id,
-      projectId: project.id,
-      project: project.name,
-      client: project.client ?? "Internal",
-      sprId: project.sprId ?? "SPR pending",
-      srId: review?.srId ?? review?.title ?? "SR pending",
-      chargeCode: `CC-${String(index + 4240).padStart(5, "0")}`,
+      id: review.id,
+      projectId: review.projectId,
+      project: review.project.name,
+      client: review.project.client ?? "Internal",
+      sprId: review.project.sprId ?? "SPR pending",
+      srId: review.srId ?? review.title,
+      chargeCode:
+        activityValue(notes, "Charge") ||
+        `CC-${String(index + 4240).padStart(5, "0")}`,
       type,
       scope:
-        type === "Web + LLM"
-          ? "Retest web controls, LLM FEAD controls, and auth/session fixes."
-          : type === "API"
-            ? "Retest API auth, JWT, rate limiting, and input validation fixes."
-            : type === "Thick Client"
-              ? "Retest signed binary, local storage, and anti-tamper fixes."
-              : "Retest remediated web findings and evidence.",
-      requestedAt: daysFromNow(-index - 1),
+        activityValue(notes, "Scope") ||
+        review.workstreams.map((workstream) => workstream.type).join(", ") ||
+        review.title,
+      requestedAt: review.createdAt,
       dueDate,
       controlsCount,
-      controlsSummary: project.findings
+      controlsSummary: review.findings
         .slice(0, 3)
         .map((finding) => finding.title)
         .join(", ") || "Controls pending evidence mapping",
-      accessReady: index % 3 !== 0,
-      fixesReady: index % 2 === 0,
+      accessReady: status !== "Not Assigned" || index % 3 !== 0,
+      fixesReady: status !== "Not Assigned" || index % 2 === 0,
       status,
-      extensionNeeded: status === "Extension Needed" || status === "Overdue",
+      extensionNeeded:
+        review.extensions.some((extension) => extension.status === "Requested") ||
+        status === "Extension Needed" ||
+        status === "Overdue",
       assignedReviewer: formatReviewer(assignedReviewer),
       initialReviewer: formatReviewer(
         initialAssignment?.reviewerProfile,
@@ -148,21 +234,16 @@ export async function getRetestGovernanceDashboard() {
       priorIterations,
       priorRetesters:
         priorIterations > 0
-          ? Array.from({
-              length: priorIterations,
-            }).map((_, iterationIndex) =>
-              formatReviewer(
-                reviewerProfiles[
-                  (index + iterationIndex + 1) %
-                    Math.max(reviewerProfiles.length, 1)
-                ],
-              ),
-            )
+          ? review.assignments
+              .slice(1)
+              .map((assignment) => formatReviewer(assignment.reviewerProfile))
           : [],
       recommendation:
-        index % 3 === 0
+        status === "Not Assigned" && index % 3 === 0
           ? "Wait for project team to confirm fixes and access before assigning."
-          : `Assign to ${formatReviewer(assignedReviewer)} based on current availability.`,
+          : status === "Not Assigned"
+            ? `Assign to ${formatReviewer(assignedReviewer)} based on current availability.`
+            : `Continue retest with ${formatReviewer(assignedReviewer)} and monitor due date.`,
     };
   });
 
