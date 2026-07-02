@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   Bot,
+  ChevronDown,
   Clipboard,
   GitBranch,
   FileText,
@@ -44,6 +45,48 @@ type AgentTraceStep = {
   summary?: string;
 };
 
+type SectionKey = "prompts" | "compose" | "trace" | "response";
+
+function CollapseButton({
+  open,
+  title,
+  subtitle,
+  badge,
+  onClick,
+}: {
+  open: boolean;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-left transition hover:border-cyan-400/30"
+    >
+      <span>
+        <span className="block font-bold text-white">{title}</span>
+        {subtitle && (
+          <span className="mt-1 block text-xs text-slate-500">{subtitle}</span>
+        )}
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        {badge && (
+          <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+            {badge}
+          </span>
+        )}
+        <ChevronDown
+          size={18}
+          className={`text-slate-400 transition ${open ? "rotate-180" : ""}`}
+        />
+      </span>
+    </button>
+  );
+}
+
 export default function CopilotChat({
   initialPrompt = "",
 }: {
@@ -55,11 +98,31 @@ export default function CopilotChat({
   const [agentTrace, setAgentTrace] = useState<AgentTraceStep[]>([]);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
+    prompts: true,
+    compose: true,
+    trace: false,
+    response: true,
+  });
+
+  function toggleSection(section: SectionKey) {
+    setOpenSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  }
 
   async function ask() {
     if (!question.trim()) return;
 
     setLoading(true);
+    setOpenSections((current) => ({
+      ...current,
+      prompts: false,
+      compose: true,
+      response: true,
+      trace: false,
+    }));
 
     try {
       const res = await fetch("/api/copilot", {
@@ -115,72 +178,100 @@ export default function CopilotChat({
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-3">
-          {promptGroups.map((group) => (
-            <div
-              key={group.title}
-              className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/30"
-            >
-              <p className="mb-3 flex items-center gap-2 font-bold text-white">
-                <Wand2 size={16} className="text-cyan-300" />
-                {group.title}
-              </p>
-              <div className="space-y-2">
-                {group.prompts.map((prompt) => (
+        <div className="space-y-3">
+          <CollapseButton
+            open={openSections.prompts}
+            title="Prompt library"
+            subtitle="Use a starter prompt, then collapse it to keep the working area short."
+            badge={`${promptGroups.reduce((total, group) => total + group.prompts.length, 0)} prompts`}
+            onClick={() => toggleSection("prompts")}
+          />
+          {openSections.prompts && (
+            <div className="grid gap-3 lg:grid-cols-3">
+              {promptGroups.map((group) => (
+                <div
+                  key={group.title}
+                  className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/30"
+                >
+                  <p className="mb-3 flex items-center gap-2 font-bold text-white">
+                    <Wand2 size={16} className="text-cyan-300" />
+                    {group.title}
+                  </p>
+                  <div className="space-y-2">
+                    {group.prompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => {
+                          setQuestion(prompt);
+                          setOpenSections((current) => ({
+                            ...current,
+                            compose: true,
+                          }));
+                        }}
+                        className="w-full rounded-xl bg-slate-800/80 px-3 py-2 text-left text-sm leading-5 text-slate-300 transition hover:bg-cyan-400/10 hover:text-cyan-100"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 space-y-3">
+          <CollapseButton
+            open={openSections.compose}
+            title="Ask Copilot"
+            subtitle="Ground a request in reviewer, SLA, evidence, or executive context."
+            badge={question.trim() ? "Draft ready" : "Empty"}
+            onClick={() => toggleSection("compose")}
+          />
+          {openSections.compose && (
+            <div className="rounded-3xl border border-slate-800 bg-slate-950/80 p-4">
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                {[
+                  "Reviewer allocation",
+                  "SLA / extensions",
+                  "FEAD evidence",
+                  "Interview governance",
+                  "Executive summary",
+                ].map((chip) => (
                   <button
-                    key={prompt}
-                    onClick={() => setQuestion(prompt)}
-                    className="w-full rounded-xl bg-slate-800/80 px-3 py-2 text-left text-sm leading-5 text-slate-300 transition hover:bg-cyan-400/10 hover:text-cyan-100"
+                    key={chip}
+                    type="button"
+                    onClick={() => setQuestion(`${chip}: summarize current risks and next actions.`)}
+                    className="rounded-full border border-slate-800 px-3 py-1 text-slate-400 hover:border-cyan-400/30 hover:text-cyan-200"
                   >
-                    {prompt}
+                    {chip}
                   </button>
                 ))}
               </div>
+              <textarea
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                rows={4}
+                placeholder="Ask Atomix to summarize governance risk, draft a call brief, check reviewer gaps, or create a QA checklist..."
+                className="w-full resize-y bg-transparent p-2 text-base leading-7 text-white outline-none placeholder:text-slate-600"
+              />
+
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-4">
+                <p className="text-sm text-slate-500">
+                  Tip: mention role, SPR/SR, evidence type, pool, risk level, or
+                  time period for sharper answers.
+                </p>
+                <button
+                  onClick={ask}
+                  disabled={loading}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3 font-bold text-slate-950 disabled:opacity-60"
+                >
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                  {loading ? "Thinking..." : "Ask Copilot"}
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-
-        <div className="mt-5 rounded-3xl border border-slate-800 bg-slate-950/80 p-4">
-          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            {[
-              "Reviewer allocation",
-              "SLA / extensions",
-              "FEAD evidence",
-              "Interview governance",
-              "Executive summary",
-            ].map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => setQuestion(`${chip}: summarize current risks and next actions.`)}
-                className="rounded-full border border-slate-800 px-3 py-1 text-slate-400 hover:border-cyan-400/30 hover:text-cyan-200"
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-          <textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            rows={7}
-            placeholder="Ask Atomix to summarize governance risk, draft a call brief, check reviewer gaps, or create a QA checklist..."
-            className="w-full resize-none bg-transparent p-2 text-lg leading-8 text-white outline-none placeholder:text-slate-600"
-          />
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-4">
-            <p className="text-sm text-slate-500">
-              Tip: mention role, SPR/SR, evidence type, pool, risk level, or
-              time period for sharper answers.
-            </p>
-            <button
-              onClick={ask}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3 font-bold text-slate-950 disabled:opacity-60"
-            >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
-              {loading ? "Thinking..." : "Ask Copilot"}
-            </button>
-          </div>
+          )}
         </div>
       </section>
 
@@ -225,36 +316,58 @@ export default function CopilotChat({
             )}
           </div>
           {agentTrace.length > 0 && (
-            <div className="mb-4 rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.04] p-4">
-              <p className="mb-3 flex items-center gap-2 text-sm font-bold text-cyan-100">
-                <GitBranch size={15} />
-                Agent Trace
-              </p>
-              <div className="space-y-2">
-                {agentTrace.map((step, index) => (
-                  <div
-                    key={`${step.toolName ?? "trace"}-${index}`}
-                    className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs leading-5 text-slate-300"
-                  >
-                    <span className="font-bold text-cyan-200">
-                      Step {step.step ?? index + 1}: {step.toolName ?? "tool"}
-                    </span>
-                    {typeof step.elapsedMs === "number" && (
-                      <span className="text-slate-500">
-                        {" "}
-                        - {step.elapsedMs}ms
-                      </span>
-                    )}
-                    <p className="mt-1 text-slate-400">
-                      {step.summary ?? step.status ?? "Completed"}
-                    </p>
+            <div className="mb-4 space-y-3">
+              <CollapseButton
+                open={openSections.trace}
+                title="Agent trace"
+                subtitle="Show deterministic MCP tool calls used to ground the answer."
+                badge={`${agentTrace.length} steps`}
+                onClick={() => toggleSection("trace")}
+              />
+              {openSections.trace && (
+                <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.04] p-4">
+                  <p className="mb-3 flex items-center gap-2 text-sm font-bold text-cyan-100">
+                    <GitBranch size={15} />
+                    MCP execution path
+                  </p>
+                  <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                    {agentTrace.map((step, index) => (
+                      <div
+                        key={`${step.toolName ?? "trace"}-${index}`}
+                        className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs leading-5 text-slate-300"
+                      >
+                        <span className="font-bold text-cyan-200">
+                          Step {step.step ?? index + 1}: {step.toolName ?? "tool"}
+                        </span>
+                        {typeof step.elapsedMs === "number" && (
+                          <span className="text-slate-500">
+                            {" "}
+                            - {step.elapsedMs}ms
+                          </span>
+                        )}
+                        <p className="mt-1 text-slate-400">
+                          {step.summary ?? step.status ?? "Completed"}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
-          <div className="max-h-[520px] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-slate-800 bg-slate-950/80 p-5 text-sm leading-7 text-slate-200">
-            {response}
+          <div className="space-y-3">
+            <CollapseButton
+              open={openSections.response}
+              title="Draft response"
+              subtitle="Keep this open for demo narration, or collapse it to return to the command area."
+              badge={`${response.length.toLocaleString()} chars`}
+              onClick={() => toggleSection("response")}
+            />
+            {openSections.response && (
+              <div className="max-h-[440px] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-slate-800 bg-slate-950/80 p-5 text-sm leading-7 text-slate-200">
+                {response}
+              </div>
+            )}
           </div>
         </section>
       )}
