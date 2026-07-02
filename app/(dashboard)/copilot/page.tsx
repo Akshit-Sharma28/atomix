@@ -17,7 +17,7 @@ export default async function Page({
   const initialPrompt = params.prompt ?? "";
 
   return (
-    <div className="mx-auto max-w-7xl p-8">
+    <div className="mx-auto max-w-[96rem] p-8">
       <div className="mb-8 overflow-hidden rounded-[2rem] border border-cyan-500/20 bg-cyan-500/[0.04] p-6 shadow-2xl shadow-cyan-950/10">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="flex items-start gap-4">
@@ -76,7 +76,7 @@ export default async function Page({
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <CopilotChat initialPrompt={initialPrompt} />
         <History history={history} />
       </div>

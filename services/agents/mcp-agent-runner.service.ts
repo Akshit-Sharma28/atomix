@@ -323,11 +323,70 @@ function isOverdueReview(value: unknown) {
   );
 }
 
+function isMcpExplainerQuestion(question: string) {
+  const normalized = normalizeQuestion(question);
+
+  return (
+    normalized.includes("what is mcp") ||
+    normalized.includes("mcp security") ||
+    normalized.includes("explain mcp") ||
+    normalized.includes("model context protocol")
+  );
+}
+
+function mcpExplainerAnswer(question: string, observations: string[], trace: AgentTraceStep[]) {
+  const parsed = observations.map(parseObservation);
+  const controls = asRecord(
+    parsed.find((item) => item.toolName === "atomix.get_mcp_controls")?.data,
+  );
+  const controlCount = numberField(controls, "count") ?? 10;
+
+  return `## Atomix Agent Result
+
+MCP responded successfully. Here is the MCP security explanation in plain language.
+
+### Request
+${question}
+
+### Answer
+MCP Security means securing the Model Context Protocol layer that lets an AI agent discover tools, read resources, retrieve prompts, and call actions in connected systems. In Atomix, MCP is what allows the Copilot to move from a prompt-only assistant to a tool-using agent that can inspect live reviews, findings, evidence, and governance signals.
+
+### Why It Matters
+- MCP gives agents real capabilities, so the security risk moves from only “bad prompt output” to “bad tool action, data access, or workflow decision.”
+- The main risks are excessive tool permissions, direct tool invocation, prompt injection through resources/tool output, secret leakage, SSRF/network abuse, destructive actions, and weak audit logging.
+- MCP security is especially important when tools can read confidential review evidence, assign owners, create retest requests, export documents, or query internal systems.
+
+### Atomix MCP Controls
+- Atomix currently tracks ${controlCount} MCP security controls for Streamable HTTP, STDIO, resources, prompts, auth, token handling, sampling, elicitation, tool abuse, and evidence capture.
+- The MCP Review Agent can test endpoints, capture JSON-RPC evidence, generate FEAD-style review packs, and expose a prompt library for MCP abuse cases.
+
+### Recommended Next Actions
+- Inventory tools, resources, prompts, roots, sampling, and elicitation before enabling an agent.
+- Enforce RBAC and project/SR scoping on every tool call, not just in the UI.
+- Keep destructive/write actions human-approved with audit logs and rollback notes.
+- Treat MCP tool outputs and resources as untrusted input; sanitize them before LLM synthesis.
+- Store MCP probe results and review evidence in the Document Vault/Data Lake for auditability.
+
+### Live MCP Observations
+${observations.length > 0
+  ? observations.map((observation) => `- ${observationHeadline(observation)}`).join("\n")
+  : "- No live MCP observations were returned."}
+
+### Tool Coverage
+- Planned MCP calls: ${trace.length}
+- Successful MCP calls: ${trace.filter((step) => step.status === "completed").length}
+- Failed MCP calls: ${trace.filter((step) => step.status === "failed").length}`;
+}
+
 function buildGroundedSynthesis(
   question: string,
   observations: string[],
   trace: AgentTraceStep[],
 ) {
+  if (isMcpExplainerQuestion(question)) {
+    return mcpExplainerAnswer(question, observations, trace);
+  }
+
   const parsed = observations.map(parseObservation);
   const dashboard = asRecord(
     parsed.find((item) => item.toolName === "atomix.dashboard_summary")?.data,

@@ -6,7 +6,6 @@ import {
   ChevronDown,
   Clipboard,
   CheckCircle2,
-  GitBranch,
   FileText,
   Loader2,
   Send,
@@ -46,19 +45,7 @@ type AgentTraceStep = {
   summary?: string;
 };
 
-type SectionKey = "prompts" | "compose" | "trace" | "response";
-
-const highlightedSections = new Map([
-  ["Executive Signal", "border-cyan-400/20 bg-cyan-400/[0.06]"],
-  ["Critical Risks", "border-red-400/20 bg-red-400/[0.05]"],
-  ["Overdue Governance Actions", "border-amber-400/20 bg-amber-400/[0.06]"],
-  ["Recommended Next Actions", "border-emerald-400/20 bg-emerald-400/[0.06]"],
-  ["Synthesis Status", "border-violet-400/20 bg-violet-400/[0.05]"],
-]);
-
-function sectionTone(title: string) {
-  return highlightedSections.get(title) ?? "border-slate-800 bg-slate-950/70";
-}
+type SectionKey = "prompts" | "compose";
 
 function parseCopilotSections(markdown: string) {
   const lines = markdown.trim().split("\n");
@@ -107,9 +94,9 @@ function CopilotSectionContent({ lines }: { lines: string[] }) {
   const paragraphs = cleanLines.filter((line) => !line.trim().startsWith("- "));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {paragraphs.map((line, index) => (
-        <p key={`${line}-${index}`} className="text-sm leading-6 text-slate-300">
+        <p key={`${line}-${index}`} className="text-sm leading-7 text-slate-300">
           {line}
         </p>
       ))}
@@ -118,9 +105,9 @@ function CopilotSectionContent({ lines }: { lines: string[] }) {
           {bullets.map((line, index) => (
             <li
               key={`${line}-${index}`}
-              className="flex gap-2 rounded-xl border border-slate-800/80 bg-slate-950/55 px-3 py-2 text-sm leading-6 text-slate-200"
+              className="flex gap-2 text-sm leading-7 text-slate-200"
             >
-              <CheckCircle2 className="mt-1 shrink-0 text-cyan-300" size={15} />
+              <CheckCircle2 className="mt-1.5 shrink-0 text-cyan-300" size={15} />
               <span>{line.replace(/^-\s+/, "")}</span>
             </li>
           ))}
@@ -132,59 +119,90 @@ function CopilotSectionContent({ lines }: { lines: string[] }) {
 
 function FormattedCopilotResponse({ response }: { response: string }) {
   const parsed = parseCopilotSections(response);
-  const primarySections = parsed.sections.filter(
-    (section) => !["Agent Trace", "Synthesis Status", "Tool Coverage", "Live MCP Observations"].includes(section.title),
+  const evidenceTitles = [
+    "Agent Trace",
+    "Synthesis Status",
+    "Tool Coverage",
+    "Live MCP Observations",
+  ];
+  const answerSections = parsed.sections.filter(
+    (section) => !evidenceTitles.includes(section.title),
   );
   const evidenceSections = parsed.sections.filter((section) =>
-    ["Tool Coverage", "Live MCP Observations", "Synthesis Status"].includes(section.title),
+    evidenceTitles.includes(section.title),
   );
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4">
+    <div className="space-y-5">
+      <div>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">
-          {parsed.title}
+          Atomix Agent
         </p>
+        <h3 className="mt-1 text-xl font-black text-white">{parsed.title}</h3>
         {parsed.intro && (
-          <p className="mt-2 text-sm leading-6 text-slate-200">{parsed.intro}</p>
+          <p className="mt-2 text-sm leading-7 text-slate-300">{parsed.intro}</p>
         )}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        {primarySections.map((section) => (
-          <article
-            key={section.title}
-            className={`rounded-2xl border p-4 ${sectionTone(section.title)}`}
-          >
-            <h3 className="mb-3 text-base font-black text-white">
-              {section.title}
-            </h3>
-            <CopilotSectionContent lines={section.lines} />
-          </article>
-        ))}
-      </div>
+      {answerSections.map((section) => (
+        <section key={section.title} className="border-t border-slate-800 pt-4">
+          <h4 className="mb-2 text-sm font-black uppercase tracking-[0.14em] text-cyan-200">
+            {section.title}
+          </h4>
+          <CopilotSectionContent lines={section.lines} />
+        </section>
+      ))}
 
       {evidenceSections.length > 0 && (
-        <details className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+        <details className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
           <summary className="cursor-pointer list-none text-sm font-bold text-slate-300">
-            Evidence and synthesis details
+            Show MCP evidence, trace, and synthesis status
           </summary>
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="mt-4 space-y-4">
             {evidenceSections.map((section) => (
-              <div
-                key={section.title}
-                className={`rounded-2xl border p-4 ${sectionTone(section.title)}`}
-              >
-                <h4 className="mb-3 text-sm font-black text-white">
+              <section key={section.title} className="border-t border-slate-800 pt-4 first:border-t-0 first:pt-0">
+                <h5 className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
                   {section.title}
-                </h4>
+                </h5>
                 <CopilotSectionContent lines={section.lines} />
-              </div>
+              </section>
             ))}
           </div>
         </details>
       )}
     </div>
+  );
+}
+
+function CompactTrace({ agentTrace }: { agentTrace: AgentTraceStep[] }) {
+  if (agentTrace.length === 0) {
+    return null;
+  }
+
+  return (
+    <details className="rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
+      <summary className="cursor-pointer list-none text-sm font-bold text-slate-300">
+        MCP tool path · {agentTrace.length} step{agentTrace.length === 1 ? "" : "s"}
+      </summary>
+      <div className="mt-3 space-y-2">
+        {agentTrace.map((step, index) => (
+          <div
+            key={`${step.toolName ?? "trace"}-${index}`}
+            className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs leading-5 text-slate-300"
+          >
+            <span className="font-bold text-cyan-200">
+              Step {step.step ?? index + 1}: {step.toolName ?? "tool"}
+            </span>
+            {typeof step.elapsedMs === "number" && (
+              <span className="text-slate-500"> · {step.elapsedMs}ms</span>
+            )}
+            <p className="mt-1 text-slate-400">
+              {step.summary ?? step.status ?? "Completed"}
+            </p>
+          </div>
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -242,8 +260,6 @@ export default function CopilotChat({
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
     prompts: true,
     compose: true,
-    trace: false,
-    response: true,
   });
 
   function toggleSection(section: SectionKey) {
@@ -261,8 +277,6 @@ export default function CopilotChat({
       ...current,
       prompts: false,
       compose: true,
-      response: true,
-      trace: false,
     }));
 
     try {
@@ -456,59 +470,9 @@ export default function CopilotChat({
               </span>
             )}
           </div>
-          {agentTrace.length > 0 && (
-            <div className="mb-4 space-y-3">
-              <CollapseButton
-                open={openSections.trace}
-                title="Agent trace"
-                subtitle="Show deterministic MCP tool calls used to ground the answer."
-                badge={`${agentTrace.length} steps`}
-                onClick={() => toggleSection("trace")}
-              />
-              {openSections.trace && (
-                <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.04] p-4">
-                  <p className="mb-3 flex items-center gap-2 text-sm font-bold text-cyan-100">
-                    <GitBranch size={15} />
-                    MCP execution path
-                  </p>
-                  <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
-                    {agentTrace.map((step, index) => (
-                      <div
-                        key={`${step.toolName ?? "trace"}-${index}`}
-                        className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs leading-5 text-slate-300"
-                      >
-                        <span className="font-bold text-cyan-200">
-                          Step {step.step ?? index + 1}: {step.toolName ?? "tool"}
-                        </span>
-                        {typeof step.elapsedMs === "number" && (
-                          <span className="text-slate-500">
-                            {" "}
-                            - {step.elapsedMs}ms
-                          </span>
-                        )}
-                        <p className="mt-1 text-slate-400">
-                          {step.summary ?? step.status ?? "Completed"}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          <div className="space-y-3">
-            <CollapseButton
-              open={openSections.response}
-              title="Draft response"
-              subtitle="Keep this open for demo narration, or collapse it to return to the command area."
-              badge={`${response.length.toLocaleString()} chars`}
-              onClick={() => toggleSection("response")}
-            />
-            {openSections.response && (
-              <div className="max-h-[560px] overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950/80 p-5">
-                <FormattedCopilotResponse response={response} />
-              </div>
-            )}
+          <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-5">
+            <FormattedCopilotResponse response={response} />
+            <CompactTrace agentTrace={agentTrace} />
           </div>
         </section>
       )}
