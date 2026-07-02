@@ -98,7 +98,10 @@ function planMcpToolCalls(question: string): PlannedToolCall[] {
     idOrRecord?.startsWith("SR-") ||
     normalized.includes("review") ||
     normalized.includes("assignment") ||
-    normalized.includes("reviewer")
+    normalized.includes("reviewer") ||
+    normalized.includes("overdue") ||
+    normalized.includes("sla") ||
+    normalized.includes("governance action")
   ) {
     calls.push({
       toolName: idOrRecord?.startsWith("SR-")
@@ -225,31 +228,159 @@ function deterministicAnswer(
     synthesisError instanceof Error
       ? synthesisError.message
       : "LLM synthesis was unavailable.";
+  const synthesis = buildGroundedSynthesis(question, observations, trace);
+
+  return `${synthesis}
+
+### Agent Trace
+${traceMarkdown(trace) || "- No tool calls were attempted."}
+
+### Synthesis Status
+- MCP tools completed and returned live data.
+- Narrative was generated from deterministic MCP observations because the LLM synthesis step returned: ${errorMessage}
+- Completed MCP calls: ${completed.length}
+- Failed MCP calls: ${failed.length}`;
+}
+
+function parseObservation(observation: string) {
+  const toolName = observation.match(/^Tool: (.+)$/m)?.[1] ?? "MCP tool";
+  const raw = observation.split("Observation:\n")[1] ?? "";
+
+  return {
+    toolName,
+    data: parseJson(raw),
+  };
+}
+
+function asRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asArray(value: unknown) {
+  return Array.isArray(value) ? value : [];
+}
+
+function stringField(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function numberField(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function nestedRecord(record: Record<string, unknown> | null, key: string) {
+  return asRecord(record?.[key]);
+}
+
+function findingLine(value: unknown) {
+  const finding = asRecord(value);
+  const project = nestedRecord(finding, "project");
+  const review = nestedRecord(finding, "review");
+  const owner = nestedRecord(finding, "owner");
+
+  return `- ${stringField(finding, "severity") ?? "Unknown"}: ${stringField(finding, "title") ?? "Untitled finding"} (${stringField(project, "sprId") ?? stringField(project, "name") ?? "No SPR"} / ${stringField(review, "srId") ?? stringField(review, "title") ?? "No SR"}) — status: ${stringField(finding, "status") ?? "Unknown"}, owner: ${stringField(owner, "name") ?? "Unassigned"}.`;
+}
+
+function reviewLine(value: unknown) {
+  const review = asRecord(value);
+  const project = nestedRecord(review, "project");
+  const assignments = asArray(review?.assignments);
+  const dueDate = stringField(review, "dueDate");
+  const dueLabel = dueDate
+    ? new Intl.DateTimeFormat("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(dueDate))
+    : "No due date";
+
+  return `- ${stringField(review, "srId") ?? "SR pending"} (${stringField(project, "sprId") ?? stringField(project, "name") ?? "No SPR"}) — ${stringField(review, "title") ?? "Untitled review"}, status: ${stringField(review, "status") ?? "Unknown"}, due: ${dueLabel}, assignments: ${assignments.length}.`;
+}
+
+function isOverdueReview(value: unknown) {
+  const review = asRecord(value);
+  const dueDate = stringField(review, "dueDate");
+  const status = stringField(review, "status") ?? "";
+
+  return Boolean(
+    dueDate &&
+      new Date(dueDate).getTime() < Date.now() &&
+      !["Completed", "Closed", "Cancelled"].includes(status),
+  );
+}
+
+function buildGroundedSynthesis(
+  question: string,
+  observations: string[],
+  trace: AgentTraceStep[],
+) {
+  const parsed = observations.map(parseObservation);
+  const dashboard = asRecord(
+    parsed.find((item) => item.toolName === "atomix.dashboard_summary")?.data,
+  );
+  const findings = asArray(
+    parsed.find((item) => item.toolName === "atomix.list_findings")?.data,
+  );
+  const reviews = asArray(
+    parsed.find((item) => item.toolName === "atomix.list_reviews")?.data,
+  );
+  const overdueReviews = reviews.filter(isOverdueReview);
+  const criticalFindings = findings.filter(
+    (finding) => stringField(asRecord(finding), "severity") === "Critical",
+  );
+  const highSignalFindings =
+    criticalFindings.length > 0
+      ? criticalFindings
+      : findings.filter((finding) =>
+          ["High", "Critical"].includes(stringField(asRecord(finding), "severity") ?? ""),
+        );
 
   return `## Atomix Agent Result
 
-I used the MCP tool loop, but the LLM synthesis step was unavailable. Here is the grounded tool summary instead.
+I used the MCP tool loop successfully and grounded this answer in live Atomix data.
 
 ### Request
 ${question}
+
+### Executive Signal
+- Projects in scope: ${numberField(dashboard, "projectCount") ?? "not returned"}.
+- Active reviews: ${numberField(dashboard, "activeReviewCount") ?? "not returned"} of ${numberField(dashboard, "reviewCount") ?? "not returned"} total.
+- Overdue reviews: ${numberField(dashboard, "overdueReviewCount") ?? overdueReviews.length}.
+- Findings: ${numberField(dashboard, "findingCount") ?? findings.length} total, ${numberField(dashboard, "openFindingCount") ?? "unknown"} open, ${numberField(dashboard, "criticalOpenCount") ?? criticalFindings.length} critical open.
+
+### Critical Risks
+${highSignalFindings.length > 0
+  ? highSignalFindings.slice(0, 5).map(findingLine).join("\n")
+  : "- No critical/high finding records were returned by the MCP finding query."}
+
+### Overdue Governance Actions
+${overdueReviews.length > 0
+  ? overdueReviews.slice(0, 5).map(reviewLine).join("\n")
+  : reviews.length > 0
+    ? reviews.slice(0, 5).map(reviewLine).join("\n")
+    : "- MCP returned overdue counters, but no review detail query was available in this run."}
+
+### Recommended Next Actions
+- Triage critical/high findings first: confirm owner, SR linkage, fix readiness, and target retest date.
+- For overdue reviews, assign a named accountable reviewer or governance owner before the next call.
+- Move fixed items into Retest Governance; leave unresolved items with an explicit remediation, exception, or escalation path.
+- Use the MCP Review Agent inspector if you need raw JSON evidence for audit or demo proof.
 
 ### Live MCP Observations
 ${observations.length > 0
   ? observations.map((observation) => `- ${observationHeadline(observation)}`).join("\n")
   : "- No live MCP observations were returned."}
 
-### Next Actions
-- Review the completed tool observations below before making workflow decisions.
-- Use the MCP Review Agent inspector if you need raw JSON evidence for the same tools.
-- Retry Copilot once local AI synthesis is stable if you need narrative wording.
-
-### Agent Trace
-${traceMarkdown(trace) || "- No tool calls were attempted."}
-
-### Synthesis Status
-- ${errorMessage}
-- Completed MCP calls: ${completed.length}
-- Failed MCP calls: ${failed.length}`;
+### Tool Coverage
+- Planned MCP calls: ${trace.length}
+- Successful MCP calls: ${trace.filter((step) => step.status === "completed").length}
+- Failed MCP calls: ${trace.filter((step) => step.status === "failed").length}`;
 }
 
 export async function runMcpAugmentedAgent(
@@ -295,9 +426,6 @@ export async function runMcpAugmentedAgent(
   }
 
   const context = `
-Base Atomix context:
-${baseContext}
-
 MCP observations:
 ${observations.join("\n\n---\n\n") || "No MCP observations were available."}
 
@@ -313,8 +441,8 @@ ${traceMarkdown(trace)}
       `Use the MCP observations as live tool evidence. Answer the user request with concrete next actions, call out uncertainty, and do not claim to change records.\n\nUser request:\n${question}`,
       context,
       {
-        timeoutMs: options.timeoutMs ?? 45000,
-        numPredict: options.numPredict ?? 900,
+        timeoutMs: options.timeoutMs ?? 25000,
+        numPredict: options.numPredict ?? 450,
         think: false,
       },
     );
