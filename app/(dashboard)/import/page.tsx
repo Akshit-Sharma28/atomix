@@ -1,5 +1,6 @@
 import ImportUploader from "@/components/import/import-uploader";
 import AIReportReviewer from "@/components/import/ai-report-reviewer";
+import PendingSubmitButton from "@/components/ui/pending-submit-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/services/users/current-user.service";
 import { normalizeRole } from "@/services/users/access.service";
@@ -50,7 +51,14 @@ function typeTone(type?: string | null) {
   return "bg-slate-800 text-slate-300";
 }
 
-export default async function ImportPage() {
+export default async function ImportPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    removed?: string;
+  }>;
+}) {
+  const params = (await searchParams) ?? {};
   const currentUser = await getCurrentUser();
   const activeRole = normalizeRole(currentUser?.role);
   const canSeeAll = broadVisibilityRoles.has(activeRole);
@@ -306,7 +314,10 @@ export default async function ImportPage() {
           </details>
         </div>
 
-        <section className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+        <section
+          id="vault-index"
+          className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-900"
+        >
           <div className="border-b border-slate-800 px-6 py-5">
             <div className="flex items-start gap-3">
               <Upload className="text-cyan-300" />
@@ -321,6 +332,12 @@ export default async function ImportPage() {
               </div>
             </div>
           </div>
+
+          {params.removed === "1" && (
+            <div className="mx-6 mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-200">
+              Document removed from the review vault.
+            </div>
+          )}
 
           <div className="max-h-[680px] overflow-y-auto overflow-x-hidden">
             {documents.length === 0 && (
@@ -493,10 +510,13 @@ export default async function ImportPage() {
 
                       <form action={deleteVaultDocument} className="mt-3">
                         <input type="hidden" name="documentId" value={document.id} />
-                        <button className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-500/10">
+                        <PendingSubmitButton
+                          pendingLabel="Removing..."
+                          className="rounded-xl border border-red-500/30 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-500/10"
+                        >
                           <Trash2 size={14} />
                           Remove from vault
-                        </button>
+                        </PendingSubmitButton>
                       </form>
                     </div>
                   ))}

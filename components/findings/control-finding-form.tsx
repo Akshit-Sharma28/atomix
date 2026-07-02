@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { Bot, ImagePlus, Sparkles } from "lucide-react";
 import { feadControls } from "@/lib/fead-controls";
 import { createFinding } from "@/app/actions/findings";
+import PendingSubmitButton from "@/components/ui/pending-submit-button";
 
 type ReviewOption = {
   id: string;
@@ -193,9 +194,17 @@ export default function ControlFindingForm({
         </label>
 
         <div className="flex items-end">
-          <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 transition hover:bg-cyan-300 md:w-fit">
-            Save Control Result
-          </button>
+          <div>
+            <PendingSubmitButton
+              pendingLabel="Saving to SR..."
+              className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 transition hover:bg-cyan-300 md:w-fit"
+            >
+              Quick Save to SR
+            </PendingSubmitButton>
+            <p className="mt-2 max-w-56 text-xs leading-5 text-slate-500">
+              Same SR save action; use this for quick PASS/FAIL entry.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -301,9 +310,12 @@ export default function ControlFindingForm({
         </div>
       </details>
 
-      <button className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 transition hover:bg-cyan-300 md:w-fit">
+      <PendingSubmitButton
+        pendingLabel="Saving control result..."
+        className="w-full rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 transition hover:bg-cyan-300 md:w-fit"
+      >
         Save Control Result to SR
-      </button>
+      </PendingSubmitButton>
     </form>
   );
 }

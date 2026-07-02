@@ -8,8 +8,9 @@ import {
   Plus,
   Brain,
   ClipboardList,
+  Database,
+  FileUp,
   RotateCcw,
-  CheckCircle2,
 } from "lucide-react";
 
 interface Props {
@@ -265,10 +266,17 @@ export default async function FindingsPage({
         {[
           {
             icon: ClipboardList,
-            title: "Reviewer Entry",
-            text: "Reviewers add initial findings from My Findings after selecting their assigned SPR/SR package.",
+            title: "SR Control Results",
+            text: "Reviewers save PASS/FAIL control results from My Findings; failed controls become governed findings tied to SPR/SR context.",
             href: "/my-findings",
             cta: "Open My Findings",
+          },
+          {
+            icon: FileUp,
+            title: "Evidence Vault",
+            text: "Review artifacts, FEAD packs, screenshots, and scanner notes stay linked to the same review package for audit-ready evidence.",
+            href: "/import#vault-index",
+            cta: "Open Vault",
           },
           {
             icon: RotateCcw,
@@ -278,11 +286,11 @@ export default async function FindingsPage({
             cta: "Open Retest Governance",
           },
           {
-            icon: CheckCircle2,
-            title: "Closure Decision",
-            text: "If no open findings remain, the SPR can move toward closure; unresolved items need retest, remediation plan, or exception.",
-            href: "/findings?status=Open",
-            cta: "Review Open Findings",
+            icon: Database,
+            title: "Data Lake Ready",
+            text: "Findings, evidence metadata, reviewer actions, and MCP traces can flow into a governed lake for analytics and Copilot retrieval.",
+            href: "/workflow/mcp-review",
+            cta: "Open MCP Agent",
           },
         ].map((item) => {
           const Icon = item.icon;
@@ -308,6 +316,36 @@ export default async function FindingsPage({
             </div>
           );
         })}
+      </div>
+
+      <div className="mb-6 grid gap-3 rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.04] p-4 text-sm text-slate-300 lg:grid-cols-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-300">
+            Source of truth
+          </p>
+          <p className="mt-2">
+            SR control results, imported evidence, finding analysis, and owner
+            assignments stay linked by SPR/SR.
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-300">
+            Next handoff
+          </p>
+          <p className="mt-2">
+            Open/high-risk items move to retest, exception, remediation, or
+            closure decision workflows.
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-300">
+            Management view
+          </p>
+          <p className="mt-2">
+            The same records can power executive dashboards, SLA pressure, and
+            governed Copilot summaries.
+          </p>
+        </div>
       </div>
 
       {/* KPI Row */}
@@ -545,6 +583,14 @@ export default async function FindingsPage({
                         {finding.component?.name
                           ? ` · ${finding.component.name}`
                           : ""}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                        <span className="rounded-full bg-slate-950 px-2 py-1 text-slate-400">
+                          Source: {finding.source}
+                        </span>
+                        <span className="rounded-full bg-cyan-500/10 px-2 py-1 text-cyan-200">
+                          {finding.review?.srId ? "SR-linked" : "Portfolio finding"}
+                        </span>
                       </div>
                     </div>
                   </Link>

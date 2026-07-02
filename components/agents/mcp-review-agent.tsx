@@ -4,6 +4,7 @@ import {
   Bot,
   CheckCircle2,
   ClipboardCheck,
+  Copy,
   Download,
   FileText,
   Globe2,
@@ -13,6 +14,7 @@ import {
   Network,
   Play,
   ShieldCheck,
+  Sparkles,
   Terminal,
   type LucideIcon,
 } from "lucide-react";
@@ -44,7 +46,7 @@ import {
 
 const transports: McpTransport[] = ["Streamable HTTP", "STDIO", "Both / Hybrid"];
 const yesNo = ["Yes", "No"];
-const tabs = ["Overview", "Inspector", "Exports", "Draft"] as const;
+const tabs = ["Overview", "Inspector", "Exports", "Prompts", "Draft"] as const;
 const inspectorMethods = [
   "initialize",
   "tools/list",
@@ -86,6 +88,81 @@ const atomixToolPresets = [
   },
 ];
 
+const mcpSecurityPromptLibrary = [
+  {
+    id: "capability-inventory",
+    category: "Discovery",
+    title: "Capability inventory and open-by-default tools",
+    prompt:
+      "Act as an MCP security reviewer. Enumerate tools, resources, prompts, roots, sampling, and elicitation. Identify open-by-default capabilities, missing auth checks, and evidence needed for FEAD.",
+    evidence:
+      "tools/list, resources/list, prompts/list, auth headers tested, role used, and screenshots or JSON-RPC output.",
+  },
+  {
+    id: "direct-invocation",
+    category: "Authorization",
+    title: "Direct tool invocation abuse",
+    prompt:
+      "Test whether a user can directly call MCP tools outside the intended agent workflow. Check role boundaries, project scoping, destructive actions, and whether tool responses leak cross-tenant data.",
+    evidence:
+      "Allowed and denied JSON-RPC calls, user role, project/SR scope, response payload, and server-side audit entry.",
+  },
+  {
+    id: "prompt-injection",
+    category: "Injection",
+    title: "Indirect prompt injection via resource or tool output",
+    prompt:
+      "Review MCP resources and tool outputs for instructions that could override the system, reveal secrets, call other tools, or exfiltrate data. Recommend sanitization and trust-boundary controls.",
+    evidence:
+      "Injected sample payload, source resource/tool, model/tool behavior, mitigation status, and residual risk.",
+  },
+  {
+    id: "destructive-tools",
+    category: "Safety",
+    title: "Write/destructive tool guardrails",
+    prompt:
+      "Assess MCP tools that create, update, delete, assign, export, or send data. Verify confirmation, RBAC, audit logging, idempotency, rollback, and human approval requirements.",
+    evidence:
+      "Tool schema, action transcript, approval step, audit record, and rollback/compensating action notes.",
+  },
+  {
+    id: "secrets-egress",
+    category: "Data Protection",
+    title: "Secret and sensitive data exfiltration",
+    prompt:
+      "Inspect whether tokens, credentials, PII, confidential evidence, or customer data can appear in prompts, resources, logs, tool arguments, exports, or model responses.",
+    evidence:
+      "Redaction examples, blocked secret patterns, log excerpts, data classification, and export handling notes.",
+  },
+  {
+    id: "network-ssrf",
+    category: "Transport",
+    title: "SSRF and network egress through tool arguments",
+    prompt:
+      "Test whether MCP tools can reach localhost, link-local metadata services, internal hosts, file URLs, or unexpected external endpoints through URL, host, path, or connector arguments.",
+    evidence:
+      "Blocked and allowed endpoint attempts, validation rules, network policy, and server-side error responses.",
+  },
+  {
+    id: "stdio-local",
+    category: "STDIO",
+    title: "STDIO local process and filesystem hardening",
+    prompt:
+      "Evaluate STDIO MCP server risk: local process permissions, filesystem roots, environment variables, shell execution, package trust, startup command integrity, and desktop inspector exposure.",
+    evidence:
+      "Startup command, environment redaction, root allowlist, local user permissions, and process isolation notes.",
+  },
+  {
+    id: "sampling-elicitation",
+    category: "Agentic Flow",
+    title: "Sampling and elicitation abuse cases",
+    prompt:
+      "If the MCP server supports sampling or elicitation, test whether it can request sensitive user input, trigger untrusted model calls, bypass consent, or create confusing human-in-the-loop flows.",
+    evidence:
+      "Sampling/elicitation transcript, consent copy, data requested, role involved, and approval/denial behavior.",
+  },
+];
+
 const defaultContext: McpReviewContext = {
   serverName: "MCP Security Review",
   owner: "Application / Platform team",
@@ -121,6 +198,7 @@ export default function McpReviewAgent() {
   const [inspectorLoading, setInspectorLoading] = useState(false);
   const [inspectorResult, setInspectorResult] =
     useState<Record<string, unknown> | null>(null);
+  const [copiedPromptId, setCopiedPromptId] = useState("");
   const applicableControls = useMemo(
     () => controlsForMcpTransport(context.transport),
     [context.transport],
@@ -202,6 +280,12 @@ export default function McpReviewAgent() {
     }
   }
 
+  async function copyPrompt(prompt: string, promptId: string) {
+    await navigator.clipboard.writeText(prompt);
+    setCopiedPromptId(promptId);
+    window.setTimeout(() => setCopiedPromptId(""), 1800);
+  }
+
   return (
     <section className="mt-8 rounded-3xl border border-cyan-500/20 bg-slate-900/70 p-6 shadow-2xl shadow-cyan-950/20">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -251,6 +335,58 @@ export default function McpReviewAgent() {
         <Metric label="Open by Default" value={openControls.length} />
         <Metric label="Auto NA" value={naControls} />
         <Metric label="Library Size" value={mcpControls.length} />
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-bold text-cyan-100">
+              <ShieldCheck size={16} />
+              Review outputs and data handling
+            </div>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
+              Intake fields stay in this browser until you export or run the
+              inspector. Exports download locally; inspector probes call the
+              Atomix API and return JSON evidence. Nothing is written to the
+              database from this page unless a downstream workflow explicitly
+              saves the artifact.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={downloadFead}
+              className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-3 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-300"
+            >
+              <Download size={15} />
+              FEAD .docx
+            </button>
+            <button
+              type="button"
+              onClick={downloadGuide}
+              className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 px-3 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-400/10"
+            >
+              <FileText size={15} />
+              Guide .docx
+            </button>
+            <button
+              type="button"
+              onClick={downloadMarkdown}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-700 px-3 py-2 text-sm font-bold text-slate-200 hover:bg-slate-800"
+            >
+              <ClipboardCheck size={15} />
+              Markdown
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("Prompts")}
+              className="inline-flex items-center gap-2 rounded-xl border border-violet-400/30 px-3 py-2 text-sm font-bold text-violet-100 hover:bg-violet-400/10"
+            >
+              <Sparkles size={15} />
+              Prompt library
+            </button>
+          </div>
+        </div>
       </div>
 
       {activeTab === "Overview" && (
@@ -383,6 +519,45 @@ export default function McpReviewAgent() {
             buttonLabel="Download Markdown"
             onClick={downloadMarkdown}
           />
+        </div>
+      )}
+
+      {activeTab === "Prompts" && (
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          {mcpSecurityPromptLibrary.map((item) => (
+            <article
+              key={item.id}
+              className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="rounded-full bg-violet-500/10 px-3 py-1 text-xs font-bold text-violet-200">
+                    {item.category}
+                  </span>
+                  <h3 className="mt-3 text-lg font-black text-white">
+                    {item.title}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copyPrompt(item.prompt, item.id)}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-cyan-400/30 px-3 py-2 text-xs font-bold text-cyan-100 hover:bg-cyan-400/10"
+                >
+                  <Copy size={14} />
+                  {copiedPromptId === item.id ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <p className="mt-4 rounded-2xl border border-slate-800 bg-black/30 p-4 text-sm leading-6 text-slate-300">
+                {item.prompt}
+              </p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Evidence to capture
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                {item.evidence}
+              </p>
+            </article>
+          ))}
         </div>
       )}
 
