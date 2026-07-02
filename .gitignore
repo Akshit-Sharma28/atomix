@@ -52,6 +52,7 @@ prisma/*.db-journal
 *.db
 *.db-journal
 atomix-sqlite-export.json
+outputs/
 
 # logs
 *.log
