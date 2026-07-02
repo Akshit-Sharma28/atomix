@@ -576,80 +576,6 @@ Atomix Governance Dashboard`;
         })}
       </div>
 
-      <form
-        action="/reviewers/governance-call"
-        className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-4"
-      >
-        <div className="grid gap-3 lg:grid-cols-[1.3fr_0.9fr_0.9fr_0.9fr_0.9fr_auto]">
-          <label className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3">
-            <Search size={18} className="text-slate-500" />
-            <input
-              name="q"
-              defaultValue={query}
-              placeholder="Search reviewer, SPR, SR, project, workstream..."
-              className="w-full bg-transparent text-white outline-none"
-            />
-          </label>
-
-          <select
-            name="status"
-            defaultValue={status}
-            className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
-          >
-            <option value="">All statuses</option>
-            <option>Requested</option>
-            <option>Assigned</option>
-            <option>Accepted</option>
-            <option>In Progress</option>
-          </select>
-
-          <select
-            name="reviewer"
-            defaultValue={reviewer}
-            className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
-          >
-            <option value="">All reviewers</option>
-            {reviewerOptions.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-
-          <select
-            name="project"
-            defaultValue={project}
-            className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
-          >
-            <option value="">All projects</option>
-            {projectOptions.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-
-          <select
-            name="pool"
-            defaultValue={pool}
-            className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
-          >
-            <option value="">All pools</option>
-            <option>Dedicated</option>
-            <option>Augmentation</option>
-          </select>
-
-          <div className="flex gap-2">
-            <button className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950">
-              <Filter size={16} />
-              Filter
-            </button>
-            <Link
-              href="/reviewers/governance-call"
-              className="rounded-xl border border-slate-700 px-4 py-3 text-slate-300 hover:bg-slate-800"
-            >
-              Reset
-            </Link>
-          </div>
-        </div>
-      </form>
-
       <div className="mb-6">
         <TransitionSection
           title="Attendance & Email Summary"
@@ -855,6 +781,80 @@ Atomix Governance Dashboard`;
             {filteredAssignments.length} visible assignments
           </div>
         </div>
+
+        <form
+          action="/reviewers/governance-call"
+          className="mb-5 rounded-2xl border border-slate-800 bg-slate-900 p-4"
+        >
+          <div className="grid gap-3 lg:grid-cols-[1.3fr_0.9fr_0.9fr_0.9fr_0.9fr_auto]">
+            <label className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3">
+              <Search size={18} className="text-slate-500" />
+              <input
+                name="q"
+                defaultValue={query}
+                placeholder="Search reviewer, SPR, SR, project, workstream..."
+                className="w-full bg-transparent text-white outline-none"
+              />
+            </label>
+
+            <select
+              name="status"
+              defaultValue={status}
+              className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
+            >
+              <option value="">All statuses</option>
+              <option>Requested</option>
+              <option>Assigned</option>
+              <option>Accepted</option>
+              <option>In Progress</option>
+            </select>
+
+            <select
+              name="reviewer"
+              defaultValue={reviewer}
+              className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
+            >
+              <option value="">All reviewers</option>
+              {reviewerOptions.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+
+            <select
+              name="project"
+              defaultValue={project}
+              className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
+            >
+              <option value="">All projects</option>
+              {projectOptions.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+
+            <select
+              name="pool"
+              defaultValue={pool}
+              className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-white"
+            >
+              <option value="">All pools</option>
+              <option>Dedicated</option>
+              <option>Augmentation</option>
+            </select>
+
+            <div className="flex gap-2">
+              <button className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950">
+                <Filter size={16} />
+                Filter
+              </button>
+              <Link
+                href="/reviewers/governance-call"
+                className="rounded-xl border border-slate-700 px-4 py-3 text-slate-300 hover:bg-slate-800"
+              >
+                Reset
+              </Link>
+            </div>
+          </div>
+        </form>
 
         <div className="grid gap-4">
           {filteredAssignments.length === 0 && (
