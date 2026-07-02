@@ -55,6 +55,9 @@ export default function FloatingAgentChat() {
     },
   ]);
   const [loading, setLoading] = useState(false);
+  const panelSize = expanded
+    ? "h-[min(82vh,760px)] w-[min(760px,calc(100vw-2rem))]"
+    : "h-[min(640px,calc(100vh-7rem))] w-[min(460px,calc(100vw-2rem))]";
 
   async function ask(prompt = question) {
     const trimmedPrompt = prompt.trim();
@@ -88,6 +91,10 @@ export default function FloatingAgentChat() {
       const trace = Array.isArray(data.agentTrace)
         ? formatTrace(data.agentTrace)
         : "";
+      const mode =
+        typeof data.mode === "string"
+          ? `\n\nMode: ${data.mode}`
+          : "";
 
       setMessages((current) => [
         ...current,
@@ -95,7 +102,7 @@ export default function FloatingAgentChat() {
           role: "agent",
           text:
             data.answer
-              ? `${data.answer}${trace}`
+              ? `${data.answer}${trace}${mode}`
               : data.error ??
                 "I could not produce an answer from the local AI service.",
         },
@@ -118,9 +125,7 @@ export default function FloatingAgentChat() {
       {open && (
         <div
           className={`mb-4 overflow-hidden rounded-3xl border border-cyan-400/30 bg-slate-950/95 shadow-2xl shadow-cyan-950/40 backdrop-blur-xl transition-all ${
-            expanded
-              ? "h-[680px] w-[520px]"
-              : "h-[540px] w-[390px]"
+            panelSize
           }`}
         >
           <div className="flex items-center justify-between border-b border-slate-800 bg-cyan-400/[0.04] p-4">
@@ -165,7 +170,7 @@ export default function FloatingAgentChat() {
               <div className="mb-3">
                 <LocalAiStatus compact />
               </div>
-              <div className="grid gap-2">
+              <div className={`grid gap-2 ${expanded ? "md:grid-cols-2" : ""}`}>
                 {quickPrompts.map((prompt) => (
                   <button
                     key={prompt}
@@ -184,8 +189,8 @@ export default function FloatingAgentChat() {
                   key={`${message.role}-${index}`}
                   className={
                     message.role === "user"
-                      ? "ml-8 rounded-2xl bg-cyan-400 px-4 py-3 text-sm text-slate-950"
-                      : "mr-8 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm leading-6 text-slate-200"
+                      ? "ml-auto max-w-[86%] whitespace-pre-wrap rounded-2xl bg-cyan-400 px-4 py-3 text-sm text-slate-950"
+                      : "mr-auto max-w-[92%] whitespace-pre-wrap rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm leading-6 text-slate-200"
                   }
                 >
                   {message.text}

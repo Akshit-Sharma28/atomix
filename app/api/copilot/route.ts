@@ -48,13 +48,31 @@ export async function POST(
 
       answer = result.answer;
       agentTrace = result.trace;
+      mode =
+        result.synthesisMode === "deterministic"
+          ? "mcp-deterministic"
+          : "mcp-agentic";
     } catch (error) {
       mode = "prompt-fallback";
-      answer =
-        await askCopilot(
-          question,
-          context
-        );
+      try {
+        answer =
+          await askCopilot(
+            question,
+            context
+          );
+      } catch {
+        answer = `## Atomix Agent Result
+
+I could not complete the MCP agent loop or the prompt-only LLM fallback.
+
+### Request
+${question}
+
+### Next Actions
+- Confirm the MCP token and local AI tunnel are available.
+- Retry from the MCP Review Agent inspector to verify raw tool access.
+- Use the dashboard queues directly while the synthesis path recovers.`;
+      }
       agentTrace = [
         {
           step: 1,

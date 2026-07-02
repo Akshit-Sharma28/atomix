@@ -73,7 +73,7 @@ export default function CopilotChat({
       });
 
       const data = await res.json();
-      setResponse(data.answer ?? "No response");
+      setResponse(data.answer ?? data.error ?? "No response");
       setMode(typeof data.mode === "string" ? data.mode : "");
       setAgentTrace(Array.isArray(data.agentTrace) ? data.agentTrace : []);
     } catch {
@@ -216,7 +216,11 @@ export default function CopilotChat({
             </span>
             {mode && (
               <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-cyan-200">
-                {mode === "mcp-agentic" ? "MCP tool loop" : "Prompt fallback"}
+                {mode === "mcp-agentic"
+                  ? "MCP tool loop"
+                  : mode === "mcp-deterministic"
+                    ? "MCP deterministic"
+                    : "Prompt fallback"}
               </span>
             )}
           </div>

@@ -194,6 +194,64 @@ function traceMarkdown(trace: AgentTraceStep[]) {
     .join("\n");
 }
 
+function observationHeadline(observation: string) {
+  const tool = observation.match(/^Tool: (.+)$/m)?.[1] ?? "MCP tool";
+  const parsed = parseJson(observation.split("Observation:\n")[1] ?? "");
+
+  if (Array.isArray(parsed)) {
+    return `${tool}: ${parsed.length} records available for review.`;
+  }
+
+  if (parsed && typeof parsed === "object") {
+    const values = Object.entries(parsed)
+      .slice(0, 6)
+      .map(([key, value]) => `${key}: ${String(value).slice(0, 80)}`);
+
+    return `${tool}: ${values.join("; ")}`;
+  }
+
+  return `${tool}: observation captured.`;
+}
+
+function deterministicAnswer(
+  question: string,
+  observations: string[],
+  trace: AgentTraceStep[],
+  synthesisError: unknown,
+) {
+  const completed = trace.filter((step) => step.status === "completed");
+  const failed = trace.filter((step) => step.status === "failed");
+  const errorMessage =
+    synthesisError instanceof Error
+      ? synthesisError.message
+      : "LLM synthesis was unavailable.";
+
+  return `## Atomix Agent Result
+
+I used the MCP tool loop, but the LLM synthesis step was unavailable. Here is the grounded tool summary instead.
+
+### Request
+${question}
+
+### Live MCP Observations
+${observations.length > 0
+  ? observations.map((observation) => `- ${observationHeadline(observation)}`).join("\n")
+  : "- No live MCP observations were returned."}
+
+### Next Actions
+- Review the completed tool observations below before making workflow decisions.
+- Use the MCP Review Agent inspector if you need raw JSON evidence for the same tools.
+- Retry Copilot once local AI synthesis is stable if you need narrative wording.
+
+### Agent Trace
+${traceMarkdown(trace) || "- No tool calls were attempted."}
+
+### Synthesis Status
+- ${errorMessage}
+- Completed MCP calls: ${completed.length}
+- Failed MCP calls: ${failed.length}`;
+}
+
 export async function runMcpAugmentedAgent(
   question: string,
   baseContext: string,
@@ -247,19 +305,33 @@ Agent trace:
 ${traceMarkdown(trace)}
 `;
 
-  const answer = await askCopilot(
-    `Use the MCP observations as live tool evidence. Answer the user request with concrete next actions, call out uncertainty, and do not claim to change records.\n\nUser request:\n${question}`,
-    context,
-    {
-      timeoutMs: options.timeoutMs ?? 45000,
-      numPredict: options.numPredict ?? 900,
-      think: false,
-    },
-  );
+  let answer = "";
+  let synthesisMode = "llm";
+
+  try {
+    answer = await askCopilot(
+      `Use the MCP observations as live tool evidence. Answer the user request with concrete next actions, call out uncertainty, and do not claim to change records.\n\nUser request:\n${question}`,
+      context,
+      {
+        timeoutMs: options.timeoutMs ?? 45000,
+        numPredict: options.numPredict ?? 900,
+        think: false,
+      },
+    );
+  } catch (error) {
+    synthesisMode = "deterministic";
+    answer = deterministicAnswer(
+      question,
+      observations,
+      trace,
+      error,
+    );
+  }
 
   return {
     answer,
     trace,
     plannedToolCount: plannedCalls.length,
+    synthesisMode,
   };
 }
