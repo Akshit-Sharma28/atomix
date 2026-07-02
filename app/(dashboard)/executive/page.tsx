@@ -133,7 +133,8 @@ export default async function ExecutiveDashboardPage({
               AI governance time saved
             </h2>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-300">
-              Pitch baseline: if every person in EYG saves{" "}
+              Scenario model, not claimed realized savings: if every person in
+              EYG saves{" "}
               {data.productivity.baselineDailyHoursPerPerson} hour/day, then{" "}
               {data.productivity.workdaysPerWeek} hrs/week/person ×{" "}
               {data.productivity.baselinePeople} people ={" "}
@@ -154,22 +155,22 @@ export default async function ExecutiveDashboardPage({
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
             [
-              "Pitch annual hours",
+              "Potential annual hours",
               data.productivity.baselineAnnualHoursSaved.toLocaleString(),
-              `${data.productivity.baselinePeople}-person assumption`,
+              `Scenario: ${data.productivity.baselinePeople} people × 1h/day`,
             ],
             [
-              "Pitch 9h person-days",
+              "Potential capacity",
               data.productivity.baselineWorkingDaysSaved.toLocaleString(),
-              `${data.productivity.baselineFteYearsSavedLabel} FTE-years equivalent`,
+              `${data.productivity.baselineFteYearsSavedLabel} FTE-years if fully adopted`,
             ],
             [
-              "Measured annual run-rate",
+              "Estimated current run-rate",
               data.productivity.measuredAnnualHoursSaved.toLocaleString(),
               `${data.productivity.measuredWeeklyHoursSaved} hrs/wk from app volumes`,
             ],
             [
-              "Measured 9h person-days",
+              "Estimated current capacity",
               data.productivity.measuredWorkingDaysSaved.toLocaleString(),
               `${data.productivity.measuredFteYearsSavedLabel} FTE-year equivalent`,
             ],
@@ -189,20 +190,122 @@ export default async function ExecutiveDashboardPage({
           ))}
         </div>
 
-        <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300">
-          <span className="font-semibold text-emerald-200">Reality check:</span>{" "}
-          The measured value is not “people saved”; it is equivalent capacity.
-          Current records show {data.productivity.measuredWeeklyHoursSaved} hrs/week
-          saved across tracked workflows, which annualizes to{" "}
-          {data.productivity.measuredAnnualHoursSaved.toLocaleString()} hrs/year ={" "}
-          {data.productivity.measuredWorkingDaysSaved.toLocaleString()} nine-hour
-          person-days, or {data.productivity.measuredFteYearsSavedLabel} FTE-year at{" "}
-          {data.productivity.annualShiftHoursPerPerson.toLocaleString()} hrs/person/year.
-          Calendar days remain {data.productivity.annualWorkingDays}/person/year;
-          these values are cross-person effort capacity.
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300">
+            <span className="font-semibold text-emerald-200">Demo framing:</span>{" "}
+            Lead with the estimated current run-rate:{" "}
+            {data.productivity.measuredWeeklyHoursSaved} hrs/week, or{" "}
+            {data.productivity.measuredWorkingDaysSaved.toLocaleString()}{" "}
+            nine-hour person-days annually. This is based on tracked workflow
+            volume × assumed time saved per item, not stopwatch tracking. The{" "}
+            {data.productivity.baselineWorkingDaysSaved.toLocaleString()}{" "}
+            person-day number is a full-adoption scenario, not realized
+            savings or headcount reduction.
+          </div>
+          <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.06] p-4 text-sm leading-6 text-slate-300">
+            <span className="font-semibold text-cyan-200">Value beyond FTE:</span>{" "}
+            quality gates, fewer missed controls, faster evidence readiness,
+            better SLA governance, reusable review memory, and less rework.
+          </div>
         </div>
 
-        <div className="mt-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+        <details className="mt-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-amber-100">
+            Show how the 46 hrs/week estimate is calculated
+          </summary>
+          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <p className="text-sm font-semibold text-white">
+              Source of the 46 hrs/week number
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Atomix does not yet use timers to prove realized savings. The
+              current run-rate is an estimate from live app volume: each
+              tracked workflow has a small time-saving assumption, then those
+              weekly estimates are added together.
+            </p>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                  <tr className="border-b border-slate-800">
+                    <th className="py-2 pr-3">Workflow</th>
+                    <th className="py-2 pr-3">Role</th>
+                    <th className="py-2 pr-3 text-right">Volume</th>
+                    <th className="py-2 pr-3 text-right">Assumption</th>
+                    <th className="py-2 text-right">Weekly estimate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.productivity.workflows.map((item) => (
+                    <tr
+                      key={`${item.role}-${item.workflow}`}
+                      className="border-b border-slate-900 text-slate-300 last:border-0"
+                    >
+                      <td className="py-3 pr-3 font-medium text-white">
+                        {item.workflow}
+                      </td>
+                      <td className="py-3 pr-3 text-slate-400">
+                        {item.role}
+                      </td>
+                      <td className="py-3 pr-3 text-right">
+                        {item.volume}
+                      </td>
+                      <td className="py-3 pr-3 text-right">
+                        {item.hoursPerUnit}h/item
+                      </td>
+                      <td className="py-3 text-right font-semibold text-cyan-200">
+                        {item.weeklyHoursSaved}h/wk
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              Total weekly estimate:{" "}
+              {data.productivity.workflows
+                .map((item) => item.weeklyHoursSaved)
+                .join(" + ")}{" "}
+              ={" "}
+              <span className="font-semibold text-cyan-200">
+                {data.productivity.measuredWeeklyHoursSaved} hrs/week
+              </span>
+              .
+            </p>
+          </div>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+              <p className="text-sm font-semibold text-white">
+                Estimated current annualized capacity
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                {data.productivity.measuredWeeklyHoursSaved} hrs/week ×{" "}
+                {data.productivity.workingWeeksPerYear} weeks ={" "}
+                {data.productivity.measuredAnnualHoursSaved.toLocaleString()}{" "}
+                hrs/year ÷ {data.productivity.workdayHours} hrs/day ={" "}
+                {data.productivity.measuredWorkingDaysSaved.toLocaleString()}{" "}
+                person-days.
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+              <p className="text-sm font-semibold text-white">
+                Full-adoption upside model
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                {data.productivity.baselinePeople} people ×{" "}
+                {data.productivity.baselineDailyHoursPerPerson} hr/day ×{" "}
+                {data.productivity.workdaysPerWeek} days/week ×{" "}
+                {data.productivity.workingWeeksPerYear} weeks ={" "}
+                {data.productivity.baselineAnnualHoursSaved.toLocaleString()}{" "}
+                hrs/year ÷ {data.productivity.workdayHours} hrs/day ={" "}
+                {data.productivity.baselineWorkingDaysSaved.toLocaleString()}{" "}
+                person-days.
+              </p>
+            </div>
+          </div>
+        </details>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {data.productivity.workflows.map((item) => (
             <div
               key={`${item.role}-${item.workflow}`}

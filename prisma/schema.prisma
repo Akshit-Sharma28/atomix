@@ -474,6 +474,8 @@ model KnowledgeDocument {
 
   fileName String?
 
+  folderName String @default("General")
+
   uploadedById String?
 
   visibility String @default("REVIEW_TEAM")

@@ -56,6 +56,15 @@ type DemoCallProject = {
 
 const riskLevels = ["High", "Medium", "Low"];
 const tenantTypes = ["Single tenant", "Multi tenant"];
+const authMechanisms = [
+  "To be confirmed",
+  "Azure AD",
+  "AD / SSO",
+  "OAuth / OIDC",
+  "JWT",
+  "LDAP",
+  "Local authentication",
+];
 const scanReports = [
   "Burp Suite",
   "Qualys",
@@ -92,6 +101,7 @@ export default function ScopeCallAgent({
   const [apiAvailable, setApiAvailable] = useState("Yes");
   const [llmUsage, setLlmUsage] = useState("No");
   const [llmReviewRequired, setLlmReviewRequired] = useState("No");
+  const [authMechanism, setAuthMechanism] = useState("To be confirmed");
   const permutation = validateRiskPermutation(
     overallRisk,
     confidentiality,
@@ -105,6 +115,7 @@ export default function ScopeCallAgent({
     internetExposed,
     apiAvailable,
     llmUsage,
+    authMechanism,
   });
   const feadContext: FeadContext = {
     scope,
@@ -114,6 +125,7 @@ export default function ScopeCallAgent({
     internetExposed,
     apiAvailable,
     llmUsage,
+    authMechanism,
   };
   const llmFeadRequired =
     llmUsage === "Yes" ||
@@ -598,7 +610,13 @@ export default function ScopeCallAgent({
           <TextField name="appServer" label="Application Server" />
           <TextField name="operatingSystem" label="Operating System" />
           <TextField name="apiStyle" label="API Usage" placeholder="REST, GraphQL, SOAP" />
-          <TextField name="authMechanism" label="Auth Mechanism" placeholder="SSO, OAuth, JWT, LDAP" />
+          <SelectField
+            name="authMechanism"
+            label="Auth Mechanism"
+            options={authMechanisms}
+            value={authMechanism}
+            onChange={setAuthMechanism}
+          />
           <TextField name="cloudServices" label="Cloud Services" placeholder="AWS, Azure, GCP" />
           <TextField name="identityIntegration" label="AD / SSO Integrated" />
           <TextField name="multiTenant" label="Tenant Architecture Notes" />
@@ -1224,6 +1242,36 @@ function validateRiskPermutation(
 
   if (
     overallRisk === "High" &&
+    cia.every((dimension) => dimension === "High")
+  ) {
+    return {
+      valid: true,
+      message:
+        "Overall Risk High with C:High I:High A:High is valid for peer validation.",
+    };
+  }
+
+  if (
+    overallRisk === "Medium" &&
+    cia.every((dimension) => dimension === "High")
+  ) {
+    return {
+      valid: false,
+      message:
+        "Overall Risk Medium cannot use C:High I:High A:High; at least one CIA dimension should be Medium.",
+    };
+  }
+
+  if (overallRisk === "Medium" && !cia.includes("Medium")) {
+    return {
+      valid: false,
+      message:
+        "Overall Risk Medium requires at least one CIA dimension to be Medium.",
+    };
+  }
+
+  if (
+    overallRisk === "High" &&
     !cia.includes("High")
   ) {
     return {
@@ -1279,21 +1327,32 @@ function generateFeadDraft({
   internetExposed,
   apiAvailable,
   llmUsage,
+  authMechanism,
 }: {
   tenantType: string;
   publicInternal: string;
   internetExposed: string;
   apiAvailable: string;
   llmUsage: string;
+  authMechanism: string;
 }) {
   const controls = [
+    {
+      id: "2-5",
+      title: "Azure AD managed identity controls",
+      status: authMechanism === "Azure AD" ? "NA" : "Open",
+      comment:
+        authMechanism === "Azure AD"
+          ? "Azure AD handles identity, password, challenge-response, and related section 2-5 controls outside the application scope."
+          : "Reviewer to validate application-managed identity, password, challenge-response, and related section 2-5 controls.",
+    },
     {
       id: "7.2",
       title: "Multi-tenant isolation",
       status: tenantType === "Single tenant" ? "NA" : "Open",
       comment:
         tenantType === "Single tenant"
-          ? "Application is deployed as a single tenant solution; multi-tenant isolation controls are not applicable."
+          ? "Application is deployed as a single tenant solution; multi-tenant isolation and cross-tenant authorization checks are not applicable."
           : "Reviewer to validate tenant isolation boundaries, data segregation, and tenant-aware authorization.",
     },
     {
@@ -1333,6 +1392,7 @@ function generateFeadDraft({
 - Internet exposed: ${internetExposed}
 - APIs available: ${apiAvailable}
 - LLM/AI usage: ${llmUsage}
+- Auth mechanism: ${authMechanism}
 
 ## Control Status
 ${controls

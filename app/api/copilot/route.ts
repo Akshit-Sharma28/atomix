@@ -7,6 +7,9 @@ import {
 import {
   askCopilot,
 } from "../../../services/ai/openai.service";
+import {
+  runMcpAugmentedAgent,
+} from "../../../services/agents/mcp-agent-runner.service";
 
 export async function POST(
   req: Request
@@ -33,11 +36,37 @@ export async function POST(
     const context =
       await buildContext();
 
-    const answer =
-      await askCopilot(
+    let answer = "";
+    let mode = "mcp-agentic";
+    let agentTrace: unknown[] = [];
+
+    try {
+      const result = await runMcpAugmentedAgent(
         question,
-        context
+        context,
       );
+
+      answer = result.answer;
+      agentTrace = result.trace;
+    } catch (error) {
+      mode = "prompt-fallback";
+      answer =
+        await askCopilot(
+          question,
+          context
+        );
+      agentTrace = [
+        {
+          step: 1,
+          toolName: "prompt-fallback",
+          status: "failed",
+          summary:
+            error instanceof Error
+              ? error.message
+              : "MCP agent loop failed; used prompt-only fallback.",
+        },
+      ];
+    }
 
     await prisma.copilotConversation.create({
       data: {
@@ -49,6 +78,8 @@ export async function POST(
 
     return Response.json({
       answer,
+      mode,
+      agentTrace,
     });
   } catch (error) {
     console.error(

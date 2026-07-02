@@ -50,9 +50,18 @@ const inspectorMethods = [
   "tools/list",
   "tools/call",
   "resources/list",
+  "resources/read",
   "prompts/list",
+  "prompts/get",
   "ping",
 ];
+
+const resourcePresets = [
+  "atomix://dashboard/summary",
+  "atomix://mcp/controls",
+];
+
+const promptPresets = ["atomix_security_review_brief"];
 
 const atomixToolPresets = [
   {
@@ -104,6 +113,11 @@ export default function McpReviewAgent() {
   const [extraHeadersJson, setExtraHeadersJson] = useState("");
   const [toolName, setToolName] = useState("atomix.dashboard_summary");
   const [toolArgumentsJson, setToolArgumentsJson] = useState("{}");
+  const [resourceUri, setResourceUri] = useState("atomix://dashboard/summary");
+  const [promptName, setPromptName] = useState("atomix_security_review_brief");
+  const [promptArgumentsJson, setPromptArgumentsJson] = useState(
+    '{\n  "focus": "MCP controls"\n}',
+  );
   const [inspectorLoading, setInspectorLoading] = useState(false);
   const [inspectorResult, setInspectorResult] =
     useState<Record<string, unknown> | null>(null);
@@ -165,6 +179,9 @@ export default function McpReviewAgent() {
           extraHeadersJson,
           toolName,
           toolArgumentsJson,
+          resourceUri,
+          promptName,
+          promptArgumentsJson,
         }),
       });
       const data = (await response.json()) as Record<string, unknown>;
@@ -331,6 +348,12 @@ export default function McpReviewAgent() {
           setToolName={setToolName}
           toolArgumentsJson={toolArgumentsJson}
           setToolArgumentsJson={setToolArgumentsJson}
+          resourceUri={resourceUri}
+          setResourceUri={setResourceUri}
+          promptName={promptName}
+          setPromptName={setPromptName}
+          promptArgumentsJson={promptArgumentsJson}
+          setPromptArgumentsJson={setPromptArgumentsJson}
           loading={inspectorLoading}
           result={inspectorResult}
           onRun={runInspector}
@@ -516,6 +539,12 @@ function InspectorPanel({
   setToolName,
   toolArgumentsJson,
   setToolArgumentsJson,
+  resourceUri,
+  setResourceUri,
+  promptName,
+  setPromptName,
+  promptArgumentsJson,
+  setPromptArgumentsJson,
   loading,
   result,
   onRun,
@@ -534,6 +563,12 @@ function InspectorPanel({
   setToolName: (value: string) => void;
   toolArgumentsJson: string;
   setToolArgumentsJson: (value: string) => void;
+  resourceUri: string;
+  setResourceUri: (value: string) => void;
+  promptName: string;
+  setPromptName: (value: string) => void;
+  promptArgumentsJson: string;
+  setPromptArgumentsJson: (value: string) => void;
   loading: boolean;
   result: Record<string, unknown> | null;
   onRun: () => void;
@@ -555,6 +590,14 @@ function InspectorPanel({
 
     if (preset) {
       setToolArgumentsJson(preset.argumentsJson);
+    }
+  }
+
+  function usePromptPreset(presetName: string) {
+    setPromptName(presetName);
+
+    if (presetName === "atomix_security_review_brief") {
+      setPromptArgumentsJson('{\n  "focus": "MCP controls"\n}');
     }
   }
 
@@ -656,6 +699,51 @@ function InspectorPanel({
               </label>
             </div>
           )}
+          {method === "resources/read" && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+              <div className="grid gap-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <SelectField
+                  label="Resource Preset"
+                  options={resourcePresets}
+                  value={resourceUri}
+                  onChange={setResourceUri}
+                />
+                <TextField
+                  label="Custom Resource URI"
+                  value={resourceUri}
+                  onChange={setResourceUri}
+                />
+              </div>
+            </div>
+          )}
+          {method === "prompts/get" && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+              <div className="mb-4 grid gap-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <SelectField
+                  label="Prompt Preset"
+                  options={promptPresets}
+                  value={promptName}
+                  onChange={usePromptPreset}
+                />
+                <TextField
+                  label="Custom Prompt Name"
+                  value={promptName}
+                  onChange={setPromptName}
+                />
+              </div>
+              <label className="block">
+                <span className="mb-2 block text-sm text-slate-400">
+                  Prompt Arguments JSON
+                </span>
+                <textarea
+                  value={promptArgumentsJson}
+                  onChange={(event) => setPromptArgumentsJson(event.target.value)}
+                  rows={5}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 font-mono text-sm text-white"
+                />
+              </label>
+            </div>
+          )}
           <div className="grid gap-3 md:grid-cols-2">
             <TextField
               label="Auth Header Name"
@@ -731,7 +819,7 @@ function InspectorPanel({
         <pre className="max-h-[31rem] overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-800 bg-black/60 p-4 text-xs leading-5 text-slate-200">
           {result
             ? JSON.stringify(result, null, 2)
-            : "Run initialize, tools/list, tools/call, resources/list, prompts/list, or ping to collect MCP evidence."}
+            : "Run initialize, tools/list, tools/call, resources/list, resources/read, prompts/list, prompts/get, or ping to collect MCP evidence."}
         </pre>
       </div>
     </div>

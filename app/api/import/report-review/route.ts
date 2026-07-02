@@ -44,6 +44,7 @@ export async function POST(req: Request) {
   const artifactType = String(form.get("artifactType") ?? "Scan Report");
   const iteration = String(form.get("iteration") ?? "1.0");
   const visibility = String(form.get("visibility") ?? "REVIEW_TEAM");
+  const folderName = String(form.get("folderName") ?? "General").trim() || "General";
   const currentUser = await getCurrentUser();
 
   if (!file || !projectId) {
@@ -100,6 +101,7 @@ export async function POST(req: Request) {
       artifactType,
       scanner,
       fileName: file.name,
+      folderName,
       uploadedById: currentUser?.id,
       visibility,
     },

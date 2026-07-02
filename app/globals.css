@@ -332,7 +332,7 @@ textarea {
     linear-gradient(rgba(34, 211, 238, 0.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(34, 211, 238, 0.08) 1px, transparent 1px),
     radial-gradient(circle at 50% 30%, rgba(34, 211, 238, 0.18), transparent 38%),
-    #020617;
+    rgba(2, 6, 23, 0.32);
   background-size: 18px 18px, 18px 18px, auto, auto;
   border: 1px solid rgba(34, 211, 238, 0.14);
   aspect-ratio: 16 / 9;
@@ -370,181 +370,214 @@ textarea {
   }
 }
 
-.atomix-pixel {
-  bottom: 38px;
-  height: 54px;
+.atomix-vault-shell {
+  animation: atomix-vault-glow 3.8s steps(4) infinite;
+  border: 4px solid #67e8f9;
+  box-shadow:
+    inset 0 0 0 4px rgba(14, 116, 144, 0.8),
+    0 0 28px rgba(34, 211, 238, 0.32);
+  height: 78px;
+  left: 50%;
   position: absolute;
-  width: 46px;
+  top: 50%;
+  transform: translate(-50%, -58%);
+  width: 118px;
 }
 
-.atomix-pixel::before,
-.atomix-pixel::after,
-.atomix-pixel span {
+.atomix-vault-shell::before,
+.atomix-vault-shell::after,
+.atomix-vault-door,
+.atomix-vault-lock,
+.atomix-data-packet,
+.atomix-policy-gate,
+.atomix-redacted-output,
+.atomix-redacted-output span,
+.atomix-audit-rail span {
   content: "";
   position: absolute;
 }
 
-.atomix-hero-sprite {
-  animation: atomix-hero-attack 2.6s steps(4) infinite;
-  left: 42px;
+.atomix-vault-shell::before {
+  background: rgba(34, 211, 238, 0.14);
+  height: 20px;
+  left: 14px;
+  top: -24px;
+  width: 90px;
 }
 
-.atomix-hero-sprite::before {
-  background: #22d3ee;
-  box-shadow:
-    10px 0 #22d3ee,
-    20px 0 #22d3ee,
-    0 10px #0e7490,
-    10px 10px #67e8f9,
-    20px 10px #0e7490,
-    10px 20px #f8fafc,
-    0 30px #22d3ee,
-    10px 30px #22d3ee,
-    20px 30px #22d3ee,
-    -10px 40px #67e8f9,
-    30px 40px #67e8f9;
-  height: 10px;
-  left: 8px;
-  top: 0;
-  width: 10px;
-}
-
-.atomix-hero-sprite::after {
-  background: rgba(34, 211, 238, 0.22);
-  border: 2px solid #67e8f9;
-  border-radius: 999px;
-  height: 42px;
-  left: 34px;
-  top: 8px;
-  width: 24px;
-}
-
-.atomix-hero-sprite span:nth-child(1) {
-  background: #facc15;
-  box-shadow: 10px 0 #facc15, 20px 0 #facc15;
-  height: 8px;
-  left: 12px;
-  top: -12px;
-  width: 8px;
-}
-
-.atomix-hero-sprite span:nth-child(2) {
+.atomix-vault-shell::after {
   background: #67e8f9;
-  height: 6px;
-  left: 54px;
-  top: 24px;
-  width: 22px;
-}
-
-.atomix-hero-sprite span:nth-child(3) {
-  background: rgba(34, 211, 238, 0.3);
-  bottom: -12px;
-  height: 5px;
-  left: -6px;
-  width: 62px;
-}
-
-.atomix-attacker-sprite {
-  animation: atomix-attacker-hit 2.6s steps(4) infinite;
-  right: 50px;
-}
-
-.atomix-attacker-sprite::before {
-  background: #ef4444;
   box-shadow:
-    10px 0 #ef4444,
-    20px 0 #ef4444,
-    -10px 10px #991b1b,
-    0 10px #f97316,
-    10px 10px #020617,
-    20px 10px #f97316,
-    30px 10px #991b1b,
-    0 20px #991b1b,
-    10px 20px #ef4444,
-    20px 20px #991b1b,
-    0 30px #ef4444,
-    20px 30px #ef4444,
-    -10px 40px #991b1b,
-    30px 40px #991b1b;
-  height: 10px;
-  left: 8px;
-  top: 3px;
-  width: 10px;
-}
-
-.atomix-attacker-sprite::after {
-  background: #ef4444;
-  box-shadow: 10px 0 #ef4444, 20px 0 #ef4444, 30px 0 #ef4444;
+    14px 0 #67e8f9,
+    28px 0 #67e8f9,
+    42px 0 #67e8f9,
+    56px 0 #67e8f9;
   height: 6px;
-  left: -34px;
-  top: 28px;
+  left: 24px;
+  top: 12px;
   width: 6px;
 }
 
-.atomix-attacker-sprite span:nth-child(1) {
-  animation: atomix-glitch 0.5s steps(2) infinite;
-  background: rgba(239, 68, 68, 0.26);
-  inset: -8px;
+.atomix-vault-door {
+  border: 3px solid #22d3ee;
+  height: 42px;
+  left: 37px;
+  top: 25px;
+  width: 42px;
 }
 
-.atomix-attacker-sprite span:nth-child(2) {
-  background: #f97316;
-  height: 6px;
-  left: -46px;
-  top: 12px;
-  width: 12px;
+.atomix-vault-lock {
+  animation: atomix-lock-pulse 3.8s steps(3) infinite;
+  background: #a7f3d0;
+  box-shadow:
+    8px 0 #a7f3d0,
+    16px 0 #a7f3d0,
+    8px 8px #020617,
+    8px 16px #a7f3d0,
+    0 24px #a7f3d0,
+    8px 24px #a7f3d0,
+    16px 24px #a7f3d0;
+  height: 8px;
+  left: 47px;
+  top: 33px;
+  width: 8px;
 }
 
-.atomix-attacker-sprite span:nth-child(3) {
-  background: rgba(239, 68, 68, 0.25);
-  bottom: -12px;
-  height: 5px;
-  left: -8px;
-  width: 62px;
+.atomix-data-packet {
+  animation: atomix-packet-seal 3.8s steps(8) infinite;
+  border: 2px solid #67e8f9;
+  color: #a5f3fc;
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 900;
+  height: 20px;
+  left: 7%;
+  line-height: 16px;
+  padding: 0 5px;
+  top: 40%;
+  white-space: nowrap;
 }
 
-.atomix-laser {
-  animation: atomix-laser-fire 2.6s steps(2) infinite;
-  background: #67e8f9;
-  box-shadow: 0 0 18px rgba(103, 232, 249, 0.9);
-  height: 6px;
-  left: 122px;
-  opacity: 0;
-  position: absolute;
-  top: 82px;
-  width: 130px;
+.atomix-data-packet-b {
+  animation-delay: 1.1s;
+  border-color: #a7f3d0;
+  color: #bbf7d0;
+  top: 58%;
 }
 
-.atomix-shield-burst {
-  animation: atomix-shield-burst 2.6s steps(4) infinite;
-  border: 3px solid #67e8f9;
-  border-radius: 999px;
-  height: 52px;
-  opacity: 0;
-  position: absolute;
-  right: 88px;
-  top: 58px;
-  width: 52px;
-}
-
-.atomix-packet {
-  animation: atomix-packet-float 3.2s linear infinite;
+.atomix-policy-gate {
+  animation: atomix-gate-check 3.8s steps(4) infinite;
+  border: 2px solid rgba(34, 211, 238, 0.55);
   color: #67e8f9;
   font-family: monospace;
   font-size: 10px;
+  font-weight: 900;
+  height: 58px;
+  line-height: 54px;
+  text-align: center;
+  top: 36%;
+  width: 46px;
+}
+
+.atomix-policy-gate-a {
+  left: 31%;
+}
+
+.atomix-policy-gate-b {
+  right: 31%;
+}
+
+.atomix-redacted-output {
+  animation: atomix-signal-release 3.8s steps(5) infinite;
+  border: 2px solid #a7f3d0;
+  height: 56px;
+  opacity: 0.25;
+  right: 7%;
+  top: 41%;
+  width: 92px;
+}
+
+.atomix-redacted-output::before {
+  color: #bbf7d0;
+  content: "SIGNALS";
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 900;
+  left: 10px;
   position: absolute;
+  top: -18px;
 }
 
-.atomix-packet-a {
-  left: 44%;
-  top: 24px;
+.atomix-redacted-output span {
+  background: #a7f3d0;
+  height: 5px;
+  left: 12px;
+  width: 44px;
 }
 
-.atomix-packet-b {
-  animation-delay: 1.1s;
-  color: #f97316;
-  left: 66%;
-  top: 124px;
+.atomix-redacted-output span:nth-child(1) {
+  top: 13px;
+}
+
+.atomix-redacted-output span:nth-child(2) {
+  top: 25px;
+  width: 64px;
+}
+
+.atomix-redacted-output span:nth-child(3) {
+  background: #020617;
+  box-shadow: 10px 0 #020617, 20px 0 #020617, 30px 0 #020617;
+  top: 37px;
+  width: 8px;
+}
+
+.atomix-audit-rail {
+  border-top: 2px solid rgba(103, 232, 249, 0.28);
+  bottom: 42px;
+  height: 24px;
+  left: 9%;
+  position: absolute;
+  right: 9%;
+}
+
+.atomix-audit-rail::before {
+  color: #67e8f9;
+  content: "AUDIT TRAIL";
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 900;
+  left: 50%;
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+}
+
+.atomix-audit-rail span {
+  animation: atomix-audit-step 3.8s steps(4) infinite;
+  background: #67e8f9;
+  height: 8px;
+  top: -5px;
+  width: 8px;
+}
+
+.atomix-audit-rail span:nth-child(1) {
+  animation-delay: 0s;
+  left: 6%;
+}
+
+.atomix-audit-rail span:nth-child(2) {
+  animation-delay: 0.35s;
+  left: 34%;
+}
+
+.atomix-audit-rail span:nth-child(3) {
+  animation-delay: 0.7s;
+  left: 62%;
+}
+
+.atomix-audit-rail span:nth-child(4) {
+  animation-delay: 1.05s;
+  left: 90%;
 }
 
 .atomix-fight-caption {
@@ -623,90 +656,89 @@ textarea {
   }
 }
 
-@keyframes atomix-hero-attack {
+@keyframes atomix-vault-glow {
   0%,
   100% {
-    transform: translateX(0);
+    box-shadow:
+      inset 0 0 0 4px rgba(14, 116, 144, 0.8),
+      0 0 22px rgba(34, 211, 238, 0.22);
   }
-  45% {
-    transform: translateX(18px);
-  }
-  60% {
-    transform: translateX(8px);
+  52%,
+  72% {
+    box-shadow:
+      inset 0 0 0 4px rgba(14, 116, 144, 0.95),
+      0 0 42px rgba(167, 243, 208, 0.45);
   }
 }
 
-@keyframes atomix-attacker-hit {
+@keyframes atomix-lock-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  56% {
+    filter: brightness(1.35);
+    transform: scale(1.08);
+  }
+}
+
+@keyframes atomix-packet-seal {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  14%,
+  74% {
+    opacity: 1;
+  }
+  58% {
+    transform: translateX(42vw);
+  }
+  76%,
+  100% {
+    opacity: 0;
+    transform: translateX(42vw) scale(0.5);
+  }
+}
+
+@keyframes atomix-gate-check {
+  0%,
+  42%,
+  100% {
+    background: transparent;
+    box-shadow: none;
+  }
+  56%,
+  72% {
+    background: rgba(34, 211, 238, 0.12);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+  }
+}
+
+@keyframes atomix-signal-release {
+  0%,
+  54% {
+    opacity: 0.2;
+    transform: translateX(0);
+  }
+  68%,
+  100% {
+    opacity: 1;
+    transform: translateX(-10px);
+  }
+}
+
+@keyframes atomix-audit-step {
   0%,
   45%,
   100% {
-    transform: translateX(0);
+    opacity: 0.35;
   }
-  60% {
-    transform: translateX(16px) rotate(2deg);
-  }
-  72% {
-    transform: translateX(-8px) rotate(-2deg);
-  }
-}
-
-@keyframes atomix-laser-fire {
-  0%,
-  42%,
-  78%,
-  100% {
-    opacity: 0;
-    transform: scaleX(0);
-    transform-origin: left;
-  }
-  48%,
-  66% {
+  58%,
+  78% {
     opacity: 1;
-    transform: scaleX(1);
-  }
-}
-
-@keyframes atomix-shield-burst {
-  0%,
-  48%,
-  100% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  58% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  74% {
-    opacity: 0;
-    transform: scale(1.35);
-  }
-}
-
-@keyframes atomix-glitch {
-  0%,
-  100% {
-    clip-path: inset(0 0 0 0);
-    transform: translate(0);
-  }
-  50% {
-    clip-path: inset(20% 0 35% 0);
-    transform: translate(-3px, 2px);
-  }
-}
-
-@keyframes atomix-packet-float {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  30%,
-  70% {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-42px);
+    box-shadow: 0 0 14px rgba(103, 232, 249, 0.85);
   }
 }
 

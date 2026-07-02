@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import {
   useRouter,
@@ -12,7 +13,6 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  LockKeyhole,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -75,7 +75,7 @@ function LoginForm() {
       <div className="atomix-hero-orb atomix-hero-orb-b" />
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col">
-        <header className="flex items-center justify-between">
+        <header className="flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/"
             className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-cyan-200"
@@ -94,14 +94,14 @@ function LoginForm() {
           </a>
         </header>
 
-        <section className="grid flex-1 grid-cols-1 items-center gap-8 py-8 lg:grid-cols-[1fr_440px]">
-          <div className="max-w-2xl">
+        <section className="grid flex-1 grid-cols-1 items-center gap-8 py-8 xl:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
+          <div className="min-w-0 max-w-2xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
               <Sparkles size={16} />
               Secure governance workspace
             </div>
 
-            <h1 className="text-4xl font-black tracking-tight md:text-6xl">
+            <h1 className="text-4xl font-black tracking-tight md:text-5xl xl:text-6xl">
               Sign in to
               <span className="block text-cyan-300">
                 Atomix Governance.
@@ -140,21 +140,24 @@ function LoginForm() {
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-md rounded-[2rem] border border-cyan-300/20 bg-slate-950/85 p-7 shadow-2xl backdrop-blur atomix-glow">
-            <div className="mb-6 flex items-center gap-4">
-              <div className="grid h-14 w-14 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 atomix-logo-pulse">
-                <LockKeyhole
-                  className="text-cyan-300"
-                  size={26}
+          <div className="mx-auto w-full max-w-md rounded-[2rem] border border-cyan-300/20 bg-slate-950/85 p-5 shadow-2xl backdrop-blur atomix-glow sm:p-7">
+            <div className="mb-6 flex min-w-0 items-center gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 atomix-logo-pulse sm:h-14 sm:w-14">
+                <Image
+                  src="/atomix-mark.svg"
+                  alt=""
+                  width={42}
+                  height={42}
+                  priority
                 />
               </div>
 
-              <div>
-                <h1 className="text-3xl font-black text-cyan-300">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-black text-cyan-300 sm:text-3xl">
                   ATOMIX
                 </h1>
 
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500 sm:text-xs sm:tracking-[0.18em]">
                   Governance Login
                 </p>
               </div>

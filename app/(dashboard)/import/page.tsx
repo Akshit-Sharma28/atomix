@@ -4,11 +4,17 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/services/users/current-user.service";
 import { normalizeRole } from "@/services/users/access.service";
 import {
+  deleteVaultDocument,
+  updateVaultDocument,
+} from "./actions";
+import {
   Archive,
+  Edit3,
   FileSearch,
   FolderOpen,
   LockKeyhole,
   ShieldCheck,
+  Trash2,
   Upload,
 } from "lucide-react";
 
@@ -192,6 +198,26 @@ export default async function ImportPage() {
   }));
   const mappedDocuments = documents.filter((document) => document.projectId);
   const iterations = new Set(documents.map((document) => document.iteration));
+  const folderGroups = Array.from(
+    documents.reduce((groups, document) => {
+      const folderName =
+        document.folderName?.trim() ||
+        [
+          document.sprId ?? "Unassigned SPR",
+          document.srId ?? "Unassigned SR",
+          `Iteration ${document.iteration}`,
+        ].join(" / ");
+      const group = groups.get(folderName) ?? [];
+
+      group.push(document);
+      groups.set(folderName, group);
+
+      return groups;
+    }, new Map<string, typeof documents>()),
+  ).map(([folderName, folderDocuments]) => ({
+    folderName,
+    documents: folderDocuments,
+  }));
 
   return (
     <div className="w-full max-w-full overflow-x-hidden px-4 py-6 sm:px-6 xl:px-8">
@@ -296,58 +322,186 @@ export default async function ImportPage() {
             </div>
           </div>
 
-          <div className="max-h-[680px] divide-y divide-slate-800 overflow-y-auto overflow-x-hidden">
+          <div className="max-h-[680px] overflow-y-auto overflow-x-hidden">
             {documents.length === 0 && (
               <div className="p-8 text-center text-slate-500">
                 No review documents are visible for your current role.
               </div>
             )}
 
-            {documents.map((document) => (
-              <div key={document.id} className="min-w-0 px-6 py-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-white">{document.title}</p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {document.sprId ?? "SPR pending"} ·{" "}
-                      {document.srId ?? "SR not selected"} · Iteration{" "}
-                      {document.iteration}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs ${typeTone(
-                      document.artifactType,
-                    )}`}
-                  >
-                    {document.artifactType}
+            {folderGroups.map((folder) => (
+              <details
+                key={folder.folderName}
+                open
+                className="border-b border-slate-800"
+              >
+                <summary className="sticky top-0 z-10 flex cursor-pointer list-none items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-6 py-4">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <FolderOpen size={18} className="shrink-0 text-cyan-300" />
+                    <span className="truncate font-bold text-white">
+                      {folder.folderName}
+                    </span>
                   </span>
-                </div>
+                  <span className="rounded-full bg-slate-950 px-3 py-1 text-xs text-slate-400">
+                    {folder.documents.length} documents
+                  </span>
+                </summary>
 
-                <div className="mt-4 grid min-w-0 gap-3 text-xs text-slate-400 sm:grid-cols-3 2xl:grid-cols-1">
-                  <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-2">
-                    <p className="text-slate-500">Source</p>
-                    <p className="mt-1 truncate text-slate-300">
-                      {document.scanner ?? document.source}
-                    </p>
-                  </div>
-                  <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-2">
-                    <p className="text-slate-500">Visibility</p>
-                    <p className="mt-1 truncate text-slate-300">
-                      {document.visibility.replaceAll("_", " ")}
-                    </p>
-                  </div>
-                  <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-2">
-                    <p className="text-slate-500">Uploaded</p>
-                    <p className="mt-1 truncate text-slate-300">
-                      {formatDate(document.createdAt)}
-                    </p>
-                  </div>
-                </div>
+                <div className="divide-y divide-slate-800">
+                  {folder.documents.map((document) => (
+                    <div key={document.id} className="min-w-0 px-6 py-5">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-white">
+                            {document.title}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {document.sprId ?? "SPR pending"} ·{" "}
+                            {document.srId ?? "SR not selected"} · Iteration{" "}
+                            {document.iteration}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs ${typeTone(
+                            document.artifactType,
+                          )}`}
+                        >
+                          {document.artifactType}
+                        </span>
+                      </div>
 
-                <p className="mt-3 line-clamp-2 text-sm text-slate-500">
-                  {document.content}
-                </p>
-              </div>
+                      <div className="mt-4 grid min-w-0 gap-3 text-xs text-slate-400 sm:grid-cols-3 2xl:grid-cols-1">
+                        <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-2">
+                          <p className="text-slate-500">Source</p>
+                          <p className="mt-1 truncate text-slate-300">
+                            {document.scanner ?? document.source}
+                          </p>
+                        </div>
+                        <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-2">
+                          <p className="text-slate-500">Visibility</p>
+                          <p className="mt-1 truncate text-slate-300">
+                            {document.visibility.replaceAll("_", " ")}
+                          </p>
+                        </div>
+                        <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-2">
+                          <p className="text-slate-500">Uploaded</p>
+                          <p className="mt-1 truncate text-slate-300">
+                            {formatDate(document.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="mt-3 line-clamp-2 text-sm text-slate-500">
+                        {document.content}
+                      </p>
+
+                      <details className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                        <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-cyan-200">
+                          <Edit3 size={15} />
+                          Edit document metadata
+                        </summary>
+                        <form action={updateVaultDocument} className="mt-4 grid gap-3">
+                          <input type="hidden" name="documentId" value={document.id} />
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <label className="space-y-2">
+                              <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                                Title
+                              </span>
+                              <input
+                                name="title"
+                                defaultValue={document.title}
+                                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                              />
+                            </label>
+                            <label className="space-y-2">
+                              <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                                Folder
+                              </span>
+                              <input
+                                name="folderName"
+                                defaultValue={folder.folderName}
+                                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                              />
+                            </label>
+                            <label className="space-y-2">
+                              <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                                Artifact type
+                              </span>
+                              <select
+                                name="artifactType"
+                                defaultValue={document.artifactType}
+                                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                              >
+                                {[
+                                  "FEAD",
+                                  "BEAD",
+                                  "LLM FEAD",
+                                  "Scan Report",
+                                  "Architecture Diagram",
+                                  "Demo Call Notes",
+                                  "Evidence Images",
+                                  "Remediation Evidence",
+                                  "Exception Evidence",
+                                ].map((type) => (
+                                  <option key={type}>{type}</option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="space-y-2">
+                              <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                                Source
+                              </span>
+                              <input
+                                name="scanner"
+                                defaultValue={document.scanner ?? "Manual / Evidence"}
+                                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                              />
+                            </label>
+                            <label className="space-y-2">
+                              <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                                Visibility
+                              </span>
+                              <select
+                                name="visibility"
+                                defaultValue={document.visibility}
+                                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                              >
+                                <option value="REVIEW_TEAM">Review team only</option>
+                                <option value="GOVERNANCE">Governance visible</option>
+                                <option value="LEADERSHIP">Leadership summary visible</option>
+                              </select>
+                            </label>
+                          </div>
+                          <label className="space-y-2">
+                            <span className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                              Document notes / extracted content
+                            </span>
+                            <textarea
+                              name="content"
+                              rows={4}
+                              defaultValue={document.content}
+                              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                            />
+                          </label>
+                          <div className="flex flex-wrap gap-3">
+                            <button className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-bold text-slate-950">
+                              Save document
+                            </button>
+                          </div>
+                        </form>
+                      </details>
+
+                      <form action={deleteVaultDocument} className="mt-3">
+                        <input type="hidden" name="documentId" value={document.id} />
+                        <button className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 px-3 py-2 text-xs font-bold text-red-200 hover:bg-red-500/10">
+                          <Trash2 size={14} />
+                          Remove from vault
+                        </button>
+                      </form>
+                    </div>
+                  ))}
+                </div>
+              </details>
             ))}
           </div>
         </section>

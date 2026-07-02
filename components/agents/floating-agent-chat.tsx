@@ -19,6 +19,26 @@ const quickPrompts = [
   "Find SLA pressure, overdue SRs, and escalation candidates.",
 ];
 
+type AgentTraceStep = {
+  step?: number;
+  toolName?: string;
+  elapsedMs?: number;
+  summary?: string;
+};
+
+function formatTrace(trace: AgentTraceStep[]) {
+  if (trace.length === 0) {
+    return "";
+  }
+
+  return `\n\nAgent trace:\n${trace
+    .map(
+      (step, index) =>
+        `- Step ${step.step ?? index + 1}: ${step.toolName ?? "tool"}${typeof step.elapsedMs === "number" ? ` (${step.elapsedMs}ms)` : ""} - ${step.summary ?? "Completed"}`,
+    )
+    .join("\n")}`;
+}
+
 export default function FloatingAgentChat() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -65,15 +85,19 @@ export default function FloatingAgentChat() {
       });
 
       const data = await response.json();
+      const trace = Array.isArray(data.agentTrace)
+        ? formatTrace(data.agentTrace)
+        : "";
 
       setMessages((current) => [
         ...current,
         {
           role: "agent",
           text:
-            data.answer ??
-            data.error ??
-            "I could not produce an answer from the local AI service.",
+            data.answer
+              ? `${data.answer}${trace}`
+              : data.error ??
+                "I could not produce an answer from the local AI service.",
         },
       ]);
     } catch {

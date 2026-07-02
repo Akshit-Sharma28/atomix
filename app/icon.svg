@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="atomix-bg" x1="18" y1="14" x2="110" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.55" stop-color="#0891b2"/>
+      <stop offset="1" stop-color="#facc15"/>
+    </linearGradient>
+  </defs>
+  <path d="M27 84L54 36h20l27 48H82l-8-15H53l-8 15H27z" fill="#ecfeff"/>
+  <path d="M61 55h5l8 14H53l8-14z" fill="#020617" opacity="0.8"/>
+  <g>
+    <path d="M31 42c14-16 52-19 69-4 13 12 4 28-19 40-25 13-55 13-63 0-7-12 8-29 33-39" fill="none" stroke="#67e8f9" stroke-width="6" stroke-linecap="round" opacity="0.86"/>
+    <circle cx="101" cy="38" r="5" fill="#e0f2fe"/>
+    <circle r="6" fill="#facc15">
+      <animateMotion dur="5.5s" repeatCount="indefinite" path="M31 42c14-16 52-19 69-4 13 12 4 28-19 40-25 13-55 13-63 0-7-12 8-29 33-39C43 40 36 39 31 42"/>
+    </circle>
+  </g>
+  <path d="M96 87L82 73M82 87l14-14" stroke="#facc15" stroke-width="8" stroke-linecap="round"/>
+</svg>

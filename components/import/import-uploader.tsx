@@ -35,6 +35,8 @@ export default function ImportUploader({
     useState(projects[0]?.id ?? "");
   const [reviewId, setReviewId] =
     useState("");
+  const [folderName, setFolderName] =
+    useState("");
   const [loading, setLoading] =
     useState(false);
   const [message, setMessage] =
@@ -58,6 +60,7 @@ export default function ImportUploader({
     formData.append("reviewId", reviewId);
     formData.append("iteration", selectedReview?.iteration ?? "1.0");
     formData.append("visibility", "REVIEW_TEAM");
+    formData.append("folderName", activeFolderName);
 
     const response = await fetch(
       "/api/import/burp",
@@ -92,6 +95,15 @@ export default function ImportUploader({
   const selectedReview = projectReviews.find(
     (review) => review.id === reviewId
   );
+  const selectedProject = projects.find(
+    (project) => project.id === projectId
+  );
+  const defaultFolderName = [
+    selectedProject?.sprId ?? selectedProject?.name ?? "Unassigned SPR",
+    selectedReview?.srId ?? selectedReview?.title ?? "Unassigned SR",
+    `Iteration ${selectedReview?.iteration ?? "1.0"}`,
+  ].join(" / ");
+  const activeFolderName = folderName.trim() || defaultFolderName;
 
   return (
     <div className="min-w-0 rounded-2xl border border-cyan-500/20 bg-slate-900 p-4 sm:p-6">
@@ -166,6 +178,17 @@ export default function ImportUploader({
             </span>
           </div>
         </Field>
+        <Field label="Vault folder">
+          <input
+            value={folderName}
+            onChange={(event) => setFolderName(event.target.value)}
+            placeholder={defaultFolderName}
+            className="w-full min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300 outline-none focus:border-cyan-400"
+          />
+        </Field>
+      </div>
+
+      <div className="mt-4">
 
         <Field label="Burp XML file">
           <input

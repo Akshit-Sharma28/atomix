@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -19,6 +20,7 @@ import {
   RotateCcw,
   ClipboardList,
   FileSearch,
+  Network,
   ShieldCheck,
   TerminalSquare,
   UserPlus,
@@ -135,7 +137,7 @@ export default function Sidebar({
     },
     {
       href: "/import",
-      label: "Import",
+      label: "Review Document Vault",
       icon: Upload,
       roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "ENGAGEMENT_MANAGER"],
     },
@@ -173,6 +175,12 @@ export default function Sidebar({
       href: "/workflow/peer-review",
       label: "Peer Review Agent",
       icon: FileSearch,
+      roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "QA_REVIEWER", "REVIEWER"],
+    },
+    {
+      href: "/workflow/mcp-review",
+      label: "MCP Review Agent",
+      icon: Network,
       roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "QA_REVIEWER", "REVIEWER"],
     },
     {
@@ -274,17 +282,14 @@ export default function Sidebar({
         border-slate-800
         "
       >
-        <h1
-          className="
-          text-[2rem]
-          font-black
-          tracking-tight
-          text-yellow-400
-          leading-none
-          "
-        >
-          ATOMIX
-        </h1>
+        <Image
+          src="/atomix-logo.svg"
+          alt="ATOMIX"
+          width={220}
+          height={59}
+          priority
+          className="h-14 w-auto"
+        />
 
         <p
           className="

@@ -6,6 +6,7 @@ export type FeadContext = {
   internetExposed: string;
   apiAvailable: string;
   llmUsage: string;
+  authMechanism: string;
 };
 
 export type FeadControl = {
@@ -33,6 +34,14 @@ function noAuthentication(context: FeadContext) {
   return context.authentication === "N - No authentication";
 }
 
+function usesAzureAd(context: FeadContext) {
+  return context.authMechanism === "Azure AD";
+}
+
+function isAzureAdManagedSection(control: FeadControl) {
+  return /^[2-5]\./.test(control.section);
+}
+
 function notInternetFacing(context: FeadContext) {
   return context.internetExposed === "No" && context.publicInternal === "Internal";
 }
@@ -41,6 +50,14 @@ export function resolveFeadControl(
   control: FeadControl,
   context: FeadContext,
 ) {
+  if (usesAzureAd(context) && isAzureAdManagedSection(control)) {
+    return {
+      status: "NA",
+      reviewerComment:
+        "Marked NA because demo-call intake indicates Azure AD handles identity, password, challenge-response, and related section 2-5 controls outside the application scope.",
+    };
+  }
+
   const reason = control.naReason?.(context) ?? null;
 
   return {
@@ -395,8 +412,8 @@ export const feadControls: FeadControl[] = [
     testing: "Attempt direct URL/API access, parameter tampering, role switching, and cross-tenant access where applicable.",
     artifacts: "Access-control test cases and proxy evidence.",
     naReason: (context) =>
-      context.tenantType === "Single tenant" && noAuthentication(context)
-        ? "Marked NA because demo-call intake shows a single-tenant unauthenticated application with no role-based authorization surface."
+      context.tenantType === "Single tenant"
+        ? "Marked NA because demo-call intake shows a single-tenant application; multi-tenant isolation and cross-tenant authorization checks are not applicable."
         : null,
   },
   {

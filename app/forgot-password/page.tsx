@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
   KeyRound,
   Loader2,
-  Mail,
   ShieldCheck,
 } from "lucide-react";
 
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
                 Account recovery workflow
               </div>
 
-              <h1 className="text-5xl font-black tracking-tight">
+              <h1 className="text-4xl font-black tracking-tight md:text-5xl">
                 Recover access
                 <span className="block text-cyan-300">
                   without exposing account state.
@@ -139,7 +139,13 @@ export default function ForgotPasswordPage() {
             <div className="mx-auto w-full max-w-md rounded-[2rem] border border-cyan-300/20 bg-slate-950/85 p-7 shadow-2xl backdrop-blur md:p-8 atomix-glow">
               <div className="mb-7 flex items-center gap-4">
                 <div className="grid h-14 w-14 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 atomix-logo-pulse">
-                  <Mail className="text-cyan-300" size={26} />
+                  <Image
+                    src="/atomix-mark.svg"
+                    alt=""
+                    width={44}
+                    height={44}
+                    priority
+                  />
                 </div>
 
                 <div>

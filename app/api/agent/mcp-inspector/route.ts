@@ -7,7 +7,9 @@ const allowedMethods = new Set([
   "tools/list",
   "tools/call",
   "resources/list",
+  "resources/read",
   "prompts/list",
+  "prompts/get",
   "ping",
 ]);
 
@@ -68,6 +70,20 @@ function parseToolArguments(toolArgumentsJson: unknown) {
   return parsed as Record<string, unknown>;
 }
 
+function parsePromptArguments(promptArgumentsJson: unknown) {
+  if (!promptArgumentsJson || typeof promptArgumentsJson !== "string") {
+    return {};
+  }
+
+  const parsed = JSON.parse(promptArgumentsJson) as unknown;
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Prompt arguments must be a JSON object.");
+  }
+
+  return parsed as Record<string, unknown>;
+}
+
 export async function POST(req: Request) {
   try {
     await requireAccess([
@@ -84,6 +100,8 @@ export async function POST(req: Request) {
     const authHeaderName = String(body.authHeaderName ?? "").trim();
     const authHeaderValue = String(body.authHeaderValue ?? "").trim();
     const toolName = String(body.toolName ?? "").trim();
+    const resourceUri = String(body.resourceUri ?? "").trim();
+    const promptName = String(body.promptName ?? "").trim();
     const requestId = Number.isFinite(Number(body.requestId))
       ? Number(body.requestId)
       : Date.now();
@@ -115,9 +133,18 @@ export async function POST(req: Request) {
 
     const extraHeaders = parseHeaders(body.extraHeadersJson);
     const toolArguments = parseToolArguments(body.toolArgumentsJson);
+    const promptArguments = parsePromptArguments(body.promptArgumentsJson);
 
     if (method === "tools/call" && !toolName) {
       return Response.json({ ok: false, error: "Tool name is required for tools/call." }, { status: 400 });
+    }
+
+    if (method === "resources/read" && !resourceUri) {
+      return Response.json({ ok: false, error: "Resource URI is required for resources/read." }, { status: 400 });
+    }
+
+    if (method === "prompts/get" && !promptName) {
+      return Response.json({ ok: false, error: "Prompt name is required for prompts/get." }, { status: 400 });
     }
 
     const controller = new AbortController();
@@ -148,12 +175,31 @@ export async function POST(req: Request) {
                 arguments: toolArguments,
               },
             }
-        : {
-            jsonrpc: "2.0",
-            id: requestId,
-            method,
-            params: {},
-          };
+          : method === "resources/read"
+            ? {
+                jsonrpc: "2.0",
+                id: requestId,
+                method,
+                params: {
+                  uri: resourceUri,
+                },
+              }
+            : method === "prompts/get"
+              ? {
+                  jsonrpc: "2.0",
+                  id: requestId,
+                  method,
+                  params: {
+                    name: promptName,
+                    arguments: promptArguments,
+                  },
+                }
+              : {
+                  jsonrpc: "2.0",
+                  id: requestId,
+                  method,
+                  params: {},
+                };
 
     const response = await fetch(url, {
       method: "POST",

@@ -1,6 +1,16 @@
 export async function askOllama(
-  prompt: string
+  prompt: string,
+  options: {
+    timeoutMs?: number;
+    numPredict?: number;
+    think?: boolean;
+  } = {},
 ) {
+  const controller = new AbortController();
+  const timeout = windowlessSetTimeout(
+    () => controller.abort(),
+    options.timeoutMs ?? 20000,
+  );
   const baseUrl =
     process.env.OLLAMA_BASE_URL ??
     "http://localhost:11434";
@@ -31,13 +41,26 @@ export async function askOllama(
           model,
           prompt,
           stream: false,
+          ...(options.think === undefined
+            ? {}
+            : {
+                think: options.think,
+              }),
+          ...(options.numPredict
+            ? {
+                options: {
+                  num_predict: options.numPredict,
+                },
+              }
+            : {}),
         }),
+        signal: controller.signal,
       }
-    );
+    ).finally(() => windowlessClearTimeout(timeout));
 
   if (!response.ok) {
     throw new Error(
-      "Unable to reach Ollama"
+      `Unable to reach Ollama: ${response.status} ${response.statusText}`
     );
   }
 
@@ -45,4 +68,12 @@ export async function askOllama(
     await response.json();
 
   return data.response;
+}
+
+function windowlessSetTimeout(callback: () => void, delay: number) {
+  return globalThis.setTimeout(callback, delay);
+}
+
+function windowlessClearTimeout(timeout: ReturnType<typeof setTimeout>) {
+  globalThis.clearTimeout(timeout);
 }

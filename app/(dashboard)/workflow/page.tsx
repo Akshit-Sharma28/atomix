@@ -5,6 +5,7 @@ import {
   FileSearch,
   GitBranch,
   ListChecks,
+  Network,
   ShieldCheck,
   TerminalSquare,
   UserPlus,
@@ -52,6 +53,15 @@ const agentWorkflows = [
     description:
       "Review FEAD, BEAD, LLM FEAD, and scan evidence against scope and control coverage before reviewer sign-off.",
     icon: FileSearch,
+    roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "QA_REVIEWER", "REVIEWER"],
+  },
+  {
+    title: "MCP Review Agent",
+    href: "/workflow/mcp-review",
+    mode: "MCP security",
+    description:
+      "Generate an MCP FEAD workbook and security review guide for tools, resources, prompts, transports, tokens, roots, sampling, and elicitation.",
+    icon: Network,
     roles: ["ADMIN", "GOVERNANCE_TEAM", "VALIDATOR", "QA_REVIEWER", "REVIEWER"],
   },
   {

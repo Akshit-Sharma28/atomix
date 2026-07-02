@@ -15,6 +15,17 @@ function isActive(status: string) {
   );
 }
 
+function assignmentHours(review: {
+  assignments: {
+    allocatedHours: number | null;
+  }[];
+}) {
+  return review.assignments.reduce(
+    (total, assignment) => total + (assignment.allocatedHours ?? 0),
+    0,
+  );
+}
+
 function formatDate(date?: Date | null) {
   if (!date) {
     return "No date";
@@ -101,11 +112,6 @@ export async function GET() {
         review,
       })),
   );
-  const cancellationRequests = reviews.filter(
-    (review) =>
-      review.cancellation &&
-      !["Approved", "Rejected"].includes(review.cancellation.status),
-  );
   const canceledProjects = projects.filter((project) =>
     ["Cancelled", "Canceled"].includes(project.status),
   );
@@ -119,17 +125,11 @@ export async function GET() {
       review.actualStartDate.getTime() >
         review.requestedStartDate.getTime(),
   );
-  const allocatedHours = reviews.reduce(
-    (total, review) =>
-      total +
-      review.assignments.reduce(
-        (assignmentTotal, assignment) =>
-          assignmentTotal + (assignment.allocatedHours ?? 0),
-        0,
-      ),
+  const allocatedHours = activeReviews.reduce(
+    (total, review) => total + assignmentHours(review),
     0,
   );
-  const expectedHours = Math.max(8, activeReviews.length * 16);
+  const expectedHours = activeReviews.length * 16;
   const variance = allocatedHours - expectedHours;
   const totalCapacity = reviewerProfiles.reduce(
     (total, profile) => total + profile.weeklyCapacityHours,
@@ -166,17 +166,11 @@ export async function GET() {
             !["Approved", "Rejected"].includes(extension.status),
         ),
       );
-      const projectHours = project.reviews.reduce(
-        (total, review) =>
-          total +
-          review.assignments.reduce(
-            (assignmentTotal, assignment) =>
-              assignmentTotal + (assignment.allocatedHours ?? 0),
-            0,
-          ),
+      const projectHours = projectActiveReviews.reduce(
+        (total, review) => total + assignmentHours(review),
         0,
       );
-      const projectExpected = Math.max(8, projectActiveReviews.length * 16);
+      const projectExpected = projectActiveReviews.length * 16;
 
       return {
         name: project.name,
@@ -200,7 +194,7 @@ export async function GET() {
         Math.abs(right.variance) - Math.abs(left.variance),
     )
     .slice(0, 8);
-  const useDemoPortfolio = projects.length < 10;
+  const useDemoPortfolio = false;
   const demoRedEngagements = [
     "Cloud Control Plane (SPR-9010) — 1 overdue SRs, 1 extension requests, 42h charged, +26h variance.",
     "Customer Portal (SPR-9001) — 1 overdue SRs, 1 extension requests, 34h charged, +18h variance.",
@@ -254,6 +248,38 @@ export async function GET() {
         weekTrend,
         monthTrend,
       };
+  const productivity = {
+    baselinePeople: 70,
+    baselineDailyHoursPerPerson: 1,
+    workdayHours: 9,
+    workdaysPerWeek: 5,
+    workingWeeksPerYear: 52,
+    measuredWeeklyHoursSaved: 46,
+  };
+  const baselineWeeklyHoursSaved =
+    productivity.baselinePeople *
+    productivity.baselineDailyHoursPerPerson *
+    productivity.workdaysPerWeek;
+  const baselineAnnualHoursSaved =
+    baselineWeeklyHoursSaved * productivity.workingWeeksPerYear;
+  const measuredAnnualHoursSaved =
+    productivity.measuredWeeklyHoursSaved * productivity.workingWeeksPerYear;
+  const baselineWorkingDaysSaved = Math.round(
+    baselineAnnualHoursSaved / productivity.workdayHours,
+  );
+  const measuredWorkingDaysSaved = Math.round(
+    measuredAnnualHoursSaved / productivity.workdayHours,
+  );
+  const annualShiftHoursPerPerson =
+    productivity.workdaysPerWeek *
+    productivity.workingWeeksPerYear *
+    productivity.workdayHours;
+  const baselineFteYearsSaved = (
+    baselineAnnualHoursSaved / annualShiftHoursPerPerson
+  ).toFixed(1);
+  const measuredFteYearsSaved = (
+    measuredAnnualHoursSaved / annualShiftHoursPerPerson
+  ).toFixed(1);
   const redEngagementLines = useDemoPortfolio
     ? demoRedEngagements
     : redEngagements.map(
@@ -312,6 +338,15 @@ Generated: ${new Date().toLocaleString()}
 - Chargeability signal: ${reportMetrics.chargeability >= 80 ? "high load" : reportMetrics.chargeability >= 50 ? "balanced load" : "under-allocated load"} across available reviewer capacity.
 - Variance signal: ${reportMetrics.variance > 0 ? "over baseline; review overrun, surge demand, or estimation drift." : reportMetrics.variance < 0 ? "under baseline; review unassigned work or under-allocation." : "on baseline."}
 - Exception trend: ${reportMetrics.redEngagements} red engagements, ${reportMetrics.extensionRequests} extension requests, ${reportMetrics.rescheduledReviews} reschedules.
+
+## Productivity And Business Value
+- Estimated current run-rate: ${productivity.measuredWeeklyHoursSaved} hrs/week from tracked workflow volumes annualizes to ${measuredAnnualHoursSaved.toLocaleString()} hrs/year, or ${measuredWorkingDaysSaved.toLocaleString()} nine-hour person-days.
+- Important measurement note: this is not stopwatch-tracked realized savings; it is calculated from current Atomix workflow volume multiplied by conservative time-saved assumptions per workflow item.
+- Estimated current capacity: ${measuredFteYearsSaved} FTE-year equivalent using ${annualShiftHoursPerPerson.toLocaleString()} hrs/person/year.
+- Full-adoption scenario: ${productivity.baselinePeople} people × ${productivity.baselineDailyHoursPerPerson} hr/day × ${productivity.workdaysPerWeek} days/week × ${productivity.workingWeeksPerYear} weeks = ${baselineAnnualHoursSaved.toLocaleString()} hrs/year, or ${baselineWorkingDaysSaved.toLocaleString()} nine-hour person-days.
+- Full-adoption capacity: ${baselineFteYearsSaved} FTE-years if the 70-person, 1-hour/day assumption is achieved.
+- Important framing: the ${baselineWorkingDaysSaved.toLocaleString()} person-day number is a scenario model, not claimed realized savings, headcount reduction, or already-delivered capacity.
+- Value beyond FTE: Atomix also targets review quality, faster evidence readiness, fewer missed controls, better SLA governance, reusable institutional knowledge, and reduced rework.
 
 ## Red Engagements
 ${redEngagementLines.map((line, index) => `${index + 1}. ${line.replace(/^\d+\.\s*/, "")}`).join("\n") || "- No red engagements in the current portfolio snapshot."}

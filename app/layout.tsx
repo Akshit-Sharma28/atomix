@@ -10,6 +10,20 @@ export const metadata: Metadata = {
   title: "ATOMIX",
   description:
     "AI Powered Pentest Platform",
+  icons: {
+    icon: [
+      {
+        url: "/icon.svg",
+        type: "image/svg+xml",
+      },
+      {
+        url: "/atomix-mark.svg",
+        type: "image/svg+xml",
+      },
+    ],
+    shortcut: "/atomix-mark.svg",
+    apple: "/atomix-mark.svg",
+  },
 };
 
 export default function RootLayout({

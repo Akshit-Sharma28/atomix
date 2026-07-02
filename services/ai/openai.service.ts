@@ -2,7 +2,12 @@ import { askOllama } from "./ollama.service";
 
 export async function askCopilot(
   question: string,
-  context: string
+  context: string,
+  options: {
+    timeoutMs?: number;
+    numPredict?: number;
+    think?: boolean;
+  } = {},
 ) {
   const prompt = `
 You are Atomix Security Copilot.
@@ -17,7 +22,7 @@ ${question}
 Answer:
 `;
 
-  return askOllama(prompt);
+  return askOllama(prompt, options);
 }
 
 export async function analyzeFinding(

@@ -31,6 +31,7 @@ function buttonLabel(button: HTMLButtonElement | HTMLInputElement) {
 function pendingLabel(label: string) {
   const normalized = label.toLowerCase();
 
+  if (normalized.includes("switch") || normalized.includes("changing user")) return "Changing user";
   if (normalized.includes("save") || normalized.includes("update")) return "Saving changes";
   if (normalized.includes("create") || normalized.includes("add")) return "Creating record";
   if (normalized.includes("assign")) return "Assigning record";
@@ -182,13 +183,24 @@ export default function GlobalPendingLoader() {
       clearPending();
     }
 
+    function onManualPending(event: Event) {
+      const detail = (event as CustomEvent<Partial<PendingState>>).detail ?? {};
+
+      startPending(
+        detail.label ?? "Processing request",
+        detail.detail ?? "Please wait while Atomix completes the request.",
+      );
+    }
+
     document.addEventListener("submit", onSubmit, true);
     document.addEventListener("click", onClick, true);
+    window.addEventListener("atomix:pending", onManualPending);
     window.addEventListener("pageshow", onPageShow);
 
     return () => {
       document.removeEventListener("submit", onSubmit, true);
       document.removeEventListener("click", onClick, true);
+      window.removeEventListener("atomix:pending", onManualPending);
       window.removeEventListener("pageshow", onPageShow);
       clearPending();
     };

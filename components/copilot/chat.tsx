@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Bot,
   Clipboard,
+  GitBranch,
   FileText,
   Loader2,
   Send,
@@ -35,6 +36,14 @@ const promptGroups = [
   },
 ];
 
+type AgentTraceStep = {
+  step?: number;
+  toolName?: string;
+  elapsedMs?: number;
+  status?: string;
+  summary?: string;
+};
+
 export default function CopilotChat({
   initialPrompt = "",
 }: {
@@ -42,6 +51,8 @@ export default function CopilotChat({
 }) {
   const [question, setQuestion] = useState(initialPrompt);
   const [response, setResponse] = useState("");
+  const [mode, setMode] = useState("");
+  const [agentTrace, setAgentTrace] = useState<AgentTraceStep[]>([]);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -63,8 +74,12 @@ export default function CopilotChat({
 
       const data = await res.json();
       setResponse(data.answer ?? "No response");
+      setMode(typeof data.mode === "string" ? data.mode : "");
+      setAgentTrace(Array.isArray(data.agentTrace) ? data.agentTrace : []);
     } catch {
       setResponse("Unable to contact Copilot");
+      setMode("");
+      setAgentTrace([]);
     }
 
     setLoading(false);
@@ -199,7 +214,41 @@ export default function CopilotChat({
             <span className="rounded-full bg-slate-950 px-3 py-1 text-slate-400">
               No automatic writes
             </span>
+            {mode && (
+              <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-cyan-200">
+                {mode === "mcp-agentic" ? "MCP tool loop" : "Prompt fallback"}
+              </span>
+            )}
           </div>
+          {agentTrace.length > 0 && (
+            <div className="mb-4 rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.04] p-4">
+              <p className="mb-3 flex items-center gap-2 text-sm font-bold text-cyan-100">
+                <GitBranch size={15} />
+                Agent Trace
+              </p>
+              <div className="space-y-2">
+                {agentTrace.map((step, index) => (
+                  <div
+                    key={`${step.toolName ?? "trace"}-${index}`}
+                    className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs leading-5 text-slate-300"
+                  >
+                    <span className="font-bold text-cyan-200">
+                      Step {step.step ?? index + 1}: {step.toolName ?? "tool"}
+                    </span>
+                    {typeof step.elapsedMs === "number" && (
+                      <span className="text-slate-500">
+                        {" "}
+                        - {step.elapsedMs}ms
+                      </span>
+                    )}
+                    <p className="mt-1 text-slate-400">
+                      {step.summary ?? step.status ?? "Completed"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="max-h-[520px] overflow-y-auto whitespace-pre-wrap rounded-2xl border border-slate-800 bg-slate-950/80 p-5 text-sm leading-7 text-slate-200">
             {response}
           </div>

@@ -10,6 +10,14 @@ import {
   type ExtractedPeerReviewFile,
 } from "@/services/peer-review/document-text.service";
 
+export const maxDuration = 60;
+
+const maxPeerReviewUploadBytes = 4 * 1024 * 1024;
+const peerReviewArtifactChunkChars = 3500;
+const peerReviewArtifactExcerptChars = 12000;
+const peerReviewAiTimeoutMs = 45000;
+const peerReviewOutputTokenBudget = 700;
+
 function value(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
 }
@@ -41,6 +49,22 @@ function truncate(text: string, max = 9000) {
   return `${text.slice(0, max)}\n\n[Truncated ${text.length - max} characters]`;
 }
 
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function estimateTokens(characters: number) {
+  return Math.ceil(characters / 4);
+}
+
+function estimateChunks(characters: number) {
+  return Math.max(1, Math.ceil(characters / peerReviewArtifactChunkChars));
+}
+
 function findEvidence(
   files: ExtractedPeerReviewFile[],
   terms: string[],
@@ -58,6 +82,7 @@ function findEvidence(
 function fallbackAnalysis(
   scope: string,
   files: ExtractedPeerReviewFile[],
+  aiError?: string,
 ) {
   const controls = controlsForScope(scope);
   const evidence = {
@@ -104,25 +129,36 @@ function fallbackAnalysis(
     ]),
   };
 
-  const gaps = controls
-    .filter((control) => {
-      const haystack = files
-        .map((file) => file.text)
-        .join("\n")
-        .toLowerCase();
+  const haystack = files
+    .map((file) => file.text)
+    .join("\n")
+    .toLowerCase();
 
-      return !control.title
-        .toLowerCase()
-        .split(/[,\s/]+/)
-        .filter((token) => token.length > 5)
-        .some((token) => haystack.includes(token));
-    })
-    .slice(0, 8);
+  const controlCoverage = controls.map((control) => {
+    const matchedTokens = control.title
+      .toLowerCase()
+      .split(/[,\s/]+/)
+      .filter((token) => token.length > 5)
+      .filter((token) => haystack.includes(token));
+
+    return {
+      control,
+      matchedTokens,
+      status: matchedTokens.length > 0 ? "Evidence signal found" : "Needs reviewer attention",
+    };
+  });
 
   return `
 ## Peer Review Agent Result
 
-Local AI was not reachable, so Atomix generated a deterministic control-coverage review from the uploaded artifacts.
+Local AI did not return a peer-review response in time, so Atomix generated a deterministic control-coverage review from the uploaded artifacts.
+${aiError ? `\nAI status detail: ${aiError}\n` : ""}
+
+### Peer Reviewer Comments
+- FEAD evidence was checked against the active Atomix peer review control library for ${scope}.
+- Reviewer must confirm each applicable FEAD control has clear test evidence, a result, and a finding or not-applicable rationale.
+- Where scanner evidence is attached, reviewer must reconcile scanner output with FEAD/BEAD conclusions before approval.
+- Any missing authentication, authorization, session, input validation, cryptography, data protection, or AI-control evidence should be returned for rework.
 
 ### Evidence Signals
 - Authentication: ${evidence.authentication.join(", ") || "No strong keyword evidence found"}
@@ -132,11 +168,11 @@ Local AI was not reachable, so Atomix generated a deterministic control-coverage
 - API/JWT controls: ${evidence.api.join(", ") || "No strong keyword evidence found"}
 - LLM controls: ${evidence.llm.join(", ") || "No strong keyword evidence found"}
 
-### Controls Needing Reviewer Attention
-${gaps
+### Complete Applicable Control Coverage
+${controlCoverage
   .map(
-    (control) =>
-      `- ${control.id} — ${control.title}: ${control.missedFindingPrompt}`,
+    ({ control, matchedTokens, status }) =>
+      `- ${control.id} — ${control.title}: ${status}. ${matchedTokens.length > 0 ? `Signals: ${matchedTokens.join(", ")}.` : control.missedFindingPrompt}`,
   )
   .join("\n")}
 
@@ -167,6 +203,13 @@ export async function POST(req: Request) {
     const roles = value(form, "roles");
     const authentication = value(form, "authentication");
     const overallRisk = value(form, "overallRisk") || "Medium";
+    const grcRiskProfile =
+      value(form, "grcRiskProfile") || overallRisk;
+    const agentSuggestedRiskProfile =
+      value(form, "agentSuggestedRiskProfile") || overallRisk;
+    const riskProfileConfirmed =
+      value(form, "riskProfileConfirmed") === "on";
+    const riskValidationComment = value(form, "riskValidationComment");
     const notes = value(form, "notes");
     const risk = {
       confidentiality: value(form, "confidentiality") || "Medium",
@@ -192,15 +235,31 @@ export async function POST(req: Request) {
       llmFeadFile,
       ...scanFiles,
     ].filter(Boolean) as File[];
+    const uploadBytes = filesToExtract.reduce(
+      (total, file) => total + file.size,
+      0,
+    );
 
-    if (!feadFile && !beadFile && scanFiles.length === 0) {
+    if (!feadFile && !beadFile && !llmFeadFile && scanFiles.length === 0) {
       return Response.json(
         {
           error:
-            "Upload at least one FEAD, BEAD, or scanner report file.",
+            "Upload at least one FEAD, BEAD, LLM FEAD, or scanner report file.",
         },
         {
           status: 400,
+        },
+      );
+    }
+
+    if (uploadBytes > maxPeerReviewUploadBytes) {
+      return Response.json(
+        {
+          ok: false,
+          error: `Selected files total ${formatBytes(uploadBytes)}. The current peer review route supports up to ${formatBytes(maxPeerReviewUploadBytes)} per run. Please upload a smaller FEAD/BEAD extract or one artifact at a time.`,
+        },
+        {
+          status: 413,
         },
       );
     }
@@ -219,7 +278,7 @@ export async function POST(req: Request) {
     const artifactText = extractedFiles
       .map(
         (file) =>
-          `Artifact: ${file.name} (${file.type}, ${file.size} bytes)\n${truncate(file.text)}`,
+          `Artifact: ${file.name} (${file.type}, ${file.size} bytes)\n${truncate(file.text, peerReviewArtifactExcerptChars)}`,
       )
       .join("\n\n---\n\n");
 
@@ -237,6 +296,10 @@ Review metadata:
 - Application type: ${appType}
 - Overall risk: ${overallRisk}
 - CIA risk: C=${risk.confidentiality}, I=${risk.integrity}, A=${risk.availability}
+- GRC risk profile: ${grcRiskProfile}
+- Agent-suggested risk profile: ${agentSuggestedRiskProfile}
+- Peer reviewer risk confirmation: ${riskProfileConfirmed ? "Confirmed" : "Not confirmed"}
+- Risk validation comment: ${riskValidationComment || "None"}
 - AV attack vector: ${network}
 - Au authentication: ${authentication || "Not provided"}
 - Scan inventory: ${scanInventory.length > 0 ? scanInventory.join("; ") : "No scan reports attached"}
@@ -248,28 +311,60 @@ ${controlText}
 Uploaded artifact excerpts:
 ${artifactText}
 
-Return a structured peer review report in markdown with:
+Current Atomix peer review control flow:
+- Confirm FEAD controls match the declared scope, review type, application exposure, CIA rating, AV, Au, target URL/IP, and RBAC roles.
+- Use BEAD when backend, API, service, data-flow, authentication, authorization, integration, or persistence controls are applicable.
+- Use LLM FEAD when model workflows, prompt flows, tool use, data leakage, model DoS, data poisoning, or AI governance controls are in scope.
+- Validate applicable Qualys, Checkmarx, Mend, AquaSec, Burp, manual evidence, and LLM FEAD outputs are present or explicitly marked not applicable.
+- Compare scanner findings with FEAD/BEAD conclusions to detect missing, downgraded, duplicated, unsupported, or untracked findings.
+- Produce peer reviewer comments that a QA reviewer can paste into governance validation.
+
+Return a complete structured peer review report in markdown. Keep it under ${peerReviewOutputTokenBudget} tokens and cover every applicable control that has weak, missing, or unclear evidence:
 1. Executive peer review decision: Pass with conditions, Needs rework, or Escalate.
-2. Artifact completeness table covering FEAD, BEAD, LLM FEAD, Qualys, Checkmarx, Mend, AquaSec, Burp, and manual evidence when applicable.
-3. Controls covered with evidence.
-4. Potential missed findings.
-5. Controls requiring more testing.
-6. Scanner-to-artifact mismatches.
-7. Required reviewer actions before approval.
-8. Suggested Atomix agent commands if records or findings should be created.
+2. Artifact completeness gaps across uploaded FEAD, BEAD, LLM FEAD, and scan evidence.
+3. Controls with evidence, using Atomix control IDs where possible.
+4. Controls needing reviewer attention, using Atomix control IDs and one-line rationale for each.
+5. Required reviewer actions before approval.
+6. Suggested Atomix agent commands, only if useful.
 `;
 
     let analysis = "";
-    let mode = "local-ai";
+    let mode = "local-ai-ollama";
+    let aiElapsedMs = 0;
+    let aiStatusDetail = "Completed";
+    const extractedCharacters = extractedFiles.reduce(
+      (total, file) => total + file.text.length,
+      0,
+    );
+    const artifactChunks = extractedFiles.reduce(
+      (total, file) => total + estimateChunks(file.text.length),
+      0,
+    );
+    const promptCharacters = prompt.length;
+    const estimatedPromptTokens = estimateTokens(promptCharacters);
+    const aiStartedAt = Date.now();
 
     try {
       analysis = await askCopilot(
         prompt,
-        "Peer review checklist, uploaded Word/PDF/text artifacts, and scanner reports.",
+        "Local AI peer review of FEAD, BEAD, LLM FEAD, scanner artifacts, control coverage, and governance validation comments.",
+        {
+          timeoutMs: peerReviewAiTimeoutMs,
+          numPredict: peerReviewOutputTokenBudget,
+          think: false,
+        },
       );
-    } catch {
+      aiElapsedMs = Date.now() - aiStartedAt;
+    } catch (error) {
       mode = "deterministic-fallback";
-      analysis = fallbackAnalysis(scope, extractedFiles);
+      aiElapsedMs = Date.now() - aiStartedAt;
+      aiStatusDetail =
+        error instanceof Error ? error.message : "Unknown AI error";
+      analysis = fallbackAnalysis(
+        scope,
+        extractedFiles,
+        aiStatusDetail,
+      );
     }
 
     return Response.json({
@@ -284,11 +379,31 @@ Return a structured peer review report in markdown with:
       roles,
       authentication,
       overallRisk,
+      grcRiskProfile,
+      agentSuggestedRiskProfile,
+      riskProfileConfirmed,
+      riskValidationComment,
       typeOfApplication: appType,
       risk,
       network,
       scanInventory,
       artifacts: summarizeExtractedFiles(extractedFiles),
+      processingInsights: {
+        uploadBytes,
+        uploadLimitBytes: maxPeerReviewUploadBytes,
+        extractedCharacters,
+        estimatedExtractedTokens: estimateTokens(extractedCharacters),
+        artifactChunks,
+        chunkSizeCharacters: peerReviewArtifactChunkChars,
+        vectorDbUsed: false,
+        promptCharacters,
+        estimatedPromptTokens,
+        excerptLimitPerArtifactCharacters: peerReviewArtifactExcerptChars,
+        aiTimeoutMs: peerReviewAiTimeoutMs,
+        aiElapsedMs,
+        aiStatusDetail,
+        outputTokenBudget: peerReviewOutputTokenBudget,
+      },
       applicableControlCount: applicableControls.length,
       controls: applicableControls.map((control) => ({
         id: control.id,

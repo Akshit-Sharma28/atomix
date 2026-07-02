@@ -2,18 +2,25 @@ import Link from "next/link";
 import KanbanBoard from "@/components/timeline/kanban-board";
 import { prisma } from "@/lib/prisma";
 import {
+  Activity,
   CalendarClock,
+  Clock3,
   KanbanSquare,
   ShieldAlert,
+  UserRoundCheck,
 } from "lucide-react";
 
 function formatDate(date?: Date | null) {
   if (!date) return "No date";
 
-  return date.toLocaleDateString();
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+  }).format(date);
 }
 
 export default async function TimelinePage() {
+  const currentTime = new Date().getTime();
   const [findings, reviews] =
     await Promise.all([
       prisma.finding.findMany({
@@ -74,89 +81,109 @@ export default async function TimelinePage() {
           review.status
         )
     );
+  const unassignedReviews = activeReviews.filter(
+    (review) => review.assignments.length === 0,
+  );
+  const overdueReviews = activeReviews.filter(
+    (review) =>
+      review.dueDate && review.dueDate.getTime() < currentTime,
+  );
+  const dueSoonReviews = activeReviews.filter((review) => {
+    if (!review.dueDate) {
+      return false;
+    }
+
+    const daysUntilDue =
+      (review.dueDate.getTime() - currentTime) /
+      (1000 * 60 * 60 * 24);
+
+    return daysUntilDue >= 0 && daysUntilDue <= 7;
+  });
 
   return (
     <div className="w-full px-8 py-6">
-      <div className="mb-8 border-b border-slate-800 pb-6">
-        <div className="flex items-center gap-4">
-          <KanbanSquare
-            size={40}
-            className="text-cyan-400"
-          />
-
-          <div>
-            <div className="mb-2 text-sm text-slate-500">
-              Timeline
+      <div className="mb-6 rounded-3xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.08] via-slate-900/70 to-slate-950 p-6 shadow-2xl shadow-cyan-950/20">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-200">
+              <KanbanSquare size={28} />
             </div>
 
-            <h1 className="text-4xl font-bold text-white">
-              Remediation & Review Board
-            </h1>
+            <div>
+              <div className="mb-2 text-xs uppercase tracking-[0.22em] text-cyan-300">
+                Timeline Command Center
+              </div>
 
-            <p className="mt-2 text-slate-400">
-              Track finding workflow and active SR delivery dates together.
-            </p>
-          </div>
-        </div>
-      </div>
+              <h1 className="text-3xl font-black text-white">
+                Review Delivery & Remediation Flow
+              </h1>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-5">
-          <div className="flex items-center justify-between text-slate-400">
-            <span>Total Findings</span>
-            <ShieldAlert size={20} className="text-cyan-300" />
-          </div>
-          <div className="mt-3 text-3xl font-bold text-cyan-300">
-            {findings.length}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-purple-500/20 bg-slate-900 p-5">
-          <div className="flex items-center justify-between text-slate-400">
-            <span>Active SRs</span>
-            <CalendarClock size={20} className="text-purple-300" />
-          </div>
-          <div className="mt-3 text-3xl font-bold text-purple-300">
-            {activeReviews.length}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-yellow-500/20 bg-slate-900 p-5">
-          <div className="flex items-center justify-between text-slate-400">
-            <span>Unassigned SRs</span>
-            <CalendarClock size={20} className="text-yellow-300" />
-          </div>
-          <div className="mt-3 text-3xl font-bold text-yellow-300">
-            {
-              activeReviews.filter(
-                (review) =>
-                  review.assignments.length === 0
-              ).length
-            }
-          </div>
-        </div>
-      </div>
-
-      <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-white">
-              Active SR Timeline
-            </h2>
-            <p className="text-sm text-slate-400">
-              Review due dates and staffing at a glance.
-            </p>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                One operating view for SR due dates, reviewer assignment
+                pressure, remediation states, and next governance actions.
+              </p>
+            </div>
           </div>
 
           <Link
             href="/reviews"
-            className="rounded-xl border border-cyan-500/30 px-4 py-2 text-cyan-300 hover:bg-cyan-500/10"
+            className="rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-400/10"
           >
             Open Reviews
           </Link>
         </div>
+      </div>
 
-        <div className="grid gap-3 lg:grid-cols-2">
+      <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        {[
+          ["Findings", findings.length, "remediation items", ShieldAlert, "text-cyan-300"],
+          ["Active SRs", activeReviews.length, "in delivery", CalendarClock, "text-purple-300"],
+          ["Unassigned", unassignedReviews.length, "need reviewer", UserRoundCheck, "text-yellow-300"],
+          ["Overdue", overdueReviews.length, "past due", Clock3, "text-red-300"],
+          ["Due 7 days", dueSoonReviews.length, "watchlist", Activity, "text-emerald-300"],
+        ].map(([label, value, helper, Icon, color]) => {
+          const MetricIcon = Icon as typeof ShieldAlert;
+
+          return (
+            <div
+              key={label as string}
+              className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                  {label as string}
+                </p>
+                <MetricIcon size={18} className={color as string} />
+              </div>
+              <p className={`mt-3 text-3xl font-black ${color as string}`}>
+                {value as number}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                {helper as string}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-white">
+              Active SR Delivery Timeline
+            </h2>
+            <p className="text-sm text-slate-400">
+              Compact queue for due dates, staffing, and workstream coverage.
+            </p>
+          </div>
+
+          <span className="rounded-full border border-purple-400/20 bg-purple-400/10 px-3 py-1 text-xs font-semibold text-purple-100">
+            {activeReviews.length} active · {unassignedReviews.length} unassigned
+          </span>
+        </div>
+
+        <div className="max-h-[430px] overflow-y-auto pr-1">
+          <div className="grid gap-3 lg:grid-cols-2">
           {activeReviews.length === 0 && (
             <div className="rounded-xl border border-slate-800 bg-slate-950 p-5 text-slate-500">
               No active reviews.
@@ -179,11 +206,11 @@ export default async function TimelinePage() {
             return (
               <div
                 key={review.id}
-                className="rounded-xl border border-slate-800 bg-slate-950 p-4"
+                className="rounded-xl border border-slate-800 bg-slate-950/80 p-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-semibold text-white">
+                    <p className="font-semibold leading-tight text-white">
                       {review.srId ?? review.title}
                     </p>
                     <p className="text-sm text-slate-500">
@@ -194,7 +221,7 @@ export default async function TimelinePage() {
                     </p>
                   </div>
 
-                  <span className="text-sm text-cyan-300">
+                  <span className="shrink-0 text-sm font-semibold text-cyan-300">
                     {formatDate(review.dueDate)}
                   </span>
                 </div>
@@ -204,20 +231,26 @@ export default async function TimelinePage() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {review.workstreams.map(
+                  {review.workstreams.slice(0, 4).map(
                     (workstream) => (
                       <span
                         key={workstream.id}
-                        className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs text-cyan-300"
+                        className="rounded-full bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-300"
                       >
                         {workstream.type}
                       </span>
                     )
                   )}
+                  {review.workstreams.length > 4 && (
+                    <span className="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-400">
+                      +{review.workstreams.length - 4}
+                    </span>
+                  )}
                 </div>
               </div>
             );
           })}
+          </div>
         </div>
       </section>
 

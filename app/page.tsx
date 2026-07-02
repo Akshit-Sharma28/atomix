@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   Bot,
@@ -9,7 +10,6 @@ import {
   GitBranch,
   Radar,
   RotateCcw,
-  ShieldCheck,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -81,16 +81,22 @@ export default function Home() {
       <div className="atomix-hero-orb atomix-hero-orb-a" />
       <div className="atomix-hero-orb atomix-hero-orb-b" />
 
-      <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 atomix-logo-pulse">
-            <ShieldCheck className="text-cyan-200" size={24} />
+      <header className="relative z-10 mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 atomix-logo-pulse sm:h-12 sm:w-12">
+            <Image
+              src="/atomix-mark.svg"
+              alt=""
+              width={38}
+              height={38}
+              priority
+            />
           </div>
-          <div>
-            <p className="text-2xl font-black tracking-tight text-cyan-300">
+          <div className="min-w-0">
+            <p className="text-xl font-black tracking-tight text-cyan-300 sm:text-2xl">
               ATOMIX
             </p>
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
+            <p className="max-w-[18rem] text-[10px] uppercase tracking-[0.12em] text-slate-500 sm:text-xs sm:tracking-[0.18em]">
               AI-powered Governance Dashboard
             </p>
           </div>
@@ -116,14 +122,14 @@ export default function Home() {
         </Link>
       </header>
 
-      <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 gap-8 px-6 pb-10 pt-5 lg:grid-cols-[1fr_0.82fr] lg:items-center">
-        <div>
+      <section className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 pb-10 pt-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)] lg:items-center">
+        <div className="min-w-0">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
             <Sparkles size={16} />
             Governance dashboard for security review operations
           </div>
 
-          <h1 className="max-w-4xl text-4xl font-black tracking-tight md:text-6xl">
+          <h1 className="max-w-4xl text-4xl font-black tracking-tight md:text-5xl xl:text-6xl">
             Security Review Governance,
             <span className="block text-cyan-300">
               coordinated with AI assistance.
@@ -219,29 +225,42 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-3 overflow-hidden rounded-2xl border border-cyan-300/20 bg-black p-3">
+          <div className="mt-3 overflow-hidden rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.04] p-3">
             <div className="mb-3 flex justify-end">
               <span className="rounded bg-cyan-300 px-2 py-1 font-mono text-[10px] font-black text-slate-950">
-                ROUND 01
+                TRUST LAYER
               </span>
             </div>
             <div className="atomix-arcade-stage atomix-arcade-wide">
-              <div className="atomix-pixel atomix-hero-sprite">
+              <div className="atomix-vault-shell">
+                <div className="atomix-vault-door" />
+                <div className="atomix-vault-lock" />
+              </div>
+              <div className="atomix-data-packet atomix-data-packet-a">
+                CLIENT DATA
+              </div>
+              <div className="atomix-data-packet atomix-data-packet-b">
+                EVIDENCE
+              </div>
+              <div className="atomix-policy-gate atomix-policy-gate-a">
+                RBAC
+              </div>
+              <div className="atomix-policy-gate atomix-policy-gate-b">
+                KMS
+              </div>
+              <div className="atomix-redacted-output">
                 <span />
                 <span />
                 <span />
               </div>
-              <div className="atomix-pixel atomix-attacker-sprite">
+              <div className="atomix-audit-rail">
+                <span />
                 <span />
                 <span />
                 <span />
               </div>
-              <div className="atomix-laser" />
-              <div className="atomix-shield-burst" />
-              <div className="atomix-packet atomix-packet-a">0101</div>
-              <div className="atomix-packet atomix-packet-b">XSS</div>
               <div className="atomix-fight-caption">
-                ATOMIX BLOCKED INTRUSION
+                CLIENT DATA SEALED · AI SEES GOVERNED SIGNALS
               </div>
             </div>
           </div>

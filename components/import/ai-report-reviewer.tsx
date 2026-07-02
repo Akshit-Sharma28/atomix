@@ -47,12 +47,20 @@ export default function AIReportReviewer({
   const [loading, setLoading] = useState(false);
   const [projectId, setProjectId] = useState("");
   const [reviewId, setReviewId] = useState("");
+  const [customFolder, setCustomFolder] = useState("");
 
   const projectReviews = reviews.filter(
     (review) => review.projectId === projectId
   );
+  const selectedProject = projects.find((project) => project.id === projectId);
   const selectedReview = projectReviews.find((review) => review.id === reviewId);
   const iteration = selectedReview?.iteration ?? "Select SR first";
+  const defaultFolder = [
+    selectedProject?.sprId ?? selectedProject?.name ?? "Unassigned SPR",
+    selectedReview?.srId ?? selectedReview?.title ?? "Unassigned SR",
+    `Iteration ${selectedReview?.iteration ?? "1.0"}`,
+  ].join(" / ");
+  const folderName = customFolder.trim() || defaultFolder;
 
   async function submit(formData: FormData) {
     setLoading(true);
@@ -122,6 +130,7 @@ export default function AIReportReviewer({
           </Field>
         </div>
         <input type="hidden" name="iteration" value={selectedReview?.iteration ?? "1.0"} />
+        <input type="hidden" name="folderName" value={folderName} />
         <div className="grid min-w-0 gap-4 md:grid-cols-3">
           <div className="min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300">
             <span className="block text-[11px] uppercase tracking-[0.18em] text-slate-500">
@@ -171,6 +180,14 @@ export default function AIReportReviewer({
           </Field>
         </div>
         <div className="grid min-w-0 gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+          <Field label="Vault folder">
+            <input
+              value={customFolder}
+              onChange={(event) => setCustomFolder(event.target.value)}
+              placeholder={defaultFolder}
+              className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
+            />
+          </Field>
           <Field label="Visibility">
             <select
               name="visibility"

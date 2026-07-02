@@ -6,6 +6,16 @@ export default function SwitchUserButton({
   userId: string;
 }) {
   async function switchUser() {
+    window.dispatchEvent(
+      new CustomEvent("atomix:pending", {
+        detail: {
+          label: "Changing user",
+          detail:
+            "Please wait while Atomix loads the selected user.",
+        },
+      })
+    );
+
     await fetch(
       "/api/auth/switch-user",
       {

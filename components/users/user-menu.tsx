@@ -165,6 +165,15 @@ export default function UserMenu() {
     }
 
     setSwitching(true);
+    window.dispatchEvent(
+      new CustomEvent("atomix:pending", {
+        detail: {
+          label: "Changing user",
+          detail:
+            "Please wait while Atomix loads the selected role preview.",
+        },
+      })
+    );
 
     await fetch("/api/auth/switch-user", {
       method: "POST",
@@ -181,6 +190,15 @@ export default function UserMenu() {
 
   async function clearPreview() {
     setSwitching(true);
+    window.dispatchEvent(
+      new CustomEvent("atomix:pending", {
+        detail: {
+          label: "Changing user",
+          detail:
+            "Please wait while Atomix restores the logged-in admin.",
+        },
+      })
+    );
 
     await fetch("/api/auth/switch-user", {
       method: "DELETE",

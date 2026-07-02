@@ -15,6 +15,8 @@ export async function POST(req: NextRequest) {
     String(formData.get("iteration") ?? "1.0");
   const visibility =
     String(formData.get("visibility") ?? "REVIEW_TEAM");
+  const folderName =
+    String(formData.get("folderName") ?? "General").trim() || "General";
 
   if (!file) {
     return NextResponse.json(
@@ -84,6 +86,7 @@ export async function POST(req: NextRequest) {
       artifactType: "Scan Report",
       scanner: "Burp Suite",
       fileName: file.name,
+      folderName,
       uploadedById: currentUser?.id,
       visibility,
     },

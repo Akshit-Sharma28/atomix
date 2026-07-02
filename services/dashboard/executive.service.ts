@@ -18,6 +18,30 @@ function isOverdue(dueDate?: Date | null) {
   return Boolean(dueDate && dueDate.getTime() < Date.now());
 }
 
+function isActiveReviewStatus(status: string) {
+  return [
+    "Requested",
+    "Scheduled",
+    "In Progress",
+    "Assigned",
+    "Active",
+  ].some(
+    (activeStatus) =>
+      activeStatus.toLowerCase() === status.toLowerCase(),
+  );
+}
+
+function assignmentHours(review: {
+  assignments: {
+    allocatedHours: number | null;
+  }[];
+}) {
+  return review.assignments.reduce(
+    (total, assignment) => total + (assignment.allocatedHours ?? 0),
+    0,
+  );
+}
+
 function statusMatches(status: string, filter: ExecutiveFilter) {
   if (filter === "all") {
     return true;
@@ -73,8 +97,7 @@ export async function getExecutiveDashboard({
 
   const rows = projects.map((project) => {
     const activeReviews = project.reviews.filter(
-      (review) =>
-        !["Completed", "Cancelled"].includes(review.status),
+      (review) => isActiveReviewStatus(review.status),
     );
     const overdueReviews = activeReviews.filter((review) =>
       isOverdue(review.dueDate),
@@ -85,17 +108,11 @@ export async function getExecutiveDashboard({
           !["Approved", "Rejected"].includes(extension.status),
       ),
     );
-    const allocatedHours = project.reviews.reduce(
-      (total, review) =>
-        total +
-        review.assignments.reduce(
-          (assignmentTotal, assignment) =>
-            assignmentTotal + (assignment.allocatedHours ?? 0),
-          0,
-        ),
+    const allocatedHours = activeReviews.reduce(
+      (total, review) => total + assignmentHours(review),
       0,
     );
-    const expectedHours = Math.max(8, activeReviews.length * 16);
+    const expectedHours = activeReviews.length * 16;
     const variance = allocatedHours - expectedHours;
     const riskScore = calculateRisk(project.findings);
     const criticalOpen = project.findings.filter(
