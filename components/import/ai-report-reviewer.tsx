@@ -65,13 +65,19 @@ export default function AIReportReviewer({
   async function submit(formData: FormData) {
     setLoading(true);
     setAnalysis("");
-    const response = await fetch("/api/import/report-review", {
-      method: "POST",
-      body: formData,
-    });
-    const data = await response.json();
-    setAnalysis(data.analysis ?? data.error ?? "No analysis returned.");
-    setLoading(false);
+
+    try {
+      const response = await fetch("/api/import/report-review", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      setAnalysis(data.analysis ?? data.error ?? "Document added to vault.");
+    } catch {
+      setAnalysis("Unable to add document. Please retry.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -208,9 +214,12 @@ export default function AIReportReviewer({
             />
           </Field>
         </div>
-        <button className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 md:w-auto">
+        <button
+          disabled={loading}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950 disabled:cursor-wait disabled:opacity-70 md:w-auto"
+        >
           {loading ? <Loader2 className="animate-spin" size={16} /> : <FileSearch size={16} />}
-          Add document to folder
+          {loading ? "Adding document..." : "Add document to folder"}
         </button>
       </form>
 
