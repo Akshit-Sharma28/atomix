@@ -39,6 +39,15 @@ const personaContent = {
       "Scout says: trust, then verify.",
     ],
   },
+  sentinel: {
+    name: "Sentinel",
+    hint: "Sentinel observing · hold for chat",
+    messages: [
+      "All sectors calm. Continue the hunt.",
+      "I found no anomalies—yet.",
+      "Sentinel focus locked. Nice work, operator.",
+    ],
+  },
 } as const;
 
 export default function AtomixPet() {
@@ -209,6 +218,21 @@ export default function AtomixPet() {
           <span className="atomix-pixel-spark atomix-pixel-spark-a" />
           <span className="atomix-pixel-spark atomix-pixel-spark-b" />
           <span className="atomix-pixel-orb-label">ORB_01</span>
+        </span>
+      )}
+      {persona === "sentinel" && (
+        <span className="atomix-sentinel-pet" aria-hidden="true">
+          <span className="atomix-sentinel-halo" />
+          <span className="atomix-sentinel-shell">
+            <span className="atomix-sentinel-segment atomix-sentinel-segment-top" />
+            <span className="atomix-sentinel-segment atomix-sentinel-segment-right" />
+            <span className="atomix-sentinel-segment atomix-sentinel-segment-bottom" />
+            <span className="atomix-sentinel-segment atomix-sentinel-segment-left" />
+            <span className="atomix-sentinel-aperture">
+              <span className="atomix-sentinel-eye" />
+            </span>
+          </span>
+          <span className="atomix-sentinel-scan" />
         </span>
       )}
     </button>

@@ -480,11 +480,12 @@ export default function UserMenu() {
             </div>
 
             {petEnabled && (
-              <div className="mt-3 grid grid-cols-3 gap-1 rounded-lg bg-slate-900 p-1">
+              <div className="mt-3 grid grid-cols-4 gap-1 rounded-lg bg-slate-900 p-1">
                 {([
                   ["beacon", "Beacon"],
                   ["orb", "Orb"],
                   ["droid", "Droid"],
+                  ["sentinel", "Sentinel"],
                 ] as [PetPersona, string][]).map(([value, label]) => (
                   <button
                     key={value}
