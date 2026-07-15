@@ -9,8 +9,13 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import LocalAiStatus from "@/components/ui/local-ai-status";
+import {
+  getServerPetPreference,
+  readPetPreference,
+  subscribeToPetPreference,
+} from "@/components/pet/pet-preference";
 
 const quickPrompts = [
   "Summarize today's governance actions and owners.",
@@ -40,6 +45,11 @@ function formatTrace(trace: AgentTraceStep[]) {
 }
 
 export default function FloatingAgentChat() {
+  const petEnabled = useSyncExternalStore(
+    subscribeToPetPreference,
+    readPetPreference,
+    getServerPetPreference,
+  );
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [question, setQuestion] = useState("");
@@ -58,6 +68,12 @@ export default function FloatingAgentChat() {
   const panelSize = expanded
     ? "h-[min(82vh,760px)] w-[min(760px,calc(100vw-2rem))]"
     : "h-[min(640px,calc(100vh-7rem))] w-[min(460px,calc(100vw-2rem))]";
+
+  useEffect(() => {
+    const openAgent = () => setOpen(true);
+    window.addEventListener("atomix:open-agent", openAgent);
+    return () => window.removeEventListener("atomix:open-agent", openAgent);
+  }, []);
 
   async function ask(prompt = question) {
     const trimmedPrompt = prompt.trim();
@@ -235,7 +251,7 @@ export default function FloatingAgentChat() {
         </div>
       )}
 
-      <button
+      {!petEnabled && <button
         onClick={() => setOpen(!open)}
         className="group relative grid h-16 w-16 place-items-center rounded-3xl border border-cyan-300/40 bg-slate-950 text-cyan-200 shadow-2xl shadow-cyan-950/40 transition hover:-translate-y-1 hover:border-cyan-200"
         aria-label="Open Atomix Agent chat"
@@ -248,7 +264,7 @@ export default function FloatingAgentChat() {
           size={26}
           className="relative transition group-hover:rotate-12"
         />
-      </button>
+      </button>}
     </div>
   );
 }

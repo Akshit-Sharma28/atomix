@@ -1,6 +1,7 @@
 import Sidebar from "@/components/layout/sidebar";
 import FloatingAgentChat from "@/components/agents/floating-agent-chat";
 import UserMenu from "@/components/users/user-menu";
+import AtomixPet from "@/components/pet/atomix-pet";
 
 import { getCurrentUser } from "@/services/users/current-user.service";
 
@@ -32,6 +33,7 @@ export default async function DashboardLayout({
       </div>
       {children}
     </main>
+    <AtomixPet />
     <FloatingAgentChat />
   </div>
 );

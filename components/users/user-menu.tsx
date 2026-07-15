@@ -13,6 +13,7 @@ import {
   User,
   Eye,
   RotateCcw,
+  PawPrint,
 } from "lucide-react";
 
 import {
@@ -20,7 +21,19 @@ import {
   useRef,
   useEffect,
   useCallback,
+  useSyncExternalStore,
 } from "react";
+
+import {
+  getServerPetPreference,
+  getServerPetPersona,
+  type PetPersona,
+  readPetPersona,
+  readPetPreference,
+  savePetPersona,
+  savePetPreference,
+  subscribeToPetPreference,
+} from "@/components/pet/pet-preference";
 
 type ActiveUser = {
   id?: string | null;
@@ -53,6 +66,17 @@ export default function UserMenu() {
 
   const [switching, setSwitching] =
     useState(false);
+
+  const petEnabled = useSyncExternalStore(
+    subscribeToPetPreference,
+    readPetPreference,
+    getServerPetPreference,
+  );
+  const petPersona = useSyncExternalStore(
+    subscribeToPetPreference,
+    readPetPersona,
+    getServerPetPersona,
+  );
 
   const menuRef =
     useRef<HTMLDivElement>(null);
@@ -422,6 +446,62 @@ export default function UserMenu() {
             <User size={16} />
             Profile
           </Link>
+
+          <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-slate-300">
+            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <PawPrint size={16} />
+              <div>
+                <p className="text-sm leading-none">Atomix pet</p>
+                <p className="mt-1 text-[10px] text-slate-500">
+                  {petEnabled ? "Companion is visible" : "Companion is hidden"}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={petEnabled}
+              aria-label="Show Atomix pet"
+              onClick={() => savePetPreference(!petEnabled)}
+              className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors ${
+                petEnabled
+                  ? "border-cyan-300/40 bg-cyan-400"
+                  : "border-slate-700 bg-slate-800"
+              }`}
+            >
+              <span
+                className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  petEnabled ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+            </div>
+
+            {petEnabled && (
+              <div className="mt-3 grid grid-cols-3 gap-1 rounded-lg bg-slate-900 p-1">
+                {([
+                  ["beacon", "Beacon"],
+                  ["orb", "Orb"],
+                  ["droid", "Droid"],
+                ] as [PetPersona, string][]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => savePetPersona(value)}
+                    className={`rounded-md px-1.5 py-1.5 text-[10px] font-bold transition ${
+                      petPersona === value
+                        ? "bg-cyan-400 text-slate-950"
+                        : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <button
             onClick={() =>
