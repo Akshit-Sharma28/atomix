@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { mcpControls, type McpTransport } from "@/lib/mcp-controls";
 import { prisma } from "@/lib/prisma";
+import {
+  getExecutiveDashboard,
+  type ProductivitySource,
+} from "@/services/dashboard/executive.service";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -116,6 +120,61 @@ const tools: ToolDefinition[] = [
       "Return Atomix MCP security review controls, optionally filtered by transport.",
     inputSchema: objectSchema({
       transport: stringSchema("STDIO, Streamable HTTP, or Both / Hybrid."),
+    }),
+  },
+  {
+    name: "atomix.reviewer_capacity",
+    title: "Reviewer capacity",
+    description:
+      "Show reviewer pool capacity, active allocations, remaining hours, availability, and skills.",
+    inputSchema: objectSchema({
+      pool: stringSchema("Optional reviewer pool: Dedicated or Augmentation."),
+      availability: stringSchema("Optional availability status."),
+      limit: numberSchema("Maximum reviewers to return. Default 10, max 25."),
+    }),
+  },
+  {
+    name: "atomix.retest_queue",
+    title: "Retest queue",
+    description:
+      "List retest reviews with due-date, assignment, status, and overdue context.",
+    inputSchema: objectSchema({
+      status: stringSchema("Optional retest status."),
+      overdue: booleanSchema("When true, return only overdue active retests."),
+      unassigned: booleanSchema("When true, return only retests without an assignment."),
+      limit: numberSchema("Maximum retests to return. Default 10, max 25."),
+    }),
+  },
+  {
+    name: "atomix.sla_summary",
+    title: "SLA summary",
+    description:
+      "Summarize active review SLA pressure and list reviews due within a bounded time window.",
+    inputSchema: objectSchema({
+      dueWithinDays: numberSchema("Due-date horizon in days. Default 7, max 90."),
+      limit: numberSchema("Maximum at-risk reviews to return. Default 10, max 25."),
+    }),
+  },
+  {
+    name: "atomix.search_knowledge",
+    title: "Search knowledge",
+    description:
+      "Search Atomix review artifacts and return metadata with short evidence excerpts.",
+    inputSchema: objectSchema({
+      query: requiredStringSchema("Search text."),
+      projectId: stringSchema("Optional project ID."),
+      reviewId: stringSchema("Optional review ID."),
+      documentType: stringSchema("Optional document type."),
+      limit: numberSchema("Maximum documents to return. Default 10, max 25."),
+    }, ["query"]),
+  },
+  {
+    name: "atomix.executive_productivity",
+    title: "Executive productivity",
+    description:
+      "Calculate Atomix hours saved by workflow and role using either saved scenario assumptions or live database volumes.",
+    inputSchema: objectSchema({
+      source: stringSchema("Calculation source: scenario or live. Default scenario."),
     }),
   },
 ];
@@ -318,6 +377,16 @@ async function callTool(params: unknown) {
       return textResult(await listFindings(args));
     case "atomix.get_mcp_controls":
       return textResult(getMcpControls(args));
+    case "atomix.reviewer_capacity":
+      return textResult(await getReviewerCapacity(args));
+    case "atomix.retest_queue":
+      return textResult(await getRetestQueue(args));
+    case "atomix.sla_summary":
+      return textResult(await getSlaSummary(args));
+    case "atomix.search_knowledge":
+      return textResult(await searchKnowledge(args));
+    case "atomix.executive_productivity":
+      return textResult(await getExecutiveProductivity(args));
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -741,6 +810,277 @@ function getMcpControls(args: Record<string, unknown>) {
   };
 }
 
+async function getReviewerCapacity(args: Record<string, unknown>) {
+  const pool = stringArg(args, "pool");
+  const availability = stringArg(args, "availability");
+  const limit = limitArg(args);
+  const activeAssignmentStatuses = ["Assigned", "Accepted", "In Progress"];
+
+  const reviewers = await prisma.reviewerProfile.findMany({
+    where: {
+      ...(availability ? { availability } : {}),
+      ...(pool ? { user: { reviewerPool: pool } } : {}),
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          reviewerPool: true,
+        },
+      },
+      skills: {
+        select: { skill: true, level: true },
+      },
+      assignments: {
+        where: { status: { in: activeAssignmentStatuses } },
+        select: {
+          id: true,
+          role: true,
+          status: true,
+          allocatedHours: true,
+          review: {
+            select: { id: true, srId: true, title: true, status: true, dueDate: true },
+          },
+        },
+      },
+    },
+    orderBy: { user: { name: "asc" } },
+    take: limit,
+  });
+
+  const rows = reviewers.map((reviewer) => {
+    const allocatedHours = reviewer.assignments.reduce(
+      (sum, assignment) => sum + (assignment.allocatedHours ?? 0),
+      0,
+    );
+    return {
+      reviewerId: reviewer.id,
+      name: reviewer.user.name,
+      email: reviewer.user.email,
+      role: reviewer.user.role,
+      pool: reviewer.user.reviewerPool ?? "Augmentation",
+      availability: reviewer.availability,
+      weeklyCapacityHours: reviewer.weeklyCapacityHours,
+      allocatedHours,
+      remainingHours: Math.max(reviewer.weeklyCapacityHours - allocatedHours, 0),
+      utilizationPercent:
+        reviewer.weeklyCapacityHours > 0
+          ? Math.round((allocatedHours / reviewer.weeklyCapacityHours) * 1000) / 10
+          : null,
+      skills: reviewer.skills,
+      activeAssignments: reviewer.assignments,
+    };
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    filters: { pool: pool ?? "all", availability: availability ?? "all" },
+    summary: {
+      reviewers: rows.length,
+      weeklyCapacityHours: rows.reduce((sum, row) => sum + row.weeklyCapacityHours, 0),
+      allocatedHours: rows.reduce((sum, row) => sum + row.allocatedHours, 0),
+      remainingHours: rows.reduce((sum, row) => sum + row.remainingHours, 0),
+    },
+    reviewers: rows,
+  };
+}
+
+async function getRetestQueue(args: Record<string, unknown>) {
+  const status = stringArg(args, "status");
+  const overdue = booleanArg(args, "overdue");
+  const unassigned = booleanArg(args, "unassigned");
+  const limit = limitArg(args);
+  const now = new Date();
+
+  const retests = await prisma.securityReview.findMany({
+    where: {
+      type: { contains: "retest" },
+      ...(status ? { status } : {}),
+      ...(overdue
+        ? { dueDate: { lt: now }, status: { notIn: ["Completed", "Closed", "Cancelled"] } }
+        : {}),
+      ...(unassigned ? { assignments: { none: {} } } : {}),
+    },
+    select: {
+      id: true,
+      srId: true,
+      title: true,
+      status: true,
+      priority: true,
+      dueDate: true,
+      createdAt: true,
+      project: { select: { id: true, sprId: true, name: true, client: true } },
+      assignments: {
+        select: {
+          role: true,
+          status: true,
+          allocatedHours: true,
+          user: { select: { name: true, role: true } },
+          reviewerProfile: { select: { user: { select: { name: true, role: true } } } },
+        },
+      },
+      _count: { select: { findings: true } },
+    },
+    orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+    take: limit,
+  });
+
+  return {
+    generatedAt: now.toISOString(),
+    filters: { status: status ?? "all", overdue, unassigned },
+    count: retests.length,
+    retests: retests.map((retest) => ({
+      ...retest,
+      overdue:
+        Boolean(retest.dueDate && retest.dueDate < now) &&
+        !["Completed", "Closed", "Cancelled"].includes(retest.status),
+    })),
+  };
+}
+
+async function getSlaSummary(args: Record<string, unknown>) {
+  const dueWithinDays = boundedNumberArg(args, "dueWithinDays", 7, 1, 90);
+  const limit = limitArg(args);
+  const now = new Date();
+  const horizon = new Date(now.getTime() + dueWithinDays * 86_400_000);
+  const closedStatuses = ["Completed", "Closed", "Cancelled"];
+
+  const [active, overdue, dueSoon] = await Promise.all([
+    prisma.securityReview.count({ where: { status: { notIn: closedStatuses } } }),
+    prisma.securityReview.count({
+      where: { status: { notIn: closedStatuses }, dueDate: { lt: now } },
+    }),
+    prisma.securityReview.findMany({
+      where: {
+        status: { notIn: closedStatuses },
+        dueDate: { gte: now, lte: horizon },
+      },
+      select: {
+        id: true,
+        srId: true,
+        title: true,
+        type: true,
+        status: true,
+        priority: true,
+        dueDate: true,
+        project: { select: { id: true, sprId: true, name: true } },
+        _count: { select: { assignments: true, findings: true } },
+      },
+      orderBy: { dueDate: "asc" },
+      take: limit,
+    }),
+  ]);
+
+  return {
+    generatedAt: now.toISOString(),
+    dueWithinDays,
+    activeReviews: active,
+    overdueReviews: overdue,
+    dueSoonCount: dueSoon.length,
+    atRiskReviews: dueSoon.map((review) => ({
+      ...review,
+      daysRemaining: review.dueDate
+        ? Math.ceil((review.dueDate.getTime() - now.getTime()) / 86_400_000)
+        : null,
+    })),
+  };
+}
+
+async function searchKnowledge(args: Record<string, unknown>) {
+  const query = requiredStringArg(args, "query");
+  const projectId = stringArg(args, "projectId");
+  const reviewId = stringArg(args, "reviewId");
+  const documentType = stringArg(args, "documentType");
+  const limit = limitArg(args);
+  const documents = await prisma.knowledgeDocument.findMany({
+    where: {
+      ...(projectId ? { projectId } : {}),
+      ...(reviewId ? { reviewId } : {}),
+      ...(documentType ? { documentType } : {}),
+      OR: [
+        { title: { contains: query } },
+        { source: { contains: query } },
+        { content: { contains: query } },
+        { sprId: { contains: query } },
+        { srId: { contains: query } },
+        { artifactType: { contains: query } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+
+  return {
+    query,
+    count: documents.length,
+    documents: documents.map(({ content, ...document }) => ({
+      ...document,
+      excerpt: knowledgeExcerpt(content, query),
+    })),
+  };
+}
+
+async function getExecutiveProductivity(args: Record<string, unknown>) {
+  const requestedSource = stringArg(args, "source")?.toLowerCase();
+  if (requestedSource && !["scenario", "live"].includes(requestedSource)) {
+    throw new Error("source must be scenario or live.");
+  }
+  const source = (requestedSource ?? "scenario") as ProductivitySource;
+  const dashboard = await getExecutiveDashboard({ productivitySource: source });
+  const productivity = dashboard.productivity;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    source,
+    calendar: {
+      workdayHours: productivity.workdayHours,
+      workdaysPerWeek: productivity.workdaysPerWeek,
+      workweekHours: productivity.workweekHours,
+      workingWeeksPerYear: productivity.workingWeeksPerYear,
+      fteAnnualWorkingHours: productivity.fteAnnualWorkingHours,
+    },
+    volumes: {
+      newReviewsPerWeek: productivity.newReviewsPerWeek,
+      dedicatedReviewsPerWeek: productivity.dedicatedReviewsPerWeek,
+      augmentationReviewsPerWeek: productivity.augmentationReviewsPerWeek,
+      peerReviewsPerWeek:
+        source === "live"
+          ? productivity.liveVolumes.current.peer
+          : productivity.settings.peerReviewsPerWeek,
+      retestsPerWeek:
+        source === "live"
+          ? productivity.liveVolumes.current.retests
+          : productivity.settings.retestsPerWeek,
+    },
+    operationalSavings: {
+      weeklyHours: productivity.measuredWeeklyHoursSaved,
+      annualHours: productivity.measuredAnnualHoursSaved,
+      workingDays: productivity.measuredWorkingDaysSaved,
+      fteYears: productivity.measuredFteYearsSaved,
+    },
+    adoptionUpside: {
+      users: productivity.adoptionUsers,
+      hoursSavedPerUserPerDay: productivity.adoptionHoursSavedPerUserPerDay,
+      weeklyHours: productivity.adoptionWeeklyHoursSaved,
+      annualHours: productivity.adoptionAnnualHoursSaved,
+      fteEquivalent: productivity.adoptionFteEquivalent,
+    },
+    workflows: productivity.workflows,
+    comparisons: productivity.comparisons,
+  };
+}
+
+function knowledgeExcerpt(content: string, query: string) {
+  const normalizedContent = content.replace(/\s+/g, " ").trim();
+  const index = normalizedContent.toLowerCase().indexOf(query.toLowerCase());
+  const start = index >= 0 ? Math.max(0, index - 100) : 0;
+  const excerpt = normalizedContent.slice(start, start + 400);
+  return `${start > 0 ? "…" : ""}${excerpt}${start + 400 < normalizedContent.length ? "…" : ""}`;
+}
+
 function authorize(req: NextRequest) {
   const expectedToken = process.env.ATOMIX_MCP_TOKEN;
 
@@ -1062,6 +1402,28 @@ function limitArg(args: Record<string, unknown>) {
   }
 
   return Math.max(1, Math.min(Math.trunc(parsedLimit), 25));
+}
+
+function boundedNumberArg(
+  args: Record<string, unknown>,
+  key: string,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+) {
+  const rawValue = args[key];
+  const parsedValue =
+    typeof rawValue === "number"
+      ? rawValue
+      : typeof rawValue === "string"
+        ? Number(rawValue)
+        : fallback;
+
+  if (!Number.isFinite(parsedValue)) {
+    return fallback;
+  }
+
+  return Math.max(minimum, Math.min(Math.trunc(parsedValue), maximum));
 }
 
 function responseHeaders(req: NextRequest) {

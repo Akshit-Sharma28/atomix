@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   Bot,
   CheckCircle2,
   ClipboardCheck,
@@ -13,6 +14,8 @@ import {
   Lock,
   Network,
   Play,
+  Radar,
+  Search,
   ShieldCheck,
   Sparkles,
   Terminal,
@@ -46,7 +49,7 @@ import {
 
 const transports: McpTransport[] = ["Streamable HTTP", "STDIO", "Both / Hybrid"];
 const yesNo = ["Yes", "No"];
-const tabs = ["Overview", "Inspector", "Exports", "Prompts", "Draft"] as const;
+const tabs = ["Overview", "Discovery", "Inspector", "Exports", "Prompts", "Draft"] as const;
 const inspectorMethods = [
   "initialize",
   "tools/list",
@@ -85,6 +88,26 @@ const atomixToolPresets = [
   {
     name: "atomix.get_mcp_controls",
     argumentsJson: '{\n  "transport": "Streamable HTTP"\n}',
+  },
+  {
+    name: "atomix.reviewer_capacity",
+    argumentsJson: '{\n  "pool": "Dedicated",\n  "limit": 10\n}',
+  },
+  {
+    name: "atomix.retest_queue",
+    argumentsJson: '{\n  "overdue": true,\n  "limit": 10\n}',
+  },
+  {
+    name: "atomix.sla_summary",
+    argumentsJson: '{\n  "dueWithinDays": 7,\n  "limit": 10\n}',
+  },
+  {
+    name: "atomix.search_knowledge",
+    argumentsJson: '{\n  "query": "authentication",\n  "limit": 10\n}',
+  },
+  {
+    name: "atomix.executive_productivity",
+    argumentsJson: '{\n  "source": "live"\n}',
   },
 ];
 
@@ -179,6 +202,30 @@ const defaultContext: McpReviewContext = {
   supportsElicitation: "No",
 };
 
+type DiscoveryEvidence = {
+  method: string;
+  ok: boolean;
+  status?: number;
+  elapsedMs?: number;
+  response?: unknown;
+  error?: string;
+};
+
+const writeToolPattern = /create|update|delete|remove|assign|send|write|upload|execute|run|export|approve|reject/i;
+
+function collectNamedItems(value: unknown, key: "tools" | "resources" | "prompts") {
+  if (!value || typeof value !== "object") return [];
+  const record = value as Record<string, unknown>;
+  const direct = record[key];
+  if (Array.isArray(direct)) return direct;
+  const result = record.result;
+  if (result && typeof result === "object") {
+    const nested = (result as Record<string, unknown>)[key];
+    if (Array.isArray(nested)) return nested;
+  }
+  return [];
+}
+
 export default function McpReviewAgent() {
   const [context, setContext] = useState<McpReviewContext>(defaultContext);
   const [activeTab, setActiveTab] =
@@ -196,6 +243,8 @@ export default function McpReviewAgent() {
     '{\n  "focus": "MCP controls"\n}',
   );
   const [inspectorLoading, setInspectorLoading] = useState(false);
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [discoveryEvidence, setDiscoveryEvidence] = useState<DiscoveryEvidence[]>([]);
   const [inspectorResult, setInspectorResult] =
     useState<Record<string, unknown> | null>(null);
   const [copiedPromptId, setCopiedPromptId] = useState("");
@@ -239,10 +288,7 @@ export default function McpReviewAgent() {
     triggerDownload(blob, `${safeFilename(context.serverName)}-mcp-review-plan.md`);
   }
 
-  async function runInspector() {
-    setInspectorLoading(true);
-    setInspectorResult(null);
-
+  async function probe(method: string): Promise<Record<string, unknown>> {
     try {
       const response = await fetch("/api/agent/mcp-inspector", {
         method: "POST",
@@ -251,7 +297,7 @@ export default function McpReviewAgent() {
         },
         body: JSON.stringify({
           targetUrl: inspectorUrl,
-          method: inspectorMethod,
+          method,
           authHeaderName,
           authHeaderValue,
           extraHeadersJson,
@@ -263,21 +309,67 @@ export default function McpReviewAgent() {
         }),
       });
       const data = (await response.json()) as Record<string, unknown>;
-      setInspectorResult({
+      return {
         ...data,
         ok: response.ok && Boolean(data.ok),
-      });
+      };
     } catch (error) {
-      setInspectorResult({
+      return {
         ok: false,
         error:
           error instanceof Error
             ? error.message
             : "Unable to run MCP inspector request.",
-      });
+      };
+    }
+  }
+
+  async function runInspector() {
+    setInspectorLoading(true);
+    setInspectorResult(null);
+
+    try {
+      setInspectorResult(await probe(inspectorMethod));
     } finally {
       setInspectorLoading(false);
     }
+  }
+
+  async function runDiscoveryScan() {
+    if (!inspectorUrl.trim()) {
+      setDiscoveryEvidence([{ method: "discovery", ok: false, error: "Enter the MCP endpoint URL before running discovery." }]);
+      return;
+    }
+    setDiscoveryLoading(true);
+    setDiscoveryEvidence([]);
+    const methods = ["initialize", "tools/list", "resources/list", "prompts/list", "ping"];
+    const evidence: DiscoveryEvidence[] = [];
+    for (const method of methods) {
+      const result = await probe(method);
+      evidence.push({
+        method,
+        ok: Boolean(result.ok),
+        status: typeof result.status === "number" ? result.status : undefined,
+        elapsedMs: typeof result.elapsedMs === "number" ? result.elapsedMs : undefined,
+        response: result.response,
+        error: typeof result.error === "string" ? result.error : undefined,
+      });
+      setDiscoveryEvidence([...evidence]);
+    }
+    setDiscoveryLoading(false);
+  }
+
+  function downloadDiscoveryEvidence() {
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      targetUrl: inspectorUrl,
+      serverName: context.serverName,
+      evidence: discoveryEvidence,
+    };
+    triggerDownload(
+      new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
+      `${safeFilename(context.serverName)}-mcp-discovery-evidence.json`,
+    );
   }
 
   async function copyPrompt(prompt: string, promptId: string) {
@@ -285,6 +377,23 @@ export default function McpReviewAgent() {
     setCopiedPromptId(promptId);
     window.setTimeout(() => setCopiedPromptId(""), 1800);
   }
+
+  const discoveredTools = discoveryEvidence.flatMap((item) =>
+    collectNamedItems(item.response, "tools"),
+  );
+  const discoveredResources = discoveryEvidence.flatMap((item) =>
+    collectNamedItems(item.response, "resources"),
+  );
+  const discoveredPrompts = discoveryEvidence.flatMap((item) =>
+    collectNamedItems(item.response, "prompts"),
+  );
+  const writeCapableTools = discoveredTools.filter((item) => {
+    const name = item && typeof item === "object"
+      ? String((item as Record<string, unknown>).name ?? "")
+      : String(item);
+    return writeToolPattern.test(name);
+  });
+  const successfulDiscoveryChecks = discoveryEvidence.filter((item) => item.ok).length;
 
   return (
     <section className="mt-8 rounded-3xl border border-cyan-500/20 bg-slate-900/70 p-6 shadow-2xl shadow-cyan-950/20">
@@ -465,6 +574,111 @@ export default function McpReviewAgent() {
             value={context.supportsElicitation}
             onChange={(value) => updateContext("supportsElicitation", value)}
           />
+        </div>
+      )}
+
+      {activeTab === "Discovery" && (
+        <div className="mt-6 space-y-4">
+          <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] p-5">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-end">
+              <label className="block flex-1">
+                <span className="mb-2 block text-sm text-slate-400">MCP Streamable HTTP endpoint</span>
+                <input
+                  value={inspectorUrl}
+                  onChange={(event) => setInspectorUrl(event.target.value)}
+                  placeholder="https://example.com/mcp"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+                />
+              </label>
+              <label className="block xl:w-48">
+                <span className="mb-2 block text-sm text-slate-400">Auth header</span>
+                <input
+                  value={authHeaderName}
+                  onChange={(event) => setAuthHeaderName(event.target.value)}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+                />
+              </label>
+              <label className="block xl:w-72">
+                <span className="mb-2 block text-sm text-slate-400">Credential</span>
+                <input
+                  value={authHeaderValue}
+                  onChange={(event) => setAuthHeaderValue(event.target.value)}
+                  type="password"
+                  autoComplete="off"
+                  placeholder="Bearer token"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={discoveryLoading}
+                onClick={runDiscoveryScan}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
+              >
+                {discoveryLoading ? <Loader2 className="animate-spin" size={16} /> : <Radar size={16} />}
+                {discoveryLoading ? "Scanning…" : "Run discovery scan"}
+              </button>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Runs initialize, tools/list, resources/list, prompts/list, and ping. Credentials are sent only with this probe and are not included in the evidence export.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <Metric label="Checks passed" value={successfulDiscoveryChecks} />
+            <Metric label="Tools discovered" value={discoveredTools.length} />
+            <Metric label="Write-like tools" value={writeCapableTools.length} />
+            <Metric label="Resources" value={discoveredResources.length} />
+            <Metric label="Prompts" value={discoveredPrompts.length} />
+          </div>
+
+          {discoveryEvidence.length > 0 && (
+            <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm font-bold text-white">
+                    <Search size={16} className="text-cyan-300" />
+                    Discovery evidence trail
+                  </div>
+                  <button
+                    type="button"
+                    onClick={downloadDiscoveryEvidence}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-slate-800"
+                  >
+                    <Download size={14} /> Export JSON
+                  </button>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {discoveryEvidence.map((item) => (
+                    <div key={item.method} className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                      <div>
+                        <p className="font-mono text-xs font-bold text-white">{item.method}</p>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          {item.error ?? `${item.status ?? "—"} · ${item.elapsedMs ?? "—"}ms`}
+                        </p>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${item.ok ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300"}`}>
+                        {item.ok ? "Passed" : "Failed"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`rounded-2xl border p-5 ${writeCapableTools.length > 0 ? "border-amber-400/20 bg-amber-400/[0.05]" : "border-emerald-400/20 bg-emerald-400/[0.05]"}`}>
+                <div className="flex items-center gap-2 text-sm font-bold text-white">
+                  {writeCapableTools.length > 0 ? <AlertTriangle size={16} className="text-amber-300" /> : <CheckCircle2 size={16} className="text-emerald-300" />}
+                  Automated review signals
+                </div>
+                <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+                  <li>{successfulDiscoveryChecks}/{discoveryEvidence.length} discovery methods responded successfully.</li>
+                  <li>{discoveredTools.length} tools are exposed; {writeCapableTools.length} names indicate possible write or destructive behavior.</li>
+                  <li>{discoveredResources.length} resources and {discoveredPrompts.length} prompts require authorization and data-leakage review.</li>
+                  <li>{writeCapableTools.length > 0 ? "Require explicit authorization, confirmation, audit logging, and rollback evidence for write-like tools." : "No write-like tool names were detected; confirm behavior from schemas and direct invocation tests."}</li>
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

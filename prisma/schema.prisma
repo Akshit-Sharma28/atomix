@@ -55,6 +55,42 @@ model User {
   accounts Account?
 }
 
+model ExecutiveProductivitySetting {
+  id String @id @default("default")
+
+  adoptionUsers                   Int   @default(100)
+  hoursSavedPerUserPerDay         Float @default(1)
+  newReviewsPerWeek               Int   @default(25)
+  dedicatedPoolShare              Float @default(0.5)
+  retestRate                      Float @default(0.2)
+  dedicatedReviewsPerWeek         Int   @default(13)
+  augmentationReviewsPerWeek      Int   @default(12)
+  peerReviewsPerWeek              Int   @default(25)
+  retestsPerWeek                  Int   @default(5)
+  lastWeekUsers                   Int   @default(100)
+  lastWeekDedicatedReviews        Int   @default(12)
+  lastWeekAugmentationReviews     Int   @default(11)
+  lastWeekPeerReviews             Int   @default(23)
+  lastWeekRetests                 Int   @default(4)
+  lastYearUsers                   Int   @default(90)
+  lastYearDedicatedReviews        Int   @default(10)
+  lastYearAugmentationReviews     Int   @default(10)
+  lastYearPeerReviews             Int   @default(20)
+  lastYearRetests                 Int   @default(4)
+  validatorHoursPerReview         Float @default(0.5)
+  reviewerHoursPerReview          Float @default(1.5)
+  peerReviewerHoursPerReview      Float @default(0.75)
+  governanceHoursPerReview        Float @default(0.6)
+  retesterHoursPerReview          Float @default(0.75)
+  workdayHours                    Float @default(9)
+  workdaysPerWeek                 Int   @default(5)
+  workingWeeksPerYear             Int   @default(52)
+  fteAnnualWorkingHours           Float @default(2025)
+
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
 model Project {
   id String @id @default(cuid())
 

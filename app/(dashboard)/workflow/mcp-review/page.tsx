@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Network } from "lucide-react";
+import { ArrowLeft, BookOpen, Network } from "lucide-react";
 
 import McpReviewAgent from "@/components/agents/mcp-review-agent";
 import { canAccess } from "@/services/users/access.service";
@@ -43,14 +43,23 @@ export default async function McpReviewWorkflowPage() {
           <Network size={16} />
           MCP Security Review
         </div>
-        <h1 className="text-3xl font-bold text-white">
-          MCP Review Agent
-        </h1>
-        <p className="mt-2 max-w-3xl text-slate-400">
-          Generate an MCP-specific FEAD workbook and security review guide for
-          Model Context Protocol servers, tools, resources, prompts, roots,
-          sampling, elicitation, and transport security.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white">MCP Review Agent</h1>
+            <p className="mt-2 max-w-3xl text-slate-400">
+              Generate an MCP-specific FEAD workbook and security review guide for
+              Model Context Protocol servers, tools, resources, prompts, roots,
+              sampling, elicitation, and transport security.
+            </p>
+          </div>
+          <Link
+            href="/workflow/mcp-review/tutorial"
+            className="inline-flex items-center gap-2 rounded-xl border border-violet-400/30 bg-violet-400/10 px-4 py-3 text-sm font-bold text-violet-100 hover:bg-violet-400/20"
+          >
+            <BookOpen size={17} />
+            MCP Tutorial &amp; JSON-RPC Guide
+          </Link>
+        </div>
       </div>
 
       <McpReviewAgent />

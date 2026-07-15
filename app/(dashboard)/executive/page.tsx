@@ -11,11 +11,13 @@ import {
 import { canAccess } from "@/services/users/access.service";
 import {
   ExecutiveFilter,
+  ProductivitySource,
   ExecutiveSort,
   getExecutiveDashboard,
 } from "@/services/dashboard/executive.service";
 import AgenticCapabilityPanel from "@/components/agents/agentic-capability-panel";
 import ExecutiveReportGenerator from "@/components/reports/executive-report-generator";
+import ProductivitySettingsForm from "@/components/executive/productivity-settings-form";
 
 function metricClass(value: number) {
   if (value > 0) {
@@ -37,6 +39,21 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
+function percentChange(current: number, baseline: number) {
+  if (baseline === 0) return current === 0 ? 0 : null;
+  return ((current - baseline) / baseline) * 100;
+}
+
+function trendLabel(current: number, baseline: number) {
+  const change = percentChange(current, baseline);
+  if (change === null) return "New baseline";
+  return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
+}
+
+function trendClass(current: number, baseline: number) {
+  return current >= baseline ? "text-emerald-300" : "text-amber-300";
+}
+
 export default async function ExecutiveDashboardPage({
   searchParams,
 }: {
@@ -44,6 +61,7 @@ export default async function ExecutiveDashboardPage({
     sort?: ExecutiveSort;
     filter?: ExecutiveFilter;
     search?: string;
+    source?: ProductivitySource;
   }>;
 }) {
   const allowed = await canAccess(["ADMIN", "EXECUTIVE"]);
@@ -68,10 +86,12 @@ export default async function ExecutiveDashboardPage({
   const sort = params.sort ?? "variance";
   const filter = params.filter ?? "all";
   const search = params.search ?? "";
+  const productivitySource = params.source === "live" ? "live" : "scenario";
   const data = await getExecutiveDashboard({
     sort,
     filter,
     search,
+    productivitySource,
   });
 
   return (
@@ -90,18 +110,31 @@ export default async function ExecutiveDashboardPage({
         </p>
       </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">
+            Live portfolio health
+          </p>
+          <h2 className="mt-1 text-xl font-bold text-white">Delivery KPIs</h2>
+        </div>
+        <p className="max-w-2xl text-right text-xs leading-5 text-slate-500">
+          Current database values. These describe delivery health and are separate
+          from the modeled capacity opportunity below.
+        </p>
+      </div>
+
+      <div className="mb-3 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         {[
-          ["Projects", data.summary.projects, "portfolio records"],
-          ["Red Projects", data.summary.redProjects, "need attention"],
-          ["Active SRs", data.summary.activeReviews, "in delivery"],
-          ["Overdue SRs", data.summary.overdueReviews, "past due"],
-          ["Hours", data.summary.allocatedHours, "allocated"],
-          ["Variance", data.summary.variance, "hours vs expected"],
-        ].map(([label, value, helper]) => (
+          ["Projects", data.summary.projects, "Portfolio records", "All SPRs currently in the executive portfolio."],
+          ["Red Projects", data.summary.redProjects, "Need attention", "Projects with overdue work, critical open findings, or pending extensions."],
+          ["Active SRs", data.summary.activeReviews, "In delivery", "Security reviews in an active workflow status."],
+          ["Overdue SRs", data.summary.overdueReviews, "Past due", "Active security reviews beyond their committed due date."],
+          ["Allocated Hours", data.summary.allocatedHours, "Current assignments", "Hours assigned to reviewers across active SRs."],
+          ["Variance", data.summary.variance, "Allocated − expected", "Difference between allocated hours and the 16-hour baseline per active SR."],
+        ].map(([label, value, helper, definition]) => (
           <div
             key={label as string}
-            className="rounded-2xl border border-cyan-500/10 bg-slate-900/70 p-4"
+            className="group rounded-2xl border border-cyan-500/10 bg-slate-900/70 p-4"
           >
             <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
               {label as string}
@@ -118,61 +151,94 @@ export default async function ExecutiveDashboardPage({
             <p className="mt-2 text-xs text-slate-400">
               {helper as string}
             </p>
+            <p className="mt-3 border-t border-slate-800 pt-3 text-[11px] leading-4 text-slate-600 group-hover:text-slate-400">
+              {definition as string}
+            </p>
           </div>
         ))}
       </div>
+
+      <div className="mb-6 flex flex-wrap gap-x-5 gap-y-2 rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 text-xs text-slate-400">
+        <span><strong className="text-slate-200">Expected-hours baseline:</strong> 16h per active SR</span>
+        <span><strong className="text-slate-200">Red trigger:</strong> delivery, risk, or extension exception</span>
+        <span><strong className="text-slate-200">Data type:</strong> live operational records</span>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
+        <div>
+          <p className="text-sm font-semibold text-white">Productivity data source</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Switch between editable planning inputs and dated operational records.
+          </p>
+        </div>
+        <div className="flex rounded-xl border border-slate-700 bg-slate-900 p-1">
+          {[
+            ["scenario", "Saved Scenario"],
+            ["live", "Live Database"],
+          ].map(([value, label]) => (
+            <Link
+              key={value}
+              href={`/executive?source=${value}`}
+              className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
+                productivitySource === value
+                  ? "bg-cyan-400 text-slate-950"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <ProductivitySettingsForm settings={data.productivity.settings} />
 
       <section className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-emerald-300">
               <TrendingUp size={16} />
-              Business Value / Productivity
+              Modeled business value / productivity
             </div>
             <h2 className="text-xl font-bold text-white">
-              AI governance time saved
+              AI-enabled capacity opportunity
             </h2>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-300">
-              Scenario model, not claimed realized savings: if every person in
-              EYG saves{" "}
-              {data.productivity.baselineDailyHoursPerPerson} hour/day, then{" "}
-              {data.productivity.workdaysPerWeek} hrs/week/person ×{" "}
-              {data.productivity.baselinePeople} people ={" "}
-              {data.productivity.baselineWeeklyHoursSaved.toLocaleString()} hrs/week,
-              or {data.productivity.baselineAnnualHoursSaved.toLocaleString()} hrs/year.
-              Person-day conversion uses a real delivery calendar:{" "}
-              {data.productivity.workdaysPerWeek} weekdays/week ×{" "}
-              {data.productivity.workingWeeksPerYear} weeks ={" "}
-              {data.productivity.annualWorkingDays} workdays/person/year,{" "}
-              {data.productivity.workdayHours} hrs/day.
+              Full-adoption scenario for {data.productivity.adoptionUsers} users
+              saving {data.productivity.adoptionHoursSavedPerUserPerDay} hour per
+              working day. Calculations use {data.productivity.workdayHours}-hour
+              days, {data.productivity.workweekHours}-hour weeks, and{" "}
+              {data.productivity.fteAnnualWorkingHours.toLocaleString()} annual
+              working hours per FTE. This is modeled released capacity, not a
+              realized headcount reduction.
             </p>
           </div>
           <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200">
-            {data.productivity.workdayHours} hrs/day · weekends off
+            {data.productivity.workweekHours} hrs/week · {data.productivity.workdayHours} hrs/day
           </span>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
             [
-              "Potential annual hours",
-              data.productivity.baselineAnnualHoursSaved.toLocaleString(),
-              `Scenario: ${data.productivity.baselinePeople} people × 1h/day`,
+              "Annual hours released",
+              data.productivity.adoptionAnnualHoursSaved.toLocaleString(),
+              "Primary capacity KPI",
             ],
             [
-              "Potential capacity",
-              data.productivity.baselineWorkingDaysSaved.toLocaleString(),
-              `${data.productivity.baselineFteYearsSavedLabel} FTE-years if fully adopted`,
+              "Equivalent FTE capacity",
+              data.productivity.adoptionFteEquivalent.toFixed(1),
+              `${data.productivity.fteAnnualWorkingHours.toLocaleString()} hours per FTE-year`,
             ],
             [
-              "Estimated current run-rate",
-              data.productivity.measuredAnnualHoursSaved.toLocaleString(),
-              `${data.productivity.measuredWeeklyHoursSaved} hrs/wk from app volumes`,
+              "Hours saved per week",
+              data.productivity.adoptionWeeklyHoursSaved.toLocaleString(),
+              `${data.productivity.adoptionUsers} users × 1h/day × 5 days`,
             ],
             [
-              "Estimated current capacity",
-              data.productivity.measuredWorkingDaysSaved.toLocaleString(),
-              `${data.productivity.measuredFteYearsSavedLabel} FTE-year equivalent`,
+              `${data.productivity.workdayHours}-hour workdays saved`,
+              Math.round(data.productivity.adoptionWorkingDaysSaved).toLocaleString(),
+              "Equivalent person-days",
             ],
           ].map(([label, value, helper]) => (
             <div
@@ -190,17 +256,121 @@ export default async function ExecutiveDashboardPage({
           ))}
         </div>
 
+        <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-slate-950/70 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-white">Capacity calculation bridge</p>
+            <span className="rounded-full bg-amber-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-200">
+              Scenario · not realized savings
+            </span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              ["Adoption", `${data.productivity.adoptionUsers} users`, "Planning population"],
+              ["Daily", `${data.productivity.adoptionDailyHoursSaved} hrs`, `${data.productivity.adoptionUsers} users × ${data.productivity.adoptionHoursSavedPerUserPerDay} hour`],
+              ["Weekly", `${data.productivity.adoptionWeeklyHoursSaved} hrs`, `Daily × ${data.productivity.workdaysPerWeek} days`],
+              ["Monthly avg.", `${Math.round(data.productivity.adoptionMonthlyHoursSaved).toLocaleString()} hrs`, "Annual ÷ 12"],
+              ["Annual", `${data.productivity.adoptionAnnualHoursSaved.toLocaleString()} hrs`, `Weekly × ${data.productivity.workingWeeksPerYear} weeks`],
+            ].map(([label, value, formula]) => (
+              <div key={label} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                <p className="text-[11px] uppercase tracking-wider text-slate-500">{label}</p>
+                <p className="mt-1 text-lg font-bold text-emerald-300">{value}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{formula}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-400">
+            <span><strong className="text-white">{Math.round(data.productivity.adoptionWorkingDaysSaved).toLocaleString()}</strong> equivalent {data.productivity.workdayHours}-hour workdays</span>
+            <span><strong className="text-white">{Math.round(data.productivity.adoptionAnnualHoursSaved / data.productivity.workweekHours).toLocaleString()}</strong> equivalent {data.productivity.workweekHours}-hour work weeks</span>
+            <span><strong className="text-white">{data.productivity.adoptionFteEquivalent.toFixed(1)}</strong> FTE capacity at {data.productivity.fteAnnualWorkingHours.toLocaleString()} hours/FTE-year</span>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+          {[
+            {
+              eyebrow: "Week-over-week",
+              title: "This week vs last week",
+              baseline: data.productivity.comparisons.lastWeek,
+              currentUsers: data.productivity.adoptionUsers,
+              baselineReviews:
+                productivitySource === "live"
+                  ? data.productivity.comparisons.lastWeek.volumes.dedicated + data.productivity.comparisons.lastWeek.volumes.augmentation
+                  : data.productivity.settings.lastWeekDedicatedReviews + data.productivity.settings.lastWeekAugmentationReviews,
+              baselinePeerReviews: productivitySource === "live" ? data.productivity.comparisons.lastWeek.volumes.peer : data.productivity.settings.lastWeekPeerReviews,
+              baselineRetests: productivitySource === "live" ? data.productivity.comparisons.lastWeek.volumes.retests : data.productivity.settings.lastWeekRetests,
+              currentReviews: data.productivity.newReviewsPerWeek,
+              multiplier: 1,
+              periodLabel: "hrs/week",
+            },
+            {
+              eyebrow: "Year-over-year run rate",
+              title: "This year vs last year",
+              baseline: data.productivity.comparisons.lastYear,
+              currentUsers: data.productivity.adoptionUsers,
+              baselineReviews:
+                productivitySource === "live"
+                  ? data.productivity.comparisons.lastYear.volumes.dedicated + data.productivity.comparisons.lastYear.volumes.augmentation
+                  : data.productivity.settings.lastYearDedicatedReviews + data.productivity.settings.lastYearAugmentationReviews,
+              baselinePeerReviews: productivitySource === "live" ? data.productivity.comparisons.lastYear.volumes.peer : data.productivity.settings.lastYearPeerReviews,
+              baselineRetests: productivitySource === "live" ? data.productivity.comparisons.lastYear.volumes.retests : data.productivity.settings.lastYearRetests,
+              currentReviews: data.productivity.newReviewsPerWeek,
+              multiplier: data.productivity.workingWeeksPerYear,
+              periodLabel: "hrs/year",
+            },
+          ].map((comparison) => {
+            const currentOperational =
+              data.productivity.measuredWeeklyHoursSaved * comparison.multiplier;
+            const baselineOperational =
+              comparison.baseline.operationalWeeklyHours * comparison.multiplier;
+            return (
+              <div key={comparison.title} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-300">
+                  {comparison.eyebrow}
+                </p>
+                <h3 className="mt-1 text-base font-bold text-white">{comparison.title}</h3>
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  {[
+                    ["Hours released", currentOperational, baselineOperational, comparison.periodLabel],
+                    ["Users", comparison.currentUsers, comparison.baseline.users, "people"],
+                    ["Pool reviews", comparison.currentReviews, comparison.baselineReviews, "reviews/wk"],
+                    [
+                      "Peer reviews",
+                      productivitySource === "live" ? data.productivity.liveVolumes.current.peer : data.productivity.settings.peerReviewsPerWeek,
+                      comparison.baselinePeerReviews,
+                      "reviews/wk",
+                    ],
+                    [
+                      "Retests",
+                      productivitySource === "live" ? data.productivity.liveVolumes.current.retests : data.productivity.settings.retestsPerWeek,
+                      comparison.baselineRetests,
+                      "retests/wk",
+                    ],
+                  ].map(([label, current, baseline, unit]) => (
+                    <div key={label as string} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                      <p className="text-[11px] text-slate-500">{label as string}</p>
+                      <p className="mt-1 text-lg font-bold text-white">
+                        {(current as number).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                      </p>
+                      <p className="text-[10px] text-slate-600">{unit as string}</p>
+                      <p className={`mt-2 text-xs font-bold ${trendClass(current as number, baseline as number)}`}>
+                        {trendLabel(current as number, baseline as number)}
+                        <span className="ml-1 font-normal text-slate-500">vs {Number(baseline).toLocaleString()}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300">
-            <span className="font-semibold text-emerald-200">Demo framing:</span>{" "}
-            Lead with the estimated current run-rate:{" "}
-            {data.productivity.measuredWeeklyHoursSaved} hrs/week, or{" "}
-            {data.productivity.measuredWorkingDaysSaved.toLocaleString()}{" "}
-            nine-hour person-days annually. This is based on tracked workflow
-            volume × assumed time saved per item, not stopwatch tracking. The{" "}
-            {data.productivity.baselineWorkingDaysSaved.toLocaleString()}{" "}
-            person-day number is a full-adoption scenario, not realized
-            savings or headcount reduction.
+            <span className="font-semibold text-emerald-200">Executive framing:</span>{" "}
+            At full adoption, {data.productivity.adoptionDailyHoursSaved.toLocaleString()} hours released each working day becomes{" "}
+            {data.productivity.adoptionAnnualHoursSaved.toLocaleString()} hours per
+            year, or approximately {data.productivity.adoptionFteEquivalent.toFixed(1)}{" "}
+            FTEs of capacity using the 2,025-hour annual convention.
           </div>
           <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.06] p-4 text-sm leading-6 text-slate-300">
             <span className="font-semibold text-cyan-200">Value beyond FTE:</span>{" "}
@@ -209,22 +379,37 @@ export default async function ExecutiveDashboardPage({
           </div>
         </div>
 
-        <details className="mt-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
+        <div className="mt-6 border-t border-emerald-500/20 pt-5">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">
+            Operational productivity model
+          </p>
+          <h3 className="mt-1 text-lg font-bold text-white">
+            Hours saved mapping by user role
+          </h3>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
+            Average weekly model for {data.productivity.newReviewsPerWeek} new EYG
+            reviews. Each row maps a workflow owner to volume, the assumed saving
+            per review, weekly capacity released, and its annual equivalent.
+          </p>
+        </div>
+
+        <details open className="mt-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
           <summary className="cursor-pointer text-sm font-semibold text-amber-100">
-            Show how the 46 hrs/week estimate is calculated
+            Show the 25-review role calculation
           </summary>
           <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
             <p className="text-sm font-semibold text-white">
-              Source of the 46 hrs/week number
+              Role assumptions and weekly calculation
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              Atomix does not yet use timers to prove realized savings. The
-              current run-rate is an estimate from live app volume: each
-              tracked workflow has a small time-saving assumption, then those
-              weekly estimates are added together.
+              This model uses {data.productivity.dedicatedReviewsPerWeek} Dedicated
+              pool reviews, {data.productivity.augmentationReviewsPerWeek}{" "}
+              Augmentation pool reviews, {data.productivity.settings.peerReviewsPerWeek}{" "}
+              peer reviews, and {data.productivity.settings.retestsPerWeek} retests
+              each week. Governance volume follows the total pool-review volume.
             </p>
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
+              <table className="w-full min-w-[980px] text-left text-sm">
                 <thead className="text-xs uppercase tracking-[0.14em] text-slate-500">
                   <tr className="border-b border-slate-800">
                     <th className="py-2 pr-3">Workflow</th>
@@ -232,6 +417,8 @@ export default async function ExecutiveDashboardPage({
                     <th className="py-2 pr-3 text-right">Volume</th>
                     <th className="py-2 pr-3 text-right">Assumption</th>
                     <th className="py-2 text-right">Weekly estimate</th>
+                    <th className="py-2 text-right">Annual estimate</th>
+                    <th className="py-2 text-right">% of 45h week</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -255,6 +442,12 @@ export default async function ExecutiveDashboardPage({
                       <td className="py-3 text-right font-semibold text-cyan-200">
                         {item.weeklyHoursSaved}h/wk
                       </td>
+                      <td className="py-3 text-right font-semibold text-emerald-200">
+                        {item.annualHoursSaved.toLocaleString()}h/yr
+                      </td>
+                      <td className="py-3 text-right text-slate-400">
+                        {item.workweekCapacityPercent.toFixed(1)}%
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -267,7 +460,7 @@ export default async function ExecutiveDashboardPage({
                 .join(" + ")}{" "}
               ={" "}
               <span className="font-semibold text-cyan-200">
-                {data.productivity.measuredWeeklyHoursSaved} hrs/week
+                {data.productivity.measuredWeeklyHoursSaved.toLocaleString()} hrs/week
               </span>
               .
             </p>
@@ -289,17 +482,13 @@ export default async function ExecutiveDashboardPage({
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
               <p className="text-sm font-semibold text-white">
-                Full-adoption upside model
+                Capacity conversion
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                {data.productivity.baselinePeople} people ×{" "}
-                {data.productivity.baselineDailyHoursPerPerson} hr/day ×{" "}
-                {data.productivity.workdaysPerWeek} days/week ×{" "}
-                {data.productivity.workingWeeksPerYear} weeks ={" "}
-                {data.productivity.baselineAnnualHoursSaved.toLocaleString()}{" "}
-                hrs/year ÷ {data.productivity.workdayHours} hrs/day ={" "}
-                {data.productivity.baselineWorkingDaysSaved.toLocaleString()}{" "}
-                person-days.
+                {data.productivity.measuredAnnualHoursSaved.toLocaleString()} hrs/year ÷{" "}
+                {data.productivity.fteAnnualWorkingHours.toLocaleString()} hrs per
+                45-hour-week FTE-year = {data.productivity.measuredFteYearsSavedLabel}{" "}
+                FTE-years of released capacity.
               </p>
             </div>
           </div>
@@ -317,11 +506,13 @@ export default async function ExecutiveDashboardPage({
                   <p className="mt-1 text-sm text-slate-400">{item.workflow}</p>
                 </div>
                 <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-200">
-                  {item.weeklyHoursSaved}h/wk
+                  {item.weeklyHoursSaved.toLocaleString()}h/wk
                 </span>
               </div>
               <p className="mt-3 text-xs text-slate-500">
-                Volume {item.volume} × {item.hoursPerUnit} hrs/unit saved
+                Volume {item.volume.toLocaleString()} × {item.hoursPerUnit} hrs/unit
+                · {item.annualHoursSaved.toLocaleString()}h/year ·{" "}
+                {item.annualWorkingDaysSaved.toFixed(1)} days/year
               </p>
             </div>
           ))}

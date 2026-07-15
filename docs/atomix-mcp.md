@@ -96,6 +96,11 @@ For MCP Inspector desktop or CLI, point it at the same Streamable HTTP URL.
 - `atomix.get_review`: fetch a review by ID or SR ID with assignments, workstreams, findings, and activities.
 - `atomix.list_findings`: list findings with optional project, review, severity, status, or text filters.
 - `atomix.get_mcp_controls`: return MCP security review controls, optionally filtered by transport.
+- `atomix.reviewer_capacity`: show reviewer pool capacity, allocation, remaining hours, skills, and active work.
+- `atomix.retest_queue`: list retests with assignment, due-date, status, and overdue context.
+- `atomix.sla_summary`: summarize SLA pressure and reviews due within a configurable 1–90 day horizon.
+- `atomix.search_knowledge`: search review artifacts and return metadata with bounded evidence excerpts.
+- `atomix.executive_productivity`: calculate role-level hours saved from saved scenario assumptions or live database volumes.
 
 ## Resources
 
