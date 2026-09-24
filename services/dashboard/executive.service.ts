@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { unstable_cache } from "next/cache";
 import { calculateRisk } from "../risk/risk.service";
 import { getRetestGovernanceSummary } from "./retest-governance.service";
 
@@ -15,6 +16,13 @@ export type ExecutiveFilter =
   | "completed";
 
 export type ProductivitySource = "scenario" | "live";
+
+type ExecutiveDashboardOptions = {
+  sort?: ExecutiveSort;
+  filter?: ExecutiveFilter;
+  search?: string;
+  productivitySource?: ProductivitySource;
+};
 
 function startOfIsoWeek(date: Date) {
   const start = new Date(date);
@@ -68,17 +76,12 @@ function statusMatches(status: string, filter: ExecutiveFilter) {
   return true;
 }
 
-export async function getExecutiveDashboard({
+async function buildExecutiveDashboard({
   sort = "variance",
   filter = "all",
   search = "",
   productivitySource = "scenario",
-}: {
-  sort?: ExecutiveSort;
-  filter?: ExecutiveFilter;
-  search?: string;
-  productivitySource?: ProductivitySource;
-}) {
+}: ExecutiveDashboardOptions) {
   const [projects, retestGovernance, savedProductivitySettings, productivityUsers] = await Promise.all([
     prisma.project.findMany({
       include: {
@@ -554,5 +557,38 @@ export async function getExecutiveDashboard({
       workflows: weeklyProductivityByWorkflow,
     },
     rows: filteredRows,
+  };
+}
+
+const getCachedExecutiveDashboard = unstable_cache(
+  async (options: ExecutiveDashboardOptions) =>
+    buildExecutiveDashboard(options),
+  ["executive-dashboard-v3"],
+  {
+    revalidate: 30,
+    tags: ["executive-dashboard"],
+  },
+);
+
+export async function getExecutiveDashboard(
+  options: ExecutiveDashboardOptions = {},
+) {
+  const dashboard = await getCachedExecutiveDashboard(options);
+
+  return {
+    ...dashboard,
+    productivity: {
+      ...dashboard.productivity,
+      settings: {
+        ...dashboard.productivity.settings,
+        updatedAt: dashboard.productivity.settings.updatedAt
+          ? new Date(dashboard.productivity.settings.updatedAt)
+          : null,
+      },
+    },
+    rows: dashboard.rows.map((row) => ({
+      ...row,
+      updatedAt: new Date(row.updatedAt),
+    })),
   };
 }

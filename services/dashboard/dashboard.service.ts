@@ -730,11 +730,36 @@ async function getRoleDashboardSummary({
       description:
         "Platform-wide identity, portfolio, review, and exception health.",
       cards: [
-        { title: "Active Users", value: users, variant: "default" },
-        { title: "Active Packages", value: activeProjects, variant: "open" },
-        { title: "Active SRs", value: activeReviews, variant: "high" },
-        { title: "Open Evidence", value: openFindings, variant: "critical" },
-        { title: "Extensions", value: pendingExtensions, variant: "closed" },
+        {
+          title: "Active Users",
+          value: users,
+          variant: "default",
+          helper: "Enabled user accounts",
+        },
+        {
+          title: "Active Projects",
+          value: activeProjects,
+          variant: "open",
+          helper: "Not closed or cancelled",
+        },
+        {
+          title: "Active SRs",
+          value: activeReviews,
+          variant: "high",
+          helper: "Requested, scheduled, assigned, or in progress",
+        },
+        {
+          title: "Open Findings",
+          value: openFindings,
+          variant: "critical",
+          helper: "Status is not closed",
+        },
+        {
+          title: "Pending Extensions",
+          value: pendingExtensions,
+          variant: "closed",
+          helper: "Awaiting approval or rejection",
+        },
       ],
     };
   }

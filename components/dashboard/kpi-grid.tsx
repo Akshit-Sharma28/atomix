@@ -12,6 +12,7 @@ interface Props {
         title: string;
         value: number;
         variant: string;
+        helper?: string;
       }[];
     };
   };
@@ -56,6 +57,7 @@ export default function KPIGrid({
           title={card.title}
           value={card.value}
           variant={card.variant}
+          helper={card.helper}
         />
       ))}
     </div>

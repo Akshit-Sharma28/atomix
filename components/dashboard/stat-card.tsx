@@ -10,12 +10,14 @@ interface Props {
   title: string;
   value: number;
   variant?: string;
+  helper?: string;
 }
 
 export default function StatCard({
   title,
   value,
   variant = "default",
+  helper = "Current database value",
 }: Props) {
   const styles = {
     default: {
@@ -102,7 +104,7 @@ export default function StatCard({
 
       <div className="mt-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-500">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-        <span>Live database count</span>
+        <span>{helper}</span>
       </div>
     </div>
   );
