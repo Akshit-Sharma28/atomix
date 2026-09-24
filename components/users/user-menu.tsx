@@ -14,6 +14,8 @@ import {
   Eye,
   RotateCcw,
   PawPrint,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 import {
@@ -34,6 +36,12 @@ import {
   savePetPreference,
   subscribeToPetPreference,
 } from "@/components/pet/pet-preference";
+import {
+  getServerThemePreference,
+  readThemePreference,
+  saveThemePreference,
+  subscribeToThemePreference,
+} from "@/components/theme/theme-preference";
 
 type ActiveUser = {
   id?: string | null;
@@ -76,6 +84,12 @@ export default function UserMenu({
     readPetPersona,
     getServerPetPersona,
   );
+  const theme = useSyncExternalStore(
+    subscribeToThemePreference,
+    readThemePreference,
+    getServerThemePreference,
+  );
+  const lightModeEnabled = theme === "light";
 
   const menuRef =
     useRef<HTMLDivElement>(null);
@@ -418,6 +432,41 @@ export default function UserMenu({
             <User size={16} />
             Profile
           </Link>
+
+          <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-slate-300">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                {lightModeEnabled ? <Sun size={16} /> : <Moon size={16} />}
+                <div>
+                  <p className="text-sm leading-none">White mode</p>
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    {lightModeEnabled ? "Light theme is active" : "Dark theme is active"}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={lightModeEnabled}
+                aria-label="Enable white mode"
+                onClick={() =>
+                  saveThemePreference(lightModeEnabled ? "dark" : "light")
+                }
+                className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors ${
+                  lightModeEnabled
+                    ? "border-cyan-500/40 bg-cyan-500"
+                    : "border-slate-700 bg-slate-800"
+                }`}
+              >
+                <span
+                  className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    lightModeEnabled ? "translate-x-5" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
 
           <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-slate-300">
             <div className="flex items-center justify-between gap-3">

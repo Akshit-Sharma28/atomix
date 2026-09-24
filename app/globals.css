@@ -116,6 +116,42 @@
   --foreground: #f8fafc;
 }
 
+.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  --primary: #0891b2;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e2e8f0;
+  --secondary-foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+
+  --accent: #ecfeff;
+  --accent-foreground: #0e7490;
+
+  --border: rgba(71, 85, 105, 0.24);
+  --input: rgba(148, 163, 184, 0.3);
+  --ring: #0891b2;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0891b2;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ecfeff;
+  --sidebar-accent-foreground: #0e7490;
+  --sidebar-border: rgba(71, 85, 105, 0.2);
+  --sidebar-ring: #0891b2;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -143,6 +179,136 @@
 
     min-height: 100vh;
   }
+}
+
+.light body {
+  background:
+    radial-gradient(circle at top right, rgba(6, 182, 212, 0.09), transparent 25%),
+    radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.06), transparent 30%),
+    #f8fafc;
+}
+
+/* Light-mode bridge for the existing dark-first Atomix utility palette. */
+.light :is(
+  [class~="bg-slate-950"],
+  [class~="bg-slate-950/20"],
+  [class~="bg-slate-950/35"],
+  [class~="bg-slate-950/40"],
+  [class~="bg-slate-950/50"],
+  [class~="bg-slate-950/60"],
+  [class~="bg-slate-950/70"],
+  [class~="bg-slate-950/75"],
+  [class~="bg-slate-950/80"],
+  [class~="bg-slate-950/85"],
+  [class~="bg-slate-950/90"],
+  [class~="bg-slate-950/95"],
+  [class~="bg-[#020617]"],
+  [class~="bg-[#050b19]"],
+  [class~="bg-[#07111f]"]
+) {
+  background-color: rgba(248, 250, 252, 0.96) !important;
+}
+
+.light :is(
+  [class~="bg-slate-900"],
+  [class~="bg-slate-900/50"],
+  [class~="bg-slate-900/60"],
+  [class~="bg-slate-900/70"],
+  [class~="bg-slate-900/80"],
+  [class~="bg-slate-900/90"]
+) {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.light :is(
+  [class~="bg-slate-800"],
+  [class~="bg-slate-800/40"],
+  [class~="bg-slate-800/50"],
+  [class~="bg-slate-800/60"],
+  [class~="bg-slate-800/80"]
+) {
+  background-color: rgba(226, 232, 240, 0.88) !important;
+}
+
+.light :is([class~="bg-slate-700"], [class~="bg-slate-700/60"]) {
+  background-color: #cbd5e1 !important;
+}
+
+.light :is([class~="bg-black"], [class~="bg-black/20"], [class~="bg-black/30"]) {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.light :is([class~="text-white"], [class~="text-slate-100"]) {
+  color: #0f172a !important;
+}
+
+.light [class~="text-slate-200"] {
+  color: #1e293b !important;
+}
+
+.light [class~="text-slate-300"] {
+  color: #334155 !important;
+}
+
+.light :is([class~="text-slate-400"], [class~="text-slate-500"], [class~="text-slate-600"]) {
+  color: #475569 !important;
+}
+
+.light :is([class~="border-slate-900"], [class~="border-slate-800"], [class~="border-slate-800/70"]) {
+  border-color: rgba(100, 116, 139, 0.25) !important;
+}
+
+.light :is([class~="border-slate-700"], [class~="border-slate-600"]) {
+  border-color: rgba(71, 85, 105, 0.38) !important;
+}
+
+.light :is([class~="text-cyan-100"], [class~="text-cyan-200"], [class~="text-cyan-300"], [class~="text-cyan-400"]) {
+  color: #0e7490 !important;
+}
+
+.light :is([class~="text-emerald-100"], [class~="text-emerald-200"], [class~="text-emerald-300"], [class~="text-emerald-400"], [class~="text-green-400"]) {
+  color: #047857 !important;
+}
+
+.light :is([class~="text-amber-100"], [class~="text-amber-200"], [class~="text-amber-300"], [class~="text-orange-300"], [class~="text-orange-400"]) {
+  color: #a16207 !important;
+}
+
+.light :is([class~="text-red-100"], [class~="text-red-200"], [class~="text-red-200/70"], [class~="text-red-300"], [class~="text-red-400"], [class~="text-red-500"]) {
+  color: #b91c1c !important;
+}
+
+.light :is([class~="text-blue-300"], [class~="text-blue-400"]) {
+  color: #1d4ed8 !important;
+}
+
+.light :is([class~="text-purple-100"], [class~="text-purple-200"], [class~="text-purple-300"], [class~="text-purple-400"], [class~="text-violet-100"], [class~="text-violet-200"], [class~="text-violet-300"], [class~="text-pink-300"]) {
+  color: #7e22ce !important;
+}
+
+.light [class~="to-slate-950"] {
+  --tw-gradient-to: #f8fafc var(--tw-gradient-to-position) !important;
+}
+
+.light [class~="via-slate-900/70"] {
+  --tw-gradient-via: rgba(255, 255, 255, 0.8) var(--tw-gradient-via-position) !important;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.light ::selection {
+  background: rgba(8, 145, 178, 0.24);
+  color: #0f172a;
 }
 
 /* Scrollbar */
