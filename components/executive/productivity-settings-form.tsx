@@ -108,8 +108,11 @@ export default function ProductivitySettingsForm({ settings }: { settings: Setti
         <div className="grid gap-5 xl:grid-cols-3">
           <fieldset>
             <legend className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-cyan-300">
-              Volume and adoption
+              Adoption scenario
             </legend>
+            <p className="mb-3 text-xs leading-5 text-slate-500">
+              Used for the per-user model: users × saved hours/day × working calendar.
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <NumberInput label="Users" name="adoptionUsers" value={settings.adoptionUsers} />
               <NumberInput label="Dedicated reviews" name="dedicatedReviewsPerWeek" value={settings.dedicatedReviewsPerWeek} suffix="/wk" />
@@ -122,8 +125,11 @@ export default function ProductivitySettingsForm({ settings }: { settings: Setti
 
           <fieldset>
             <legend className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-cyan-300">
-              Hours saved per review
+              Per-review operational model
             </legend>
+            <p className="mb-3 text-xs leading-5 text-slate-500">
+              Separate from the adoption model. Stage assumptions roll up to the estimated hours saved per review.
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <NumberInput label="Reviewer intake" name="validatorHoursPerReview" step={0.05} value={settings.validatorHoursPerReview} suffix="hrs" />
               <NumberInput label="Pool reviewer" name="reviewerHoursPerReview" step={0.05} value={settings.reviewerHoursPerReview} suffix="hrs" />

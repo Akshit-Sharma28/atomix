@@ -19,22 +19,22 @@ export default async function DashboardLayout({
   const user = await getCurrentUser();
 
   return (
-  <div className="flex min-h-screen">
-    <Sidebar
-      role={
-        user?.role ??
-        "REVIEWER"
-      }
-    />
+    <div className="flex min-h-screen min-w-0">
+      <Sidebar
+        role={
+          user?.role ??
+          "REVIEWER"
+        }
+      />
 
-    <main className="relative flex-1">
-      <div className="fixed right-6 top-6 z-40">
-        <UserMenu />
-      </div>
-      {children}
-    </main>
-    <AtomixPet />
-    <FloatingAgentChat />
-  </div>
-);
+      <main className="relative min-w-0 flex-1">
+        <div className="fixed right-4 top-4 z-40 sm:right-6 sm:top-6">
+          <UserMenu initialUser={user} />
+        </div>
+        {children}
+      </main>
+      <AtomixPet />
+      <FloatingAgentChat />
+    </div>
+  );
 }

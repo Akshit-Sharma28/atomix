@@ -40,7 +40,7 @@ const capabilityCards = [
   {
     icon: Gauge,
     title: "Leadership reporting",
-    text: "Surface hours, chargeability, variance, overdue work, red engagements, extension pressure, and executive-ready delivery summaries.",
+    text: "Surface allocated hours, capacity utilization, variance, overdue work, red engagements, extension pressure, and executive-ready delivery summaries.",
   },
 ];
 

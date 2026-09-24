@@ -32,9 +32,9 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="w-full px-8 py-6">
-      <div className="-ml-8 mb-6 border-b border-slate-800 pb-5 pl-8">
-        <div className="flex items-center justify-between pr-48">
+    <div className="w-full px-4 py-5 sm:px-6 2xl:px-8 2xl:py-6">
+      <div className="-mx-4 mb-5 border-b border-slate-800 px-4 pb-5 sm:-mx-6 sm:px-6 2xl:-mx-8 2xl:px-8">
+        <div className="flex items-center justify-between pr-32 sm:pr-40">
           <div>
             <div className="flex items-center gap-3">
               <Shield size={28} className="text-cyan-400" />

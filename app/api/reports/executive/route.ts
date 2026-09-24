@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getExecutiveDashboard } from "@/services/dashboard/executive.service";
 
 const activeStatuses = [
   "Requested",
@@ -15,17 +16,6 @@ function isActive(status: string) {
   );
 }
 
-function assignmentHours(review: {
-  assignments: {
-    allocatedHours: number | null;
-  }[];
-}) {
-  return review.assignments.reduce(
-    (total, assignment) => total + (assignment.allocatedHours ?? 0),
-    0,
-  );
-}
-
 function formatDate(date?: Date | null) {
   if (!date) {
     return "No date";
@@ -38,33 +28,10 @@ function formatDate(date?: Date | null) {
   }).format(date);
 }
 
-function trendLabel(current: number, previous: number) {
-  const variance = current - previous;
-
-  if (variance === 0) {
-    return "flat";
-  }
-
-  return variance > 0 ? `+${variance}` : `${variance}`;
-}
-
-export async function GET() {
-  const now = new Date();
-  const [projects, reviews, reviewerProfiles] = await Promise.all([
-    prisma.project.findMany({
-      include: {
-        reviews: {
-          include: {
-            assignments: true,
-            extensions: true,
-            cancellation: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    }),
+export async function GET(request: Request) {
+  const requestedSource = new URL(request.url).searchParams.get("source");
+  const productivitySource = requestedSource === "live" ? "live" : "scenario";
+  const [reviews, reviewerProfiles, executive] = await Promise.all([
     prisma.securityReview.findMany({
       include: {
         project: true,
@@ -90,6 +57,7 @@ export async function GET() {
         },
       },
     }),
+    getExecutiveDashboard({ productivitySource }),
   ]);
 
   const activeReviews = reviews.filter((review) =>
@@ -97,9 +65,6 @@ export async function GET() {
   );
   const unassignedReviews = activeReviews.filter(
     (review) => review.assignments.length === 0,
-  );
-  const overdueReviews = activeReviews.filter(
-    (review) => review.dueDate && review.dueDate.getTime() < now.getTime(),
   );
   const extensionRequests = reviews.flatMap((review) =>
     review.extensions
@@ -112,7 +77,7 @@ export async function GET() {
         review,
       })),
   );
-  const canceledProjects = projects.filter((project) =>
+  const canceledProjects = executive.rows.filter((project) =>
     ["Cancelled", "Canceled"].includes(project.status),
   );
   const canceledReviews = reviews.filter((review) =>
@@ -125,136 +90,49 @@ export async function GET() {
       review.actualStartDate.getTime() >
         review.requestedStartDate.getTime(),
   );
-  const allocatedHours = activeReviews.reduce(
-    (total, review) => total + assignmentHours(review),
-    0,
-  );
-  const expectedHours = activeReviews.length * 16;
-  const variance = allocatedHours - expectedHours;
+  const allocatedHours = executive.summary.allocatedHours;
+  const variance = executive.summary.variance;
   const totalCapacity = reviewerProfiles.reduce(
     (total, profile) => total + profile.weeklyCapacityHours,
     0,
   );
-  const chargeability = totalCapacity
+  const capacityUtilization = totalCapacity
     ? Math.round((allocatedHours / totalCapacity) * 100)
     : 0;
-  const previousWeekHours = Math.max(
-    0,
-    allocatedHours -
-      overdueReviews.length * 4 +
-      rescheduledReviews.length * 2,
-  );
-  const weekTrend = trendLabel(allocatedHours, previousWeekHours);
   const monthHours = Math.round(allocatedHours * 4.2);
-  const lastYearMonthHours = Math.max(
-    0,
-    monthHours - activeReviews.length * 3 - extensionRequests.length * 2,
-  );
-  const monthTrend = trendLabel(monthHours, lastYearMonthHours);
-  const redEngagements = projects
-    .map((project) => {
-      const projectActiveReviews = project.reviews.filter((review) =>
-        isActive(review.status),
-      );
-      const projectOverdue = projectActiveReviews.filter(
-        (review) =>
-          review.dueDate && review.dueDate.getTime() < now.getTime(),
-      );
-      const projectExtensions = project.reviews.flatMap((review) =>
-        review.extensions.filter(
-          (extension) =>
-            !["Approved", "Rejected"].includes(extension.status),
-        ),
-      );
-      const projectHours = projectActiveReviews.reduce(
-        (total, review) => total + assignmentHours(review),
-        0,
-      );
-      const projectExpected = projectActiveReviews.length * 16;
-
-      return {
-        name: project.name,
-        sprId: project.sprId ?? "SPR pending",
-        status: project.status,
-        overdue: projectOverdue.length,
-        extensions: projectExtensions.length,
-        variance: projectHours - projectExpected,
-        hours: projectHours,
-        red:
-          projectOverdue.length > 0 ||
-          projectExtensions.length > 0 ||
-          projectHours - projectExpected > 8,
-      };
-    })
+  const redEngagements = executive.rows
     .filter((project) => project.red)
     .sort(
       (left, right) =>
-        right.overdue - left.overdue ||
-        right.extensions - left.extensions ||
+        right.overdueReviews - left.overdueReviews ||
+        right.criticalOpen - left.criticalOpen ||
+        right.pendingExtensions - left.pendingExtensions ||
         Math.abs(right.variance) - Math.abs(left.variance),
     )
     .slice(0, 8);
-  const useDemoPortfolio = false;
-  const demoRedEngagements = [
-    "Cloud Control Plane (SPR-9010) — 1 overdue SRs, 1 extension requests, 42h charged, +26h variance.",
-    "Customer Portal (SPR-9001) — 1 overdue SRs, 1 extension requests, 34h charged, +18h variance.",
-    "Data Lake Ingestion (SPR-9005) — 1 overdue SRs, 1 extension requests, 16h charged, flat variance.",
-  ];
-  const demoUnassignedReviews = [
-    "Mobile Banking API · SPR-9003 · SR-9003-2026 — Scheduled, due Jul 1, 2026.",
-    "Vendor Claims Platform · SPR-9006 · SR-9006-2026 — Requested, due Jul 2, 2026.",
-  ];
-  const demoReschedules = [
-    "Rescheduled: Mobile Banking API · SR-9003-2026 — requested Jun 13, 2026, actual Jun 18, 2026.",
-    "Rescheduled: Trading Analytics · SR-9008-2026 — requested Jun 11, 2026, actual Jun 15, 2026.",
-  ];
-  const demoCancellations = [
-    "Canceled project: Legacy CRM · SPR-9009 · Cancelled.",
-    "Canceled review: Legacy CRM · SR-9009-2026 · Cancelled.",
-  ];
-  const demoExtensions = [
-    "Cloud Control Plane · SR-9010-2026 — requested until Jun 23, 2026; additional service account evidence required for closure.",
-    "Customer Portal · SR-9001-2026 — requested until Jun 21, 2026; additional retest window required after authentication changes.",
-    "Data Lake Ingestion · SR-9005-2026 — requested until Jun 20, 2026; vendor package evidence arrived after planned review start.",
-  ];
-  const reportMetrics = useDemoPortfolio
-    ? {
-        activeReviews: Math.max(activeReviews.length, 8),
-        allocatedHours: Math.max(allocatedHours, 188),
-        chargeability: Math.max(chargeability, 86),
-        variance: Math.max(variance, 34),
-        monthHours: Math.max(monthHours, 790),
-        redEngagements: Math.max(redEngagements.length, 3),
-        unassignedReviews: Math.max(unassignedReviews.length, 2),
-        extensionRequests: Math.max(extensionRequests.length, 3),
-        rescheduledReviews: Math.max(rescheduledReviews.length, 2),
-        canceledProjects: Math.max(canceledProjects.length, 1),
-        canceledReviews: Math.max(canceledReviews.length, 1),
-        weekTrend: "+22",
-        monthTrend: "+118",
-      }
-    : {
-        activeReviews: activeReviews.length,
-        allocatedHours,
-        chargeability,
-        variance,
-        monthHours,
-        redEngagements: redEngagements.length,
-        unassignedReviews: unassignedReviews.length,
-        extensionRequests: extensionRequests.length,
-        rescheduledReviews: rescheduledReviews.length,
-        canceledProjects: canceledProjects.length,
-        canceledReviews: canceledReviews.length,
-        weekTrend,
-        monthTrend,
-      };
+  const reportMetrics = {
+    activeReviews: executive.summary.activeReviews,
+    allocatedHours,
+    capacityUtilization,
+    variance,
+    monthHours,
+    redEngagements: executive.summary.redProjects,
+    unassignedReviews: unassignedReviews.length,
+    extensionRequests: extensionRequests.length,
+    rescheduledReviews: rescheduledReviews.length,
+    canceledProjects: canceledProjects.length,
+    canceledReviews: canceledReviews.length,
+  };
   const productivity = {
-    baselinePeople: 70,
-    baselineDailyHoursPerPerson: 1,
-    workdayHours: 9,
-    workdaysPerWeek: 5,
-    workingWeeksPerYear: 52,
-    measuredWeeklyHoursSaved: 46,
+    baselinePeople: executive.productivity.adoptionUsers,
+    baselineDailyHoursPerPerson:
+      executive.productivity.adoptionHoursSavedPerUserPerDay,
+    workdayHours: executive.productivity.workdayHours,
+    workdaysPerWeek: executive.productivity.workdaysPerWeek,
+    workingWeeksPerYear: executive.productivity.workingWeeksPerYear,
+    measuredWeeklyHoursSaved:
+      executive.productivity.measuredWeeklyHoursSaved,
+    fteAnnualWorkingHours: executive.productivity.fteAnnualWorkingHours,
   };
   const baselineWeeklyHoursSaved =
     productivity.baselinePeople *
@@ -270,50 +148,39 @@ export async function GET() {
   const measuredWorkingDaysSaved = Math.round(
     measuredAnnualHoursSaved / productivity.workdayHours,
   );
-  const annualShiftHoursPerPerson =
-    productivity.workdaysPerWeek *
-    productivity.workingWeeksPerYear *
-    productivity.workdayHours;
+  const annualShiftHoursPerPerson = productivity.fteAnnualWorkingHours;
   const baselineFteYearsSaved = (
     baselineAnnualHoursSaved / annualShiftHoursPerPerson
   ).toFixed(1);
   const measuredFteYearsSaved = (
     measuredAnnualHoursSaved / annualShiftHoursPerPerson
   ).toFixed(1);
-  const redEngagementLines = useDemoPortfolio
-    ? demoRedEngagements
-    : redEngagements.map(
-        (project, index) =>
-          `${index + 1}. ${project.name} (${project.sprId}) — ${project.overdue} overdue SRs, ${project.extensions} extension requests, ${project.hours}h charged, ${project.variance >= 0 ? "+" : ""}${project.variance}h variance.`,
-      );
-  const unassignedReviewLines = useDemoPortfolio
-    ? demoUnassignedReviews
-    : unassignedReviews.slice(0, 10).map(
-        (review) =>
-          `${review.project.name} · ${review.project.sprId ?? "SPR pending"} · ${review.srId ?? "SR pending"} — ${review.status}, due ${formatDate(review.dueDate)}.`,
-      );
-  const rescheduleAndCancellationLines = useDemoPortfolio
-    ? [...demoReschedules, ...demoCancellations]
-    : [
-        ...rescheduledReviews.slice(0, 8).map(
-          (review) =>
-            `Rescheduled: ${review.project.name} · ${review.srId ?? "SR pending"} — requested ${formatDate(review.requestedStartDate)}, actual ${formatDate(review.actualStartDate)}.`,
-        ),
-        ...canceledProjects.slice(0, 6).map(
-          (project) =>
-            `Canceled project: ${project.name} · ${project.sprId ?? "SPR pending"} · ${project.status}.`,
-        ),
-        ...canceledReviews.slice(0, 6).map(
-          (review) =>
-            `Canceled review: ${review.project.name} · ${review.srId ?? "SR pending"} · ${review.status}.`,
-        ),
-      ];
-  const extensionLines = useDemoPortfolio
-    ? demoExtensions
-    : extensionRequests.slice(0, 10).map(
-        (extension) =>
-          `${extension.review.project.name} · ${extension.review.srId ?? "SR pending"} — requested until ${formatDate(extension.requestedUntil)}; ${extension.reason}.`,
-      );
+  const redEngagementLines = redEngagements.map(
+    (project, index) =>
+      `${index + 1}. ${project.name} (${project.sprId}) - ${project.overdueReviews} overdue SRs, ${project.criticalOpen} critical open findings, ${project.pendingExtensions} pending extensions, ${project.allocatedHours}h allocated, ${project.variance >= 0 ? "+" : ""}${project.variance}h variance.`,
+  );
+  const unassignedReviewLines = unassignedReviews.slice(0, 10).map(
+    (review) =>
+      `${review.project.name} | ${review.project.sprId ?? "SPR pending"} | ${review.srId ?? "SR pending"} - ${review.status}, due ${formatDate(review.dueDate)}.`,
+  );
+  const rescheduleAndCancellationLines = [
+    ...rescheduledReviews.slice(0, 8).map(
+      (review) =>
+        `Rescheduled: ${review.project.name} | ${review.srId ?? "SR pending"} - requested ${formatDate(review.requestedStartDate)}, actual ${formatDate(review.actualStartDate)}.`,
+    ),
+    ...canceledProjects.slice(0, 6).map(
+      (project) =>
+        `Canceled project: ${project.name} | ${project.sprId ?? "SPR pending"} | ${project.status}.`,
+    ),
+    ...canceledReviews.slice(0, 6).map(
+      (review) =>
+        `Canceled review: ${review.project.name} | ${review.srId ?? "SR pending"} | ${review.status}.`,
+    ),
+  ];
+  const extensionLines = extensionRequests.slice(0, 10).map(
+    (extension) =>
+      `${extension.review.project.name} | ${extension.review.srId ?? "SR pending"} - requested until ${formatDate(extension.requestedUntil)}; ${extension.reason.replace(/[.\s]+$/, "")}.`,
+  );
 
   const report = `# Atomix Executive Delivery Report
 
@@ -321,10 +188,10 @@ Generated: ${new Date().toLocaleString()}
 
 ## KPI Snapshot
 - Active SRs: ${reportMetrics.activeReviews}
-- Hours charged this week: ${reportMetrics.allocatedHours}h
-- Chargeability: ${reportMetrics.chargeability}% of reviewer capacity
+- Allocated hours: ${reportMetrics.allocatedHours}h across active SR assignments
+- Capacity utilization: ${reportMetrics.capacityUtilization}% of reviewer capacity
 - Variance: ${reportMetrics.variance >= 0 ? "+" : ""}${reportMetrics.variance}h against expected delivery baseline
-- Hours charged this month: ${reportMetrics.monthHours}h
+- Monthly allocation run-rate: ${reportMetrics.monthHours}h (4.2-week planning estimate)
 - Red engagements: ${reportMetrics.redEngagements}
 - Unassigned reviews: ${reportMetrics.unassignedReviews}
 - Extensions needed: ${reportMetrics.extensionRequests}
@@ -332,19 +199,19 @@ Generated: ${new Date().toLocaleString()}
 - Canceled projects: ${reportMetrics.canceledProjects}
 - Canceled reviews: ${reportMetrics.canceledReviews}
 
-## Trend Summary
-- Weekly hours trend: ${reportMetrics.weekTrend}h versus last week estimate.
-- Monthly hours trend: ${reportMetrics.monthTrend}h versus same-month baseline.
-- Chargeability signal: ${reportMetrics.chargeability >= 80 ? "high load" : reportMetrics.chargeability >= 50 ? "balanced load" : "under-allocated load"} across available reviewer capacity.
+## Operational Signals
+- Historical allocation trend: Not available until dated time-entry history is recorded.
+- Capacity utilization signal: ${reportMetrics.capacityUtilization >= 80 ? "high load" : reportMetrics.capacityUtilization >= 50 ? "balanced load" : "under-allocated load"} across available reviewer capacity.
 - Variance signal: ${reportMetrics.variance > 0 ? "over baseline; review overrun, surge demand, or estimation drift." : reportMetrics.variance < 0 ? "under baseline; review unassigned work or under-allocation." : "on baseline."}
 - Exception trend: ${reportMetrics.redEngagements} red engagements, ${reportMetrics.extensionRequests} extension requests, ${reportMetrics.rescheduledReviews} reschedules.
 
 ## Productivity And Business Value
-- Estimated current run-rate: ${productivity.measuredWeeklyHoursSaved} hrs/week from tracked workflow volumes annualizes to ${measuredAnnualHoursSaved.toLocaleString()} hrs/year, or ${measuredWorkingDaysSaved.toLocaleString()} nine-hour person-days.
+- Productivity source: ${productivitySource === "live" ? "Observed database volumes multiplied by saved-time assumptions" : "Saved planning scenario assumptions"}.
+- Estimated workflow run-rate: ${productivity.measuredWeeklyHoursSaved} hrs/week from ${productivitySource === "live" ? "observed workflow volumes" : "saved workflow-volume assumptions"} annualizes to ${measuredAnnualHoursSaved.toLocaleString()} hrs/year, or ${measuredWorkingDaysSaved.toLocaleString()} ${productivity.workdayHours}-hour person-days.
 - Important measurement note: this is not stopwatch-tracked realized savings; it is calculated from current Atomix workflow volume multiplied by conservative time-saved assumptions per workflow item.
 - Estimated current capacity: ${measuredFteYearsSaved} FTE-year equivalent using ${annualShiftHoursPerPerson.toLocaleString()} hrs/person/year.
-- Full-adoption scenario: ${productivity.baselinePeople} people × ${productivity.baselineDailyHoursPerPerson} hr/day × ${productivity.workdaysPerWeek} days/week × ${productivity.workingWeeksPerYear} weeks = ${baselineAnnualHoursSaved.toLocaleString()} hrs/year, or ${baselineWorkingDaysSaved.toLocaleString()} nine-hour person-days.
-- Full-adoption capacity: ${baselineFteYearsSaved} FTE-years if the 70-person, 1-hour/day assumption is achieved.
+- Full-adoption scenario: ${productivity.baselinePeople} people x ${productivity.baselineDailyHoursPerPerson} hr/day x ${productivity.workdaysPerWeek} days/week x ${productivity.workingWeeksPerYear} weeks = ${baselineAnnualHoursSaved.toLocaleString()} hrs/year, or ${baselineWorkingDaysSaved.toLocaleString()} ${productivity.workdayHours}-hour person-days.
+- Full-adoption capacity: ${baselineFteYearsSaved} FTE-years if the ${productivitySource === "live" ? "observed-user run rate" : "saved adoption scenario"} is achieved.
 - Important framing: the ${baselineWorkingDaysSaved.toLocaleString()} person-day number is a scenario model, not claimed realized savings, headcount reduction, or already-delivered capacity.
 - Value beyond FTE: Atomix also targets review quality, faster evidence readiness, fewer missed controls, better SLA governance, reusable institutional knowledge, and reduced rework.
 
@@ -359,19 +226,15 @@ ${rescheduleAndCancellationLines.map((line) => `- ${line}`).join("\n") || "- No 
 
 ## Extension Queue
 ${extensionLines.map((line) => `- ${line}`).join("\n") || "- No pending extension requests."}
-
-## Agentic Follow-up
-- Ask Executive Agent to summarize weekly hours, variance, red engagements, and delivery trends.
-- Ask Governance Agent to assign unassigned reviews and rebalance chargeability.
-- Ask Peer Review Agent to identify review bottlenecks and reschedule drivers.
 `;
 
   return Response.json({
     report,
     summary: {
-      projects: projects.length,
+      projects: executive.summary.projects,
       ...reportMetrics,
-      demoPortfolioApplied: useDemoPortfolio,
+      operationalDataSource: "live",
+      productivitySource,
     },
   });
 }

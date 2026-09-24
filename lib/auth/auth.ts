@@ -25,33 +25,32 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user =
-          await prisma.user.findUnique({
-            where: {
-              email:
-                credentials.email,
+        const user = await prisma.user.findUnique({
+          where: {
+            email: credentials.email,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            isActive: true,
+            accounts: {
+              select: {
+                passwordHash: true,
+              },
             },
-          });
+          },
+        });
 
-        if (!user) {
-          return null;
-        }
-
-        const account =
-          await prisma.account.findFirst({
-            where: {
-              userId: user.id,
-            },
-          });
-
-        if (!account) {
+        if (!user?.isActive || !user.accounts) {
           return null;
         }
 
         const valid =
           await bcrypt.compare(
             credentials.password,
-            account.passwordHash
+            user.accounts.passwordHash
           );
 
         if (!valid) {
@@ -73,24 +72,19 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({
-      token,
-      user,
-    }: any) {
+    async jwt({ token, user }) {
       if (user) {
-        token.role =
-          user.role;
+        token.role = user.role;
       }
 
       return token;
     },
 
-    async session({
-      session,
-      token,
-    }: any) {
-      session.user.role =
-        token.role;
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.sub ?? "";
+        session.user.role = token.role ?? "REVIEWER";
+      }
 
       return session;
     },

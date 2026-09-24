@@ -1,30 +1,26 @@
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "../../lib/prisma";
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async function getCurrentUser() {
   const authSession = await getServerSession(authOptions);
-  const email = authSession?.user?.email;
+  const sessionUser = authSession?.user;
 
-  if (email) {
-    const user = await prisma.user.findUnique({
-      where: {
-        email,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-      },
-    });
+  if (sessionUser?.id) {
+    const user = {
+      id: sessionUser.id,
+      name: sessionUser.name ?? "User",
+      email: sessionUser.email ?? "",
+      role: sessionUser.role,
+    };
 
-    if (user) {
+    if (user.role === "ADMIN") {
       const cookieStore = await cookies();
       const previewUserId = cookieStore.get("atomix_preview_user_id")?.value;
 
-      if (user.role === "ADMIN" && previewUserId) {
+      if (previewUserId) {
         const previewUser = await prisma.user.findUnique({
           where: {
             id: previewUserId,
@@ -45,8 +41,9 @@ export async function getCurrentUser() {
         }
       }
 
-      return user;
     }
+
+    return user;
   }
 
   const session =
@@ -64,4 +61,4 @@ export async function getCurrentUser() {
     });
 
   return session?.user ?? null;
-}
+});

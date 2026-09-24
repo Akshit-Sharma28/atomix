@@ -95,6 +95,106 @@ function reviewTypeLabel(review: {
   return "Web";
 }
 
+function retestInsights(notAssigned: number, overdue: number, extensionNeeded: number) {
+  return [
+    notAssigned > 0
+      ? `${notAssigned} retest requests are waiting for reviewer assignment.`
+      : "No unassigned retest requests in the current queue.",
+    overdue > 0
+      ? `${overdue} retest requests are overdue and should be escalated.`
+      : "No overdue retest requests in the current queue.",
+    extensionNeeded > 0
+      ? `${extensionNeeded} retest requests need extension decisions or revised access dates.`
+      : "No extension pressure detected for retests.",
+  ];
+}
+
+export async function getRetestGovernanceSummary() {
+  const [reviews, reviewerProfiles] = await Promise.all([
+    prisma.securityReview.findMany({
+      where: {
+        OR: [
+          { type: "RETEST" },
+          {
+            activities: {
+              some: {
+                action: { in: ["Retest requested", "Infosec review requested"] },
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        status: true,
+        dueDate: true,
+        completedAt: true,
+        cancelledAt: true,
+        assignments: { select: { id: true } },
+        findings: { select: { id: true } },
+        workstreams: { select: { id: true } },
+        activities: {
+          select: { action: true, notes: true },
+          orderBy: { createdAt: "desc" },
+        },
+        extensions: { select: { status: true } },
+      },
+      take: 50,
+    }),
+    prisma.reviewerProfile.findMany({
+      select: { availability: true },
+    }),
+  ]);
+
+  const requests = reviews.map((review) => {
+    const status = displayStatus(review);
+    const latestRequestActivity = review.activities.find((activity) =>
+      ["Retest requested", "Infosec review requested"].includes(activity.action),
+    );
+    const parsedControlsCount = Number(
+      activityValue(latestRequestActivity?.notes, "Controls in scope"),
+    );
+    return {
+      status,
+      controlsCount: Math.max(
+        1,
+        Number.isFinite(parsedControlsCount) && parsedControlsCount > 0
+          ? parsedControlsCount
+          : review.findings.length + review.workstreams.length + 1,
+      ),
+      extensionNeeded:
+        review.extensions.some((extension) => extension.status === "Requested") ||
+        status === "Extension Needed" ||
+        status === "Overdue",
+    };
+  });
+  const notAssigned = requests.filter((request) => request.status === "Not Assigned").length;
+  const inProgress = requests.filter((request) => request.status === "In Progress").length;
+  const overdue = requests.filter((request) => request.status === "Overdue").length;
+  const extensionNeeded = requests.filter((request) => request.extensionNeeded).length;
+  const completed = requests.filter((request) => request.status === "Completed").length;
+  const controlsInRetest = requests.reduce(
+    (total, request) => total + request.controlsCount,
+    0,
+  );
+  const availableReviewers = reviewerProfiles.filter((profile) =>
+    profile.availability.toLowerCase().includes("available"),
+  ).length;
+
+  return {
+    summary: {
+      total: requests.length,
+      controlsInRetest,
+      notAssigned,
+      inProgress,
+      overdue,
+      extensionNeeded,
+      completed,
+      availableReviewers,
+    },
+    insights: retestInsights(notAssigned, overdue, extensionNeeded),
+  };
+}
+
 export async function getRetestGovernanceDashboard() {
   const [reviews, reviewerProfiles] = await Promise.all([
     prisma.securityReview.findMany({
@@ -287,16 +387,6 @@ export async function getRetestGovernanceDashboard() {
       activeAssignments: profile.assignments.length,
       skills: profile.skills.map((skill) => skill.skill).slice(0, 4),
     })),
-    insights: [
-      notAssigned > 0
-        ? `${notAssigned} retest requests are waiting for reviewer assignment.`
-        : "No unassigned retest requests in the current queue.",
-      overdue > 0
-        ? `${overdue} retest requests are overdue and should be escalated.`
-        : "No overdue retest requests in the current queue.",
-      extensionNeeded > 0
-        ? `${extensionNeeded} retest requests need extension decisions or revised access dates.`
-        : "No extension pressure detected for retests.",
-    ],
+    insights: retestInsights(notAssigned, overdue, extensionNeeded),
   };
 }

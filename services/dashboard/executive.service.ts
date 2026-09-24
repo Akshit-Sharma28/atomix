@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { calculateRisk } from "../risk/risk.service";
-import { getRetestGovernanceDashboard } from "./retest-governance.service";
+import { getRetestGovernanceSummary } from "./retest-governance.service";
 
 export type ExecutiveSort =
   | "variance"
@@ -115,7 +115,7 @@ export async function getExecutiveDashboard({
         updatedAt: "desc",
       },
     }),
-    getRetestGovernanceDashboard(),
+    getRetestGovernanceSummary(),
     prisma.executiveProductivitySetting.findUnique({
       where: { id: "default" },
     }),
@@ -259,7 +259,7 @@ export async function getExecutiveDashboard({
     validatorHoursPerReview: 0.5,
     reviewerHoursPerReview: 1.5,
     peerReviewerHoursPerReview: 0.75,
-    governanceHoursPerReview: 0.6,
+    governanceHoursPerReview: 1.1,
     retesterHoursPerReview: 0.75,
     workdayHours: 9,
     workdaysPerWeek: 5,
@@ -467,8 +467,8 @@ export async function getExecutiveDashboard({
         value: `${totalHours}h`,
         direction:
           totalHours >= totalExpected
-            ? "up"
-            : "down",
+            ? "above baseline"
+            : "below baseline",
         detail:
           totalHours >= totalExpected
             ? "Allocated hours are above expected active-review baseline."
@@ -481,8 +481,8 @@ export async function getExecutiveDashboard({
           .length.toString(),
         direction:
           rows.some((row) => row.red)
-            ? "watch"
-            : "stable",
+            ? "attention"
+            : "clear",
         detail:
           "Projects turn red when overdue reviews, critical open findings, or pending extensions exist.",
       },
@@ -493,7 +493,7 @@ export async function getExecutiveDashboard({
             month: "short",
             day: "numeric",
           }) ?? "No data",
-        direction: "stable",
+        direction: "latest record",
         detail:
           "Most recently updated project record in the executive portfolio.",
       },
@@ -503,7 +503,7 @@ export async function getExecutiveDashboard({
         ? `${rows.filter((row) => row.red).length} projects require leadership attention due to red delivery or risk signals.`
         : "No red projects detected in the current portfolio view.",
       totalHours - totalExpected > 0
-        ? `Portfolio is running ${totalHours - totalExpected}h above expected allocation baseline; review capacity and chargeability variance.`
+        ? `Portfolio is running ${totalHours - totalExpected}h above expected allocation baseline; review staffing and capacity utilization.`
         : `Portfolio is ${Math.abs(totalHours - totalExpected)}h under expected allocation baseline; check whether reviews are under-staffed or not yet assigned.`,
       rows.some((row) => row.pendingExtensions > 0)
         ? "Pending extension requests exist; leadership should ask for owner decisions and revised timelines."

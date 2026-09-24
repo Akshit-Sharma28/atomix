@@ -95,7 +95,7 @@ export default async function ExecutiveDashboardPage({
   });
 
   return (
-    <div className="w-full px-8 py-6">
+    <div className="w-full px-4 py-5 sm:px-6 2xl:px-8 2xl:py-6">
       <div className="mb-6 border-b border-slate-800 pb-5">
         <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
           <Eye size={16} />
@@ -123,7 +123,7 @@ export default async function ExecutiveDashboardPage({
         </p>
       </div>
 
-      <div className="mb-3 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 2xl:gap-4">
         {[
           ["Projects", data.summary.projects, "Portfolio records", "All SPRs currently in the executive portfolio."],
           ["Red Projects", data.summary.redProjects, "Need attention", "Projects with overdue work, critical open findings, or pending extensions."],
@@ -168,13 +168,13 @@ export default async function ExecutiveDashboardPage({
         <div>
           <p className="text-sm font-semibold text-white">Productivity data source</p>
           <p className="mt-1 text-xs text-slate-500">
-            Switch between editable planning inputs and dated operational records.
+            Scenario uses saved planning inputs. Observed volumes uses current database counts multiplied by the same saved-time assumptions.
           </p>
         </div>
         <div className="flex rounded-xl border border-slate-700 bg-slate-900 p-1">
           {[
             ["scenario", "Saved Scenario"],
-            ["live", "Live Database"],
+            ["live", "Observed Volumes"],
           ].map(([value, label]) => (
             <Link
               key={value}
@@ -213,12 +213,17 @@ export default async function ExecutiveDashboardPage({
               realized headcount reduction.
             </p>
           </div>
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200">
-            {data.productivity.workweekHours} hrs/week · {data.productivity.workdayHours} hrs/day
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200">
+              Demo headline · {data.productivity.adoptionAnnualHoursSaved.toLocaleString()} modeled hrs/year
+            </span>
+            <span className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-bold text-slate-300">
+              {data.productivity.workweekHours} hrs/week · {data.productivity.workdayHours} hrs/day
+            </span>
+          </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4 2xl:gap-4">
           {[
             [
               "Annual hours released",
@@ -285,11 +290,11 @@ export default async function ExecutiveDashboardPage({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <div className="mt-4 grid gap-4 2xl:grid-cols-2">
           {[
             {
-              eyebrow: "Week-over-week",
-              title: "This week vs last week",
+              eyebrow: productivitySource === "live" ? "Observed week-over-week" : "Scenario comparison",
+              title: productivitySource === "live" ? "Current observed volumes vs last week" : "Current scenario vs saved last-week baseline",
               baseline: data.productivity.comparisons.lastWeek,
               currentUsers: data.productivity.adoptionUsers,
               baselineReviews:
@@ -303,8 +308,8 @@ export default async function ExecutiveDashboardPage({
               periodLabel: "hrs/week",
             },
             {
-              eyebrow: "Year-over-year run rate",
-              title: "This year vs last year",
+              eyebrow: productivitySource === "live" ? "Observed year-over-year run rate" : "Scenario comparison",
+              title: productivitySource === "live" ? "Current observed run rate vs last year" : "Current scenario vs saved last-year baseline",
               baseline: data.productivity.comparisons.lastYear,
               currentUsers: data.productivity.adoptionUsers,
               baselineReviews:
@@ -328,9 +333,9 @@ export default async function ExecutiveDashboardPage({
                   {comparison.eyebrow}
                 </p>
                 <h3 className="mt-1 text-base font-bold text-white">{comparison.title}</h3>
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
                   {[
-                    ["Hours released", currentOperational, baselineOperational, comparison.periodLabel],
+                    ["Workflow-model hours", currentOperational, baselineOperational, comparison.periodLabel],
                     ["Users", comparison.currentUsers, comparison.baseline.users, "people"],
                     ["Pool reviews", comparison.currentReviews, comparison.baselineReviews, "reviews/wk"],
                     [
@@ -364,13 +369,13 @@ export default async function ExecutiveDashboardPage({
           })}
         </div>
 
-        <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="mt-4 grid gap-3 2xl:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300">
             <span className="font-semibold text-emerald-200">Executive framing:</span>{" "}
             At full adoption, {data.productivity.adoptionDailyHoursSaved.toLocaleString()} hours released each working day becomes{" "}
             {data.productivity.adoptionAnnualHoursSaved.toLocaleString()} hours per
             year, or approximately {data.productivity.adoptionFteEquivalent.toFixed(1)}{" "}
-            FTEs of capacity using the 2,025-hour annual convention.
+            FTEs of capacity using the {data.productivity.fteAnnualWorkingHours.toLocaleString()}-hour annual convention.
           </div>
           <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.06] p-4 text-sm leading-6 text-slate-300">
             <span className="font-semibold text-cyan-200">Value beyond FTE:</span>{" "}
@@ -440,7 +445,7 @@ export default async function ExecutiveDashboardPage({
                         {item.hoursPerUnit}h/item
                       </td>
                       <td className="py-3 text-right font-semibold text-cyan-200">
-                        {item.weeklyHoursSaved}h/wk
+                        {item.weeklyHoursSaved.toLocaleString(undefined, { maximumFractionDigits: 2 })}h/wk
                       </td>
                       <td className="py-3 text-right font-semibold text-emerald-200">
                         {item.annualHoursSaved.toLocaleString()}h/yr
@@ -456,7 +461,11 @@ export default async function ExecutiveDashboardPage({
             <p className="mt-3 text-sm leading-6 text-slate-300">
               Total weekly estimate:{" "}
               {data.productivity.workflows
-                .map((item) => item.weeklyHoursSaved)
+                .map((item) =>
+                  item.weeklyHoursSaved.toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  }),
+                )
                 .join(" + ")}{" "}
               ={" "}
               <span className="font-semibold text-cyan-200">
@@ -494,7 +503,7 @@ export default async function ExecutiveDashboardPage({
           </div>
         </details>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-4 grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
           {data.productivity.workflows.map((item) => (
             <div
               key={`${item.role}-${item.workflow}`}
@@ -599,7 +608,7 @@ export default async function ExecutiveDashboardPage({
           </Link>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 2xl:gap-4">
           {[
             ["Retests", data.retestSummary.total, "requests"],
             [
@@ -649,7 +658,7 @@ export default async function ExecutiveDashboardPage({
         </div>
       </div>
 
-      <ExecutiveReportGenerator />
+      <ExecutiveReportGenerator productivitySource={productivitySource} />
 
       <form className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
         <div>
@@ -726,19 +735,20 @@ export default async function ExecutiveDashboardPage({
           </div>
         </div>
 
-        <table className="w-full text-sm">
-          <thead className="bg-slate-950/70 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
-            <tr>
-              <th className="p-4">Project</th>
-              <th className="p-4">Risk</th>
-              <th className="p-4">Reviews</th>
-              <th className="p-4">Findings</th>
-              <th className="p-4">Variance</th>
-              <th className="p-4">Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.rows.map((row) => (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-sm">
+            <thead className="bg-slate-950/70 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
+              <tr>
+                <th className="p-4">Project</th>
+                <th className="p-4">Risk</th>
+                <th className="p-4">Reviews</th>
+                <th className="p-4">Findings</th>
+                <th className="p-4">Variance</th>
+                <th className="p-4">Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rows.map((row) => (
               <tr
                 key={row.id}
                 className="border-t border-slate-800"
@@ -806,9 +816,10 @@ export default async function ExecutiveDashboardPage({
                   </p>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

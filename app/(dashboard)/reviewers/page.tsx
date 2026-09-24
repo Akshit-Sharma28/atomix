@@ -25,19 +25,6 @@ function formatDate(date?: Date | null) {
   }).format(date);
 }
 
-function trendClass(trend: string) {
-  if (
-    trend.includes("action") ||
-    trend.includes("watch") ||
-    trend === "tight" ||
-    trend === "down"
-  ) {
-    return "text-amber-300";
-  }
-
-  return "text-emerald-300";
-}
-
 function availabilityClass(availability: string) {
   if (availability === "Available") {
     return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
@@ -275,12 +262,8 @@ export default async function ReviewersPage({
             <p className="mt-2 text-xs text-slate-400">
               {kpi.helper}
             </p>
-            <p
-              className={`mt-2 text-xs font-semibold uppercase ${trendClass(
-                kpi.trend,
-              )}`}
-            >
-              {kpi.trend}
+            <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-300">
+              {kpi.source}
             </p>
           </div>
         ))}

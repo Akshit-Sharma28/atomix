@@ -50,6 +50,13 @@ const personaContent = {
   },
 } as const;
 
+function clampPetPosition(candidate: { x: number; y: number }) {
+  return {
+    x: Math.max(8, Math.min(window.innerWidth - 88, candidate.x)),
+    y: Math.max(8, Math.min(window.innerHeight - 96, candidate.y)),
+  };
+}
+
 export default function AtomixPet() {
   const enabled = useSyncExternalStore(
     subscribeToPetPreference,
@@ -82,13 +89,28 @@ export default function AtomixPet() {
       try {
         const saved = JSON.parse(window.localStorage.getItem("atomix:pet-position") ?? "null");
         if (typeof saved?.x === "number" && typeof saved?.y === "number") {
-          setPosition(saved);
+          const clamped = clampPetPosition(saved);
+          const wasOffscreen = clamped.x !== saved.x || clamped.y !== saved.y;
+          if (wasOffscreen) {
+            window.localStorage.removeItem("atomix:pet-position");
+          } else {
+            setPosition(clamped);
+          }
         }
       } catch {
         // Ignore a malformed local preference and use the default position.
       }
     });
     return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const keepPetInViewport = () => {
+      setPosition((current) => (current ? clampPetPosition(current) : current));
+    };
+
+    window.addEventListener("resize", keepPetInViewport, { passive: true });
+    return () => window.removeEventListener("resize", keepPetInViewport);
   }, []);
 
   useEffect(() => {
@@ -160,10 +182,10 @@ export default function AtomixPet() {
         if (distance > 5) {
           interaction.current.dragged = true;
           if (holdTimer.current) window.clearTimeout(holdTimer.current);
-          const next = {
-            x: Math.max(8, Math.min(window.innerWidth - 88, event.clientX - interaction.current.offsetX)),
-            y: Math.max(8, Math.min(window.innerHeight - 96, event.clientY - interaction.current.offsetY)),
-          };
+          const next = clampPetPosition({
+            x: event.clientX - interaction.current.offsetX,
+            y: event.clientY - interaction.current.offsetY,
+          });
           setPosition(next);
           window.localStorage.setItem("atomix:pet-position", JSON.stringify(next));
         }

@@ -3,7 +3,11 @@
 import { Download, FileText, Loader2, Printer } from "lucide-react";
 import { useState } from "react";
 
-export default function ExecutiveReportGenerator() {
+export default function ExecutiveReportGenerator({
+  productivitySource = "scenario",
+}: {
+  productivitySource?: "scenario" | "live";
+}) {
   const [report, setReport] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -14,6 +18,7 @@ export default function ExecutiveReportGenerator() {
   function compactMetric(value: string) {
     return value
       .replace(/\s+of\s+reviewer\s+capacity/i, "")
+      .replace(/\s+across\s+active\s+SR\s+assignments/i, "")
       .replace(/\s+against\s+expected\s+delivery\s+baseline/i, "")
       .replace(/\s+versus\s+.*$/i, "")
       .trim();
@@ -26,19 +31,20 @@ export default function ExecutiveReportGenerator() {
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
-  function trendFromReport(label: string) {
-    const value = parseReportValue(label, "0");
-    const parsed = Number.parseInt(value.replace(/[^\d-]/g, ""), 10);
-
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
   async function generate() {
     setLoading(true);
-    const response = await fetch("/api/reports/executive");
-    const data = await response.json();
-    setReport(data.report ?? "Unable to generate report.");
-    setLoading(false);
+    try {
+      const response = await fetch(
+        `/api/reports/executive?source=${productivitySource}`,
+      );
+      if (!response.ok) throw new Error("Report request failed");
+      const data = await response.json();
+      setReport(data.report ?? "Unable to generate report.");
+    } catch {
+      setReport("Unable to generate report. Please retry.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function downloadPdf() {
@@ -169,9 +175,7 @@ export default function ExecutiveReportGenerator() {
       const extensions = numberFromReport("Extensions needed");
       const reschedules = numberFromReport("Rescheduled reviews");
       const red = numberFromReport("Red engagements");
-      const chargeability = numberFromReport("Chargeability");
-      const weekTrendValue = trendFromReport("Weekly hours trend");
-      const monthTrendValue = trendFromReport("Monthly hours trend");
+      const capacityUtilization = numberFromReport("Capacity utilization");
       const panelHeight = 150;
 
       ensureSpace(panelHeight + 24);
@@ -184,48 +188,38 @@ export default function ExecutiveReportGenerator() {
       pdf.text("Portfolio Visual Signals", margin + 18, y + 26);
 
       const barX = margin + 18;
-      const barWidth = 145;
+      const barWidth = 165;
       const maxQueue = Math.max(activeSrs, unassigned, extensions, reschedules, red, 1);
       drawBar(barX, y + 50, barWidth, "Active SRs", activeSrs, maxQueue, [8, 145, 178]);
       drawBar(barX, y + 78, barWidth, "Unassigned", unassigned, maxQueue, [245, 158, 11]);
       drawBar(barX, y + 106, barWidth, "Extensions", extensions, maxQueue, [239, 68, 68]);
 
-      const gaugeX = margin + contentWidth - 172;
+      const healthX = margin + contentWidth / 2 + 26;
+      const healthWidth = contentWidth / 2 - 44;
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(9);
       pdf.setTextColor(100, 116, 139);
-      pdf.text("Chargeability", gaugeX, y + 54);
-      pdf.setDrawColor(226, 232, 240);
-      pdf.setLineWidth(12);
-      pdf.circle(gaugeX + 55, y + 88, 38, "S");
-      pdf.setDrawColor(37, 99, 235);
-      pdf.setLineWidth(12);
-      pdf.circle(gaugeX + 55, y + 88, Math.max(8, Math.min(38, chargeability * 0.38)), "S");
+      pdf.text("Reviewer capacity utilization", healthX, y + 54);
+      pdf.setFillColor(226, 232, 240);
+      pdf.roundedRect(healthX, y + 66, healthWidth, 12, 6, 6, "F");
+      pdf.setFillColor(37, 99, 235);
+      pdf.roundedRect(
+        healthX,
+        y + 66,
+        Math.max(8, Math.min(healthWidth, healthWidth * (capacityUtilization / 100))),
+        12,
+        6,
+        6,
+        "F",
+      );
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(20);
+      pdf.setFontSize(18);
       pdf.setTextColor(37, 99, 235);
-      pdf.text(`${chargeability}%`, gaugeX + 32, y + 95);
-
-      const trendX = margin + 245;
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 116, 139);
-      pdf.text("Trend Movement", trendX, y + 54);
-      pdf.setDrawColor(203, 213, 225);
-      pdf.line(trendX, y + 116, trendX + 145, y + 116);
-      pdf.setDrawColor(8, 145, 178);
-      pdf.setLineWidth(3);
-      pdf.line(trendX, y + 96, trendX + 70, y + 86 - weekTrendValue * 0.2);
-      pdf.line(trendX + 70, y + 86 - weekTrendValue * 0.2, trendX + 145, y + 92 - monthTrendValue * 0.08);
-      pdf.setFillColor(8, 145, 178);
-      pdf.circle(trendX, y + 96, 4, "F");
-      pdf.circle(trendX + 70, y + 86 - weekTrendValue * 0.2, 4, "F");
-      pdf.circle(trendX + 145, y + 92 - monthTrendValue * 0.08, 4, "F");
+      pdf.text(`${capacityUtilization}%`, healthX, y + 104);
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(9);
       pdf.setTextColor(15, 23, 42);
-      pdf.text(`Week ${weekTrendValue >= 0 ? "+" : ""}${weekTrendValue}h`, trendX, y + 134);
-      pdf.text(`Month ${monthTrendValue >= 0 ? "+" : ""}${monthTrendValue}h`, trendX + 82, y + 134);
+      pdf.text("Live assignments / weekly reviewer capacity", healthX, y + 124);
 
       y += panelHeight + 28;
     }
@@ -247,7 +241,7 @@ export default function ExecutiveReportGenerator() {
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(11);
     pdf.text(
-      "Hours, chargeability, variance, productivity framing, and delivery exceptions",
+      "Allocated hours, capacity utilization, variance, productivity, and delivery exceptions",
       margin,
       96,
     );
@@ -255,13 +249,13 @@ export default function ExecutiveReportGenerator() {
 
     y = 185;
     const summaryMatches = {
-      hours: compactMetric(parseReportValue("Hours charged this week")),
-      chargeability: compactMetric(parseReportValue("Chargeability")),
+      hours: compactMetric(parseReportValue("Allocated hours")),
+      capacityUtilization: compactMetric(parseReportValue("Capacity utilization")),
       variance: compactMetric(parseReportValue("Variance")),
       red: compactMetric(parseReportValue("Red engagements")),
     };
     const cardWidth = (contentWidth - 36) / 4;
-    drawCard(margin, y, cardWidth, "Hours This Week", summaryMatches.hours, [
+    drawCard(margin, y, cardWidth, "Allocated Hours", summaryMatches.hours, [
       8,
       145,
       178,
@@ -270,8 +264,8 @@ export default function ExecutiveReportGenerator() {
       margin + cardWidth + 12,
       y,
       cardWidth,
-      "Chargeability",
-      summaryMatches.chargeability,
+      "Capacity Util.",
+      summaryMatches.capacityUtilization,
       [37, 99, 235],
     );
     drawCard(
@@ -368,8 +362,8 @@ export default function ExecutiveReportGenerator() {
       report.match(/Generated: ([^\n]+)/)?.[1] ?? new Date().toLocaleString(),
     );
     const kpis = [
-      ["Hours This Week", compactMetric(parseReportValue("Hours charged this week"))],
-      ["Chargeability", compactMetric(parseReportValue("Chargeability"))],
+      ["Allocated Hours", compactMetric(parseReportValue("Allocated hours"))],
+      ["Capacity Util.", compactMetric(parseReportValue("Capacity utilization"))],
       ["Variance", compactMetric(parseReportValue("Variance"))],
       ["Red Engagements", compactMetric(parseReportValue("Red engagements"))],
     ];
@@ -379,10 +373,8 @@ export default function ExecutiveReportGenerator() {
       extensions: numberFromReport("Extensions needed"),
       reschedules: numberFromReport("Rescheduled reviews"),
       red: numberFromReport("Red engagements"),
-      chargeability: numberFromReport("Chargeability"),
+      capacityUtilization: numberFromReport("Capacity utilization"),
       variance: numberFromReport("Variance"),
-      weekTrend: trendFromReport("Weekly hours trend"),
-      monthTrend: trendFromReport("Monthly hours trend"),
     };
     const maxQueue = Math.max(
       visualMetrics.activeSrs,
@@ -535,7 +527,7 @@ export default function ExecutiveReportGenerator() {
               border-radius: 999px;
               display: grid;
               place-items: center;
-              background: conic-gradient(#2563eb 0 ${visualMetrics.chargeability}%, #e2e8f0 ${visualMetrics.chargeability}% 100%);
+              background: conic-gradient(#2563eb 0 ${visualMetrics.capacityUtilization}%, #e2e8f0 ${visualMetrics.capacityUtilization}% 100%);
             }
             .donut-center {
               display: grid;
@@ -610,7 +602,7 @@ export default function ExecutiveReportGenerator() {
             <header class="cover">
               <div class="brand">ATOMIX</div>
               <h1>Executive Delivery Report</h1>
-              <div class="subtitle">Hours, chargeability, KPI variance, productivity framing, red engagements, unassigned reviews, reschedules, cancellations, and extension queues.</div>
+              <div class="subtitle">Allocated hours, reviewer capacity utilization, KPI variance, productivity framing, red engagements, unassigned reviews, reschedules, cancellations, and extension queues.</div>
               <div class="generated">Generated ${generated}</div>
             </header>
             <div class="kpis">
@@ -651,15 +643,15 @@ export default function ExecutiveReportGenerator() {
               <div class="visual-card">
                 <h2 class="visual-title">Delivery Health</h2>
                 <div class="donut-wrap">
-                  <div class="donut"><div class="donut-center">${visualMetrics.chargeability}%</div></div>
+                  <div class="donut"><div class="donut-center">${visualMetrics.capacityUtilization}%</div></div>
                   <div>
-                    <p><strong>Chargeability</strong> shows reviewer load against available capacity.</p>
+                    <p><strong>Capacity utilization</strong> shows allocated active-SR hours against available reviewer capacity.</p>
                     <p><strong>Variance:</strong> ${visualMetrics.variance >= 0 ? "+" : ""}${visualMetrics.variance}h against expected baseline.</p>
                   </div>
                 </div>
                 <div class="trend-strip">
-                  <div class="trend-pill"><span>Weekly trend</span><span>${visualMetrics.weekTrend >= 0 ? "+" : ""}${visualMetrics.weekTrend}h</span></div>
-                  <div class="trend-pill"><span>Monthly trend</span><span>${visualMetrics.monthTrend >= 0 ? "+" : ""}${visualMetrics.monthTrend}h</span></div>
+                  <div class="trend-pill"><span>Active SRs</span><span>${visualMetrics.activeSrs}</span></div>
+                  <div class="trend-pill"><span>Variance</span><span>${visualMetrics.variance >= 0 ? "+" : ""}${visualMetrics.variance}h</span></div>
                 </div>
               </div>
             </section>
@@ -681,8 +673,8 @@ export default function ExecutiveReportGenerator() {
             Generate Executive Report
           </h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-400">
-            Creates a leadership-ready delivery report covering hours,
-            chargeability, KPI variance, measured-vs-potential productivity
+            Creates a leadership-ready delivery report covering allocated hours,
+            capacity utilization, KPI variance, measured-vs-potential productivity
             framing, red engagements, unassigned reviews, reschedules,
             cancellations, and extension queues.
           </p>

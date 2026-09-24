@@ -4,8 +4,8 @@ import Link from "next/link";
 
 import {
   signOut,
-  useSession,
 } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 import {
   LogOut,
@@ -50,13 +50,12 @@ type SwitchableUser = {
   role: string;
 };
 
-export default function UserMenu() {
-  const {
-    data: session,
-  } = useSession();
-
-  const [activeUser, setActiveUser] =
-    useState<ActiveUser | null>(null);
+export default function UserMenu({
+  initialUser,
+}: {
+  initialUser: ActiveUser | null;
+}) {
+  const router = useRouter();
 
   const [open, setOpen] =
     useState(false);
@@ -108,38 +107,6 @@ export default function UserMenu() {
     };
   }, []);
 
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadActiveUser() {
-      try {
-        const response =
-          await fetch("/api/auth/me", {
-            cache: "no-store",
-          });
-
-        const data =
-          await response.json();
-
-        if (!ignore) {
-          setActiveUser(
-            data.user ?? null
-          );
-        }
-      } catch {
-        if (!ignore) {
-          setActiveUser(null);
-        }
-      }
-    }
-
-    loadActiveUser();
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
   const loadSwitchableUsers = useCallback(async () => {
     try {
       const response =
@@ -161,19 +128,12 @@ export default function UserMenu() {
   }, []);
 
   useEffect(() => {
-    void Promise.resolve().then(loadSwitchableUsers);
-  }, [loadSwitchableUsers]);
-
-  useEffect(() => {
-    if (open) {
+    if (open && switchableUsers.length === 0) {
       void Promise.resolve().then(loadSwitchableUsers);
     }
-  }, [loadSwitchableUsers, open]);
+  }, [loadSwitchableUsers, open, switchableUsers.length]);
 
-  const displayUser: ActiveUser =
-    activeUser ??
-    (session?.user as ActiveUser | undefined) ??
-    {};
+  const displayUser: ActiveUser = initialUser ?? {};
 
   const initials =
     displayUser?.name
@@ -199,7 +159,7 @@ export default function UserMenu() {
       })
     );
 
-    await fetch("/api/auth/switch-user", {
+    const response = await fetch("/api/auth/switch-user", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -209,7 +169,13 @@ export default function UserMenu() {
       }),
     });
 
-    window.location.reload();
+    if (response.ok) {
+      setOpen(false);
+      router.refresh();
+      setSwitching(false);
+    } else {
+      setSwitching(false);
+    }
   }
 
   async function clearPreview() {
@@ -224,11 +190,17 @@ export default function UserMenu() {
       })
     );
 
-    await fetch("/api/auth/switch-user", {
+    const response = await fetch("/api/auth/switch-user", {
       method: "DELETE",
     });
 
-    window.location.reload();
+    if (response.ok) {
+      setOpen(false);
+      router.refresh();
+      setSwitching(false);
+    } else {
+      setSwitching(false);
+    }
   }
 
   return (

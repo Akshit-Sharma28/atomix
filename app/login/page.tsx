@@ -64,17 +64,16 @@ function LoginForm() {
       return;
     }
 
-    router.push(callbackUrl);
-    router.refresh();
+    router.replace(callbackUrl);
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-6 text-white">
+    <main className="atomix-login-shell relative min-h-screen overflow-x-hidden bg-slate-950 px-4 py-5 text-white sm:px-6">
       <div className="atomix-hero-grid absolute inset-0 opacity-45" />
       <div className="atomix-hero-orb atomix-hero-orb-a" />
       <div className="atomix-hero-orb atomix-hero-orb-b" />
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col">
+      <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-2.5rem)] max-w-6xl flex-col">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/"
@@ -94,27 +93,27 @@ function LoginForm() {
           </a>
         </header>
 
-        <section className="grid flex-1 grid-cols-1 items-center gap-8 py-8 xl:grid-cols-[minmax(0,1fr)_minmax(340px,440px)]">
-          <div className="min-w-0 max-w-2xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
+        <section className="atomix-login-grid grid flex-1 grid-cols-1 items-center gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] xl:gap-10">
+          <div className="atomix-login-intro min-w-0 max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
               <Sparkles size={16} />
               Secure governance workspace
             </div>
 
-            <h1 className="text-4xl font-black tracking-tight md:text-5xl xl:text-6xl">
+            <h1 className="text-4xl font-black tracking-tight md:text-5xl 2xl:text-6xl">
               Sign in to
               <span className="block text-cyan-300">
                 Atomix Governance.
               </span>
             </h1>
 
-            <p className="mt-5 max-w-xl text-base leading-8 text-slate-300">
+            <p className="mt-4 max-w-xl text-base leading-7 text-slate-300">
               Access a governed workspace for scope readiness, review
               coordination, evidence tracking, retest status, SLA signals, and
               leadership reporting.
             </p>
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+            <div className="atomix-login-features mt-5 grid gap-3 sm:grid-cols-2">
               {[
                 ["Scope readiness", "prerequisites and review boundaries"],
                 ["Capacity signals", "assignments and weekly updates"],
@@ -131,7 +130,7 @@ function LoginForm() {
               ))}
             </div>
 
-            <div className="mt-6 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4">
+            <div className="atomix-login-note mt-5 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.05] p-4">
               <p className="text-sm leading-6 text-slate-300">
                 Atomix acts as a coordination layer for security review
                 governance, helping teams maintain clear ownership, evidence
@@ -140,8 +139,8 @@ function LoginForm() {
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-md rounded-[2rem] border border-cyan-300/20 bg-slate-950/85 p-5 shadow-2xl backdrop-blur atomix-glow sm:p-7">
-            <div className="mb-6 flex min-w-0 items-center gap-4">
+          <div className="atomix-login-card mx-auto w-full max-w-md rounded-[2rem] border border-cyan-300/20 bg-slate-950/85 p-5 shadow-2xl backdrop-blur atomix-glow sm:p-6 2xl:p-7">
+            <div className="mb-5 flex min-w-0 items-center gap-4">
               <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 atomix-logo-pulse sm:h-14 sm:w-14">
                 <Image
                   src="/atomix-mark.svg"
@@ -163,7 +162,7 @@ function LoginForm() {
               </div>
             </div>
 
-            <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+            <div className="atomix-login-role mb-5 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
               <div className="mb-2 flex items-center gap-2">
                 <ShieldCheck className="text-cyan-300" size={18} />
                 <p className="text-sm font-semibold text-slate-100">

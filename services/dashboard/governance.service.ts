@@ -82,18 +82,6 @@ function redProjectReasons(
   ].filter(Boolean);
 }
 
-function trendLabel(current: number, previous: number) {
-  const variance = current - previous;
-
-  if (variance === 0) {
-    return "flat";
-  }
-
-  return variance > 0
-    ? `+${variance}`
-    : `${variance}`;
-}
-
 export async function getGovernanceDashboard() {
   const now = new Date();
 
@@ -194,12 +182,6 @@ export async function getGovernanceDashboard() {
     isActiveStatus(review.status)
   );
 
-  const overdueReviews = activeReviews.filter(
-    (review) =>
-      review.dueDate &&
-      review.dueDate.getTime() < now.getTime()
-  );
-
   const rescheduledReviews = reviews.filter(
     (review) =>
       review.actualStartDate &&
@@ -229,7 +211,7 @@ export async function getGovernanceDashboard() {
     return reasons.some(Boolean);
   });
 
-  const estimatedWeeklyHours = governancePool.reduce(
+  const allocatedWeeklyHours = governancePool.reduce(
     (total, profile) => {
       const activeAssignmentHours =
         profile.assignments
@@ -239,7 +221,7 @@ export async function getGovernanceDashboard() {
           .reduce(
             (assignmentTotal, assignment) =>
               assignmentTotal +
-              (assignment.allocatedHours ?? 8),
+              (assignment.allocatedHours ?? 0),
             0
           );
 
@@ -253,23 +235,15 @@ export async function getGovernanceDashboard() {
       .toLowerCase()
       .includes("available")
   ).length;
-
-  const previousWeekHours = Math.max(
+  const weeklyCapacityHours = governancePool.reduce(
+    (total, profile) => total + profile.weeklyCapacityHours,
     0,
-    estimatedWeeklyHours -
-      overdueReviews.length * 4 +
-      rescheduledReviews.length * 2
   );
-  const chargeabilityVariance =
-    estimatedWeeklyHours - previousWeekHours;
+  const capacityUtilization = weeklyCapacityHours
+    ? Math.round((allocatedWeeklyHours / weeklyCapacityHours) * 100)
+    : 0;
   const monthHours = Math.round(
-    estimatedWeeklyHours * 4.2
-  );
-  const lastYearMonthHours = Math.max(
-    0,
-    monthHours -
-      activeReviews.length * 3 -
-      pendingExtensions.length * 2
+    allocatedWeeklyHours * 4.2
   );
 
   return {
@@ -278,62 +252,37 @@ export async function getGovernanceDashboard() {
         label: "Reviewer Pool",
         value: `${availableReviewers}/${governancePool.length}`,
         helper: "available reviewers",
-        trend:
-          availableReviewers >=
-          Math.ceil(governancePool.length / 2)
-            ? "healthy"
-            : "tight",
+        source: "Live",
       },
       {
-        label: "Hours Charged",
-        value: estimatedWeeklyHours.toString(),
-        helper: `this week · ${trendLabel(
-          estimatedWeeklyHours,
-          previousWeekHours
-        )} vs last week`,
-        trend:
-          chargeabilityVariance >= 0
-            ? "up"
-            : "down",
+        label: "Allocated Hours",
+        value: allocatedWeeklyHours.toString(),
+        helper: "active SR assignments",
+        source: "Live",
       },
       {
         label: "Red Projects",
         value: redProjects.length.toString(),
         helper: "matches executive dashboard",
-        trend:
-          redProjects.length > 0
-            ? "needs action"
-            : "clear",
+        source: "Calculated",
       },
       {
         label: "Extensions Needed",
         value: pendingExtensions.length.toString(),
         helper: "pending requests",
-        trend:
-          pendingExtensions.length > 0
-            ? "watch"
-            : "clear",
+        source: "Live",
       },
       {
         label: "Monthly Hours",
         value: monthHours.toString(),
-        helper: `${trendLabel(
-          monthHours,
-          lastYearMonthHours
-        )} vs same month last year`,
-        trend:
-          monthHours >= lastYearMonthHours
-            ? "up"
-            : "down",
+        helper: "4.2 × weekly allocation",
+        source: "Modelled",
       },
       {
-        label: "Chargeability Variance",
-        value: `${chargeabilityVariance >= 0 ? "+" : ""}${chargeabilityVariance}`,
-        helper: "estimated from active review allocation",
-        trend:
-          chargeabilityVariance >= 0
-            ? "up"
-            : "down",
+        label: "Capacity Utilization",
+        value: `${capacityUtilization}%`,
+        helper: `${allocatedWeeklyHours}/${weeklyCapacityHours} hrs allocated`,
+        source: "Calculated",
       },
     ],
     reviewerPool: governancePool.map((profile) => {

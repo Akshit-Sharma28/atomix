@@ -259,8 +259,13 @@ export default function Sidebar({
   return (
     <aside
       className="
-      w-72
-      min-h-screen
+      w-60
+      2xl:w-72
+      h-screen
+      sticky
+      top-0
+      shrink-0
+      overflow-y-auto
       bg-slate-950/90
       backdrop-blur-xl
       border-r
@@ -273,8 +278,10 @@ export default function Sidebar({
 
       <div
         className="
-        h-[113px]
-        px-8
+        min-h-24
+        px-5
+        2xl:min-h-[113px]
+        2xl:px-8
         flex
         flex-col
         justify-center
@@ -288,7 +295,7 @@ export default function Sidebar({
           width={220}
           height={59}
           priority
-          className="h-14 w-auto"
+          className="h-12 w-auto 2xl:h-14"
         />
 
         <p
@@ -307,12 +314,13 @@ export default function Sidebar({
       <nav
         className="
         flex-1
-        px-4
+        px-3
+        2xl:px-4
         pt-3
         pb-4
         "
       >
-        <div className="space-y-2">
+        <div className="space-y-1 2xl:space-y-2">
           {visibleItems.map((item) => {
             const Icon = item.icon;
 
@@ -332,8 +340,10 @@ export default function Sidebar({
                   flex
                   items-center
                   gap-3
-                  px-4
-                  py-3
+                  px-3
+                  py-2.5
+                  2xl:px-4
+                  2xl:py-3
                   rounded-xl
                   transition-all
                   duration-200
@@ -380,7 +390,7 @@ export default function Sidebar({
                   }
                 />
 
-                <span className="font-medium">
+                <span className="text-sm font-medium 2xl:text-base">
                   {item.label}
                 </span>
               </Link>
@@ -394,7 +404,7 @@ export default function Sidebar({
               Agents
             </p>
 
-            <div className="space-y-2">
+            <div className="space-y-1 2xl:space-y-2">
               {visibleAgentItems.map((item) => {
                 const Icon = item.icon;
 
@@ -413,8 +423,10 @@ export default function Sidebar({
                       flex
                       items-center
                       gap-3
-                      px-4
-                      py-3
+                      px-3
+                      py-2.5
+                      2xl:px-4
+                      2xl:py-3
                       rounded-xl
                       transition-all
                       duration-200
@@ -457,7 +469,7 @@ export default function Sidebar({
                       className={active ? "text-cyan-400" : ""}
                     />
 
-                    <span className="font-medium">
+                    <span className="text-sm font-medium 2xl:text-base">
                       {item.label}
                     </span>
                   </Link>

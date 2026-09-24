@@ -463,7 +463,7 @@ export async function getDashboardWorkspace({
         {
           label: "Download Executive Report",
           href: "/executive",
-          detail: "Export hours, chargeability, variance, and exceptions.",
+          detail: "Export allocated hours, capacity utilization, variance, and exceptions.",
         },
       ],
       sections: [
@@ -846,7 +846,7 @@ async function getRoleDashboardSummary({
   }
 
   if (normalizedRole === "EXECUTIVE") {
-    const [projects, activeReviews, criticalOpen, overdueReviews] =
+    const [projects, activeReviews, criticalOpen, overdueReviews, pendingExtensions] =
       await Promise.all([
         prisma.project.count(),
         prisma.securityReview.count({
@@ -868,6 +868,13 @@ async function getRoleDashboardSummary({
             },
           },
         }),
+        prisma.reviewExtension.count({
+          where: {
+            status: {
+              notIn: ["Approved", "Rejected"],
+            },
+          },
+        }),
       ]);
 
     return {
@@ -879,7 +886,7 @@ async function getRoleDashboardSummary({
         { title: "Active SRs", value: activeReviews, variant: "open" },
         { title: "Critical Open", value: criticalOpen, variant: "critical" },
         { title: "Overdue SRs", value: overdueReviews, variant: "high" },
-        { title: "Signal", value: overdueReviews + criticalOpen, variant: "closed" },
+        { title: "Pending Extensions", value: pendingExtensions, variant: "closed" },
       ],
     };
   }
@@ -1164,7 +1171,6 @@ async function getRoleDashboardSummary({
         { title: "Due Soon", value: dueSoonRetests, variant: "high" },
         { title: "Overdue", value: overdueRetests, variant: "critical" },
         { title: "Completed", value: completedRetests, variant: "closed" },
-        { title: "Focus", value: assignedRetests + overdueRetests, variant: "default" },
       ],
     };
   }
@@ -1226,7 +1232,6 @@ async function getRoleDashboardSummary({
       { title: "My Findings", value: assignedFindings, variant: "critical" },
       { title: "Due Soon", value: dueSoonReviews, variant: "high" },
       { title: "Completed", value: completedReviews, variant: "closed" },
-      { title: "Focus", value: assignedReviews + assignedFindings, variant: "default" },
     ],
   };
 }

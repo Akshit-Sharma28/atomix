@@ -82,7 +82,7 @@ const agentConfigs: Record<
       {
         title: "Variance Agent",
         detail:
-          "Explains chargeability variance and separates healthy throughput from delivery drag.",
+          "Explains capacity utilization and separates healthy throughput from delivery drag.",
         prompt:
           "Explain the largest delivery variance drivers and what leadership should ask the governance team next.",
       },

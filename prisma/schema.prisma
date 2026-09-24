@@ -80,7 +80,7 @@ model ExecutiveProductivitySetting {
   validatorHoursPerReview         Float @default(0.5)
   reviewerHoursPerReview          Float @default(1.5)
   peerReviewerHoursPerReview      Float @default(0.75)
-  governanceHoursPerReview        Float @default(0.6)
+  governanceHoursPerReview        Float @default(1.1)
   retesterHoursPerReview          Float @default(0.75)
   workdayHours                    Float @default(9)
   workdaysPerWeek                 Int   @default(5)

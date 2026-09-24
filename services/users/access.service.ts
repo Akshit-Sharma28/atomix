@@ -1,5 +1,3 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/auth";
 import { getCurrentUser } from "./current-user.service";
 
 export function normalizeRole(role?: string | null) {
@@ -21,10 +19,7 @@ export async function getActiveRole() {
     return normalizeRole(appUser.role);
   }
 
-  const session = await getServerSession(authOptions);
-  const sessionRole = (session?.user as { role?: string } | undefined)?.role;
-
-  return normalizeRole(sessionRole);
+  return normalizeRole(null);
 }
 
 export async function canAccess(allowedRoles: string[]) {

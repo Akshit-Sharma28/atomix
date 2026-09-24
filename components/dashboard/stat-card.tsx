@@ -4,8 +4,6 @@ import {
   ShieldCheck,
   Activity,
   Bug,
-  TrendingUp,
-  TrendingDown,
 } from "lucide-react";
 
 interface Props {
@@ -25,9 +23,6 @@ export default function StatCard({
       bg: "bg-cyan-500/10",
       text: "text-cyan-400",
       icon: <Bug size={18} />,
-      trend: "+4 this week",
-      trendColor: "text-cyan-400",
-      trendIcon: <TrendingUp size={12} />,
     },
 
     critical: {
@@ -35,9 +30,6 @@ export default function StatCard({
       bg: "bg-red-500/10",
       text: "text-red-400",
       icon: <ShieldAlert size={18} />,
-      trend: "-2 fixed",
-      trendColor: "text-green-400",
-      trendIcon: <TrendingDown size={12} />,
     },
 
     high: {
@@ -45,9 +37,6 @@ export default function StatCard({
       bg: "bg-orange-500/10",
       text: "text-orange-400",
       icon: <AlertTriangle size={18} />,
-      trend: "+1 this week",
-      trendColor: "text-orange-400",
-      trendIcon: <TrendingUp size={12} />,
     },
 
     open: {
@@ -55,9 +44,6 @@ export default function StatCard({
       bg: "bg-blue-500/10",
       text: "text-blue-400",
       icon: <Activity size={18} />,
-      trend: "+3 active",
-      trendColor: "text-blue-400",
-      trendIcon: <TrendingUp size={12} />,
     },
 
     closed: {
@@ -65,9 +51,6 @@ export default function StatCard({
       bg: "bg-green-500/10",
       text: "text-green-400",
       icon: <ShieldCheck size={18} />,
-      trend: "+8 resolved",
-      trendColor: "text-green-400",
-      trendIcon: <TrendingUp size={12} />,
     },
   };
 
@@ -117,21 +100,9 @@ export default function StatCard({
         {value}
       </div>
 
-      <div
-        className={`
-          mt-2
-          flex
-          items-center
-          gap-1
-          text-xs
-          ${style.trendColor}
-        `}
-      >
-        {style.trendIcon}
-
-        <span>
-          {style.trend}
-        </span>
+      <div className="mt-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-500">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        <span>Live database count</span>
       </div>
     </div>
   );

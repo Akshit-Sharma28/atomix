@@ -5,26 +5,11 @@ import { authOptions } from "@/lib/auth/auth";
 import { prisma } from "../../../../lib/prisma";
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = "sin1";
 
 async function getSessionAdmin() {
   const session = await getServerSession(authOptions);
-  const email = session?.user?.email;
-
-  if (!email) {
-    return null;
-  }
-
-  const user = await prisma.user.findUnique({
-    where: {
-      email,
-    },
-    select: {
-      id: true,
-      role: true,
-    },
-  });
-
-  return user?.role === "ADMIN" ? user : null;
+  return session?.user?.role === "ADMIN" ? session.user : null;
 }
 
 export async function GET() {
@@ -93,9 +78,16 @@ export async function POST(req: Request) {
     where: {
       id: body.userId,
     },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+    },
   });
 
-  if (!user) {
+  if (!user?.isActive) {
     return Response.json(
       {
         error: "User not found",
@@ -104,25 +96,6 @@ export async function POST(req: Request) {
         status: 404,
       }
     );
-  }
-
-  const session = await prisma.appSession.findFirst();
-
-  if (session) {
-    await prisma.appSession.update({
-      where: {
-        id: session.id,
-      },
-      data: {
-        currentUserId: body.userId,
-      },
-    });
-  } else {
-    await prisma.appSession.create({
-      data: {
-        currentUserId: body.userId,
-      },
-    });
   }
 
   const cookieStore = await cookies();
@@ -135,6 +108,7 @@ export async function POST(req: Request) {
 
   return Response.json({
     success: true,
+    user,
   });
 }
 
