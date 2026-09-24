@@ -97,7 +97,7 @@ export default function Home() {
               ATOMIX
             </p>
             <p className="max-w-[18rem] text-[10px] uppercase tracking-[0.12em] text-slate-500 sm:text-xs sm:tracking-[0.18em]">
-              AI-powered Governance Dashboard
+              AI-powered Governance Platform
             </p>
           </div>
         </Link>
@@ -126,7 +126,7 @@ export default function Home() {
         <div className="min-w-0">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
             <Sparkles size={16} />
-            Governance dashboard for security review operations
+            AI-powered Governance Platform for security review operations
           </div>
 
           <h1 className="max-w-4xl text-4xl font-black tracking-tight md:text-5xl xl:text-6xl">

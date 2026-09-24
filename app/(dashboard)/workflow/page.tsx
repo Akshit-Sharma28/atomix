@@ -354,7 +354,7 @@ export default async function WorkflowPage() {
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
             If every person in EYG saves 1 hour per day using this
-            AI-powered governance dashboard: 5 hrs/week/person x 70 people =
+            AI-powered Governance Platform: 5 hrs/week/person x 70 people =
             350 hrs/week, and 350 hrs/week x 52 weeks = 18,200 hrs/year saved.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">

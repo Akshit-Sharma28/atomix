@@ -809,7 +809,7 @@ async function getRoleDashboardSummary({
     ]);
 
     return {
-      title: "AI-powered Governance Dashboard",
+      title: "AI-powered Governance Platform",
       description:
         "Reviewer pool, unassigned work, overdue reviews, and extension pressure.",
       cards: [
