@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { signIn } from "next-auth/react";
 import {
   useRouter,
@@ -21,6 +20,8 @@ import {
   Suspense,
   useState,
 } from "react";
+
+import AtomixBrand from "@/components/branding/atomix-brand";
 
 export default function LoginPage() {
   return (
@@ -140,27 +141,11 @@ function LoginForm() {
           </div>
 
           <div className="atomix-login-card mx-auto w-full max-w-md rounded-[2rem] border border-cyan-300/20 bg-slate-950/85 p-5 shadow-2xl backdrop-blur atomix-glow sm:p-6 2xl:p-7">
-            <div className="mb-5 flex min-w-0 items-center gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 atomix-logo-pulse sm:h-14 sm:w-14">
-                <Image
-                  src="/atomix-mark.svg"
-                  alt=""
-                  width={42}
-                  height={42}
-                  priority
-                />
-              </div>
-
-              <div className="min-w-0">
-                <h1 className="text-2xl font-black text-cyan-300 sm:text-3xl">
-                  ATOMIX
-                </h1>
-
-                <p className="text-[10px] uppercase tracking-[0.12em] text-slate-500 sm:text-xs sm:tracking-[0.18em]">
-                  Governance Login
-                </p>
-              </div>
-            </div>
+            <AtomixBrand
+              size="login"
+              context="Governance Login"
+              className="mb-5"
+            />
 
             <div className="atomix-login-role mb-5 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
               <div className="mb-2 flex items-center gap-2">

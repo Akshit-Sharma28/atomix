@@ -1,8 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+import AtomixBrand from "@/components/branding/atomix-brand";
 
 import {
   LayoutDashboard,
@@ -276,37 +277,8 @@ export default function Sidebar({
     >
       {/* Logo */}
 
-      <div
-        className="
-        min-h-24
-        px-5
-        2xl:min-h-[113px]
-        2xl:px-8
-        flex
-        flex-col
-        justify-center
-        border-b
-        border-slate-800
-        "
-      >
-        <Image
-          src="/atomix-logo.svg"
-          alt="ATOMIX"
-          width={220}
-          height={59}
-          priority
-          className="h-12 w-auto 2xl:h-14"
-        />
-
-        <p
-          className="
-          text-slate-500
-          text-[11px]
-          mt-1
-          "
-        >
-          AI-powered Governance Platform
-        </p>
+      <div className="flex min-h-24 items-center border-b border-slate-800 px-4 2xl:min-h-[113px] 2xl:px-6">
+        <AtomixBrand context="AI Governance Platform" />
       </div>
 
       {/* Navigation */}

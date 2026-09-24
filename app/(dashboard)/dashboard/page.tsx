@@ -1,9 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   Bot,
   Cpu,
-  Shield,
 } from "lucide-react";
 
 import KPIGrid from "@/components/dashboard/kpi-grid";
@@ -35,12 +35,25 @@ export default async function DashboardPage() {
     <div className="w-full px-4 py-5 sm:px-6 2xl:px-8 2xl:py-6">
       <div className="-mx-4 mb-5 border-b border-slate-800 px-4 pb-5 sm:-mx-6 sm:px-6 2xl:-mx-8 2xl:px-8">
         <div className="flex items-center justify-between pr-32 sm:pr-40">
-          <div>
-            <div className="flex items-center gap-3">
-              <Shield size={28} className="text-cyan-400" />
-              <h1 className="text-3xl font-bold text-white">
-                Dashboard
-              </h1>
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-cyan-400/15 via-slate-900/70 to-amber-300/10 shadow-[0_8px_24px_rgba(8,145,178,0.16)]">
+                <Image
+                  src="/atomix-mark.svg"
+                  alt=""
+                  width={36}
+                  height={36}
+                  priority
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
+                  Atomix Governance
+                </p>
+                <h1 className="mt-0.5 text-3xl font-bold text-white">
+                  Dashboard
+                </h1>
+              </div>
             </div>
             <p className="mt-2 max-w-3xl text-slate-400">
               {metrics.role?.description ??
